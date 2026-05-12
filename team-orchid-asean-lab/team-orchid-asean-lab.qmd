@@ -211,7 +211,9 @@ identical(min_rank(levels(meat$animal_factor)), 1:length(levels(meat$animal_fact
 It is not necessary for the meat to be an ordered factor, as there is no need for a comparison of e.g. poultry > pig.
 
 ### Task 3.4.4
-```{r}
+```{r} 
+#| label: collapsing-color
+
 meat$color <- fct_collapse(
   meat$animal_factor,
   red   = c("beef and buffalo", "mutton and goat", "pig"),
@@ -250,6 +252,7 @@ levels(meat$color)  # Expected: "red" "white" ✅
 
 ### Task 3.5.1
 ```{r}
+# | label: assign-iso3
 meat$iso3 <- recode_values(
   meat$country,
   "Brunei Darussalam" ~ "BRN",
