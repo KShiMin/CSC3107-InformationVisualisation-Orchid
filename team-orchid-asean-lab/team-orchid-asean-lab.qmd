@@ -4,6 +4,7 @@ format: html
 ---
 
 Assigned Role 
+
 1. Coder - Quan Yi
 2. Navigator - Shi Min
 3. Verifier - Subhashini
@@ -20,6 +21,8 @@ meat <- read_csv("meat.csv")
 
 This document contains each group member's individual predictions for the `meat` dataset, made **before** running any code or consulting AI.
 
+## 3.1 Inspecting meat tibble
+
 Each member predicts:
 
 - **a.** The class of each column (`country`, `animal`, `year`, `production`)
@@ -27,6 +30,8 @@ Each member predicts:
 - **c.** The dataset dimensions: `nrow(meat)` and `ncol(meat)`
 
 ---
+
+### Task 3.1.1
 
 Quan Yi's Predictions
 
@@ -160,7 +165,7 @@ c. Dataset Dimensions
 
 ## 3.1 Inspecting the tibble
 
-### Task 3.1.2
+### Task 3.1.2, 3.1.3
 ```{r}
 #| label: meat-reveal
 class(meat$country)
@@ -217,6 +222,8 @@ length(unique(meat$year)) # Expected: 4 ✅
 
 ## 3.2 Handle Missing Values
 
+### Task 3.2.1, 3.2.2
+
 ```{r}
 #| label: handle-missing-values
 any(is.na(meat))
@@ -225,13 +232,14 @@ mask <- is.na(meat$production)
 meat[mask, c("country", "animal", "year")]
 ```
 
-`is.na(meat$production)` creates a logical TRUE.
+`is.na(meat$production)` returns a logical vector where each element is TRUE if the corresponding value is `NA`.
 `any(is.na(meat))` checks if any value in the tibble is `NA` to return `TRUE`.
 `meat[mask, c("country", "animal", "year")]` subsets the tibble using the mask to show only rows where production is missing.
 
-In the rows where production is `NA`, the countries are always **Cambodia**, for **mutton and goat** and for the years 2018 to 2021
+It was observed that in the rows where production is `NA`, the countries are always **Cambodia**, for **mutton and goat** and from the year 2018 to 2021
 
 
+### Task 3.2.3
 
 ```{r}
 #| label: total-production
@@ -239,13 +247,15 @@ sum(meat$production)
 sum(meat$production, na.rm = TRUE)
 ```
 
-As there is a `NA` value in the production column, it will return `NA`. 
+As there is a missing value in the production column, the sum operation cannot be completed and returns `NA`. 
 
-By adding `na.rm = TRUE`, it will remove the rows with NA values and add the sum, therefore returning a value of 83937.52
+By adding `na.rm = TRUE`, it will ignore the rows with missing/NA values and perform the sum operation, returning a value of `83937.52`
+
+### Task 3.2.4
 
 When we use `na.rm = TRUE`, we assume that there are no production for that country for the animal product in that year and is thus `NA`. 
 
-This assumption is valid, as since Cambodia did not have any production for mutton and goat through the years 2018 - 2021. Therefore we can assume that they do not have such produce in Cambodia
+This assumption is valid because Cambodia recorded zero production for mutton and goat from 2018 to 2021. Therefore, we can assume that they do not have such produce in Cambodia and treat these missing values as a lack of production.
 
 #### VERIFIER CHECK 3.2
 
@@ -274,9 +284,11 @@ max_poultry <- max(poultry_2020$production, na.rm = TRUE)
 poultry_2020$country[poultry_2020$production == max_poultry]
 ```
 
-This keeps only the rows for poultry in 2020 and subsets the tibble using compound logical condition(both criteria must be TRUE).
+The first line keeps only the rows for poultry in 2020 and subsets the tibble using compound logical condition(both criteria must be TRUE).
 
 The maximum production value is found with `max()`. The second line determines which nation's production is equal to that maximum using a logical index.
+
+The final line uses a logical index `(production == max_poultry)` to find the row(s) where the production matches that maximum value, and then returns the corresponding country name
 
 
 
@@ -289,9 +301,10 @@ poultry_2020$country[ranks == 2]
 ```
 
 `desc()` reverses the order so the largest value ranks first.
+
 `min_rank()` assigns integer ranks. Subsetting where rank equals 2.
 
-
+This helps to find the country with the second-highest poultry production in 2020
 
 ### Task 3.3.3
 
@@ -304,10 +317,13 @@ identical(poultry_2020$country, pig_2020$country)
 sum(poultry_2020$production > pig_2020$production, na.rm = TRUE)
 ```
 
+Using the same logic in **Task 3.3.1**, we create `pig_2020`
+
 `identical()` confirms the country vectors are in the same order before doing an element wise comparison returning `TRUE`.
 
-`poultry_202$production > pig_202$production` compares each country's poultry vs pig production row by row.
-`sum()` counts the `TRUE`
+`poultry_2020$production > pig_2020$production` compares each country's poultry vs pig production row by row.
+
+`sum()` counts the `TRUE` and by summing the logical vector, we calculate the total number of countries that produced more poultry than pig.
 
 
 
@@ -365,7 +381,11 @@ identical(
 
 `levels(meat$animal_factor)` returns the factor's levels in their stored order. 
 
-`identical(min_rank(levels(meat$animal_factor)), 1:length(levels(meat$animal_factor)))` check confirms they are alphabetical.
+`min_rank(levels(meat$animal_factor)` assigns a numerical rank to the levels based on their alphabetical position
+
+`1:length(levels(meat$animal_factor)))` generates a simple sequence of integers from 1 to the total number of levels.
+
+This check confirms that they are alphabetical by using `identical()` as the rank matches the sequence.
 
 ### Task 3.4.3
 It is not necessary for the meat to be an ordered factor, as there is no need for a comparison of e.g. poultry > pig.
@@ -381,7 +401,9 @@ meat$color <- fct_collapse(
 levels(meat$color)
 ```
 
-`fct_collapse()` merges multiple factor levels into new ones.
+`fct_collapse()` merges multiple factor levels into new ones. In our case, we mapped "beef and buffalo", "mutton and goat" and "pig" to "red" meat and the level "poultry" to "white"
+
+We then confirm that there are only "red" and "white" meat in `animal_factor` 
 
 #### VERIFIER CHECK 3.4
 
@@ -414,7 +436,7 @@ levels(meat$color) # Expected: "red" "white" ✅
 
 ### Task 3.5.1
 ```{r}
-#| label: assign-iso3
+#| label: create-iso3
 meat$iso3 <- recode_values(
   meat$country,
   "Brunei Darussalam" ~ "BRN",
@@ -430,13 +452,19 @@ meat$iso3 <- recode_values(
 )
 ```
 
+`recode_values()` helps to create a new column (iso3) by mapping full country names to the ISO3 codes using tilde-based formulas.
+
+### Task 3.5.2
 ```{r}
-#| label: confirmation
+#| label: confirmation-iso3
 any(is.na(meat$iso3))
 
 length(unique(meat$country))
 length(unique(meat$iso3))
+nrow(unique(meat[ , c("country", "iso3")]))
 ```
+
+We verify that there are no missing values as `any(is.na(meat$iso3))` returned `FALSE` and that there are ten unique name-plus-code pairs
 
 #### VERIFIER CHECK 3.5
 
