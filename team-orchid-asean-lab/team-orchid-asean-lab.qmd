@@ -157,7 +157,17 @@ head(meat)
 tail(meat)
 ```
 
-Majority of teammates correctly predicted the class country and animal as character.  Most of us were surprised by the dataset's dimensions and the number of different ASEAN nations. In addition, some almost accurately anticipated the exact nrow and ncol.
+data type of every column is returned by class(). 
+`year` and `production` are "numeric" but nation and animal are "character".
+
+`nrow()` and `ncol()` return the number of rows and columns.
+
+`unique()` retrieves all distinct values in a column.
+wrapping it in `length()` and counts them.
+
+`head()` and `tail()` show first and last 6 rows.
+
+Majority of teammates correctly predicted the class `country` and `animal` as "character".  Most of us were surprised by the dataset's dimensions and the number of different ASEAN nations. In addition, some almost accurately anticipated the exact `nrow` and `ncol`.
 
 
 
@@ -182,6 +192,7 @@ length(unique(meat$year)) # Expected: 4 ✅
 # head() and tail() outputs match coder's rendered results ✅
 ```
 
+
 ## 3.2 Handle Missing Values
 
 ```{r}
@@ -191,6 +202,10 @@ mask <- is.na(meat$production)
 
 meat[mask, c("country", "animal", "year")]
 ```
+
+`is.na(meat$production)` creates a logical TRUE.
+`any(is.na(meat))` checks if any value in the tibble is `NA` to return `TRUE`.
+`meat[mask, c("country", "animal", "year")]` subsets the tibble using the mask to show only rows where production is missing.
 
 In the rows where production is `NA`, the countries are always **Cambodia**, for **mutton and goat** and for the years 2018 to 2021
 
@@ -237,6 +252,12 @@ max_poultry <- max(poultry_2020$production, na.rm = TRUE)
 poultry_2020$country[poultry_2020$production == max_poultry]
 ```
 
+This keeps only the rows for poultry in 2020 and subsets the tibble using compound logical condition(both criteria must be TRUE).
+
+The maximum production value is found with `max()`. The second line determines which nation's production is equal to that maximum using a logical index.
+
+
+
 ### Task 3.3.2
 
 ```{r}
@@ -244,6 +265,11 @@ poultry_2020$country[poultry_2020$production == max_poultry]
 ranks <- min_rank(desc(poultry_2020$production))
 poultry_2020$country[ranks == 2]
 ```
+
+`desc()` reverses the order so the largest value ranks first.
+`min_rank()` assigns integer ranks. Subsetting where rank equals 2.
+
+
 
 ### Task 3.3.3
 
@@ -255,6 +281,13 @@ identical(poultry_2020$country, pig_2020$country)
 
 sum(poultry_2020$production > pig_2020$production, na.rm = TRUE)
 ```
+
+`identical()` confirms the country vectors are in the same order before doing an element wise comparison returning `TRUE`.
+
+`poultry_202$production > pig_202$production` compares each country's poultry vs pig production row by row.
+`sum()` counts the `TRUE`
+
+
 
 #### VERIFIER CHECK 3.3
 
@@ -274,6 +307,12 @@ identical(poultry_2020$country, pig_2020$country) # Expected: TRUE ✅
 sum(poultry_2020$production > pig_2020$production) # Expected: 6 ✅
 ```
 
+`poultry_2020$country[which.max(poultry_2020$production)]` directly returns the index of the maximum value. 
+
+`ranked <- poultry_2020[order(-poultry_2020$production), ]` returns indices that would sort in descending order then takes row two giving the second highest country.
+
+
+
 ## 3.4 Construct Factors
 
 ### Task 3.4.1
@@ -287,6 +326,10 @@ is.factor(meat$animal_factor)
 meat
 ```
 
+`factor(meat$animal)` converts the character column animal into a factor and stores it in a new column. 
+
+`is.factor(meat$animal_factor)` confirms it worked, returning `TRUE`.
+
 ### Task 3.4.2
 ```{r}
 #| label: looking-at-factor
@@ -297,6 +340,10 @@ identical(
   1:length(levels(meat$animal_factor))
 )
 ```
+
+`levels(meat$animal_factor)` returns the factor's levels in their stored order. 
+
+`identical(min_rank(levels(meat$animal_factor)), 1:length(levels(meat$animal_factor)))` check confirms they are alphabetical.
 
 ### Task 3.4.3
 It is not necessary for the meat to be an ordered factor, as there is no need for a comparison of e.g. poultry > pig.
@@ -311,6 +358,8 @@ meat$color <- fct_collapse(
 )
 levels(meat$color)
 ```
+
+`fct_collapse()` merges multiple factor levels into new ones.
 
 #### VERIFIER CHECK 3.4
 
@@ -336,6 +385,8 @@ identical(
 # Task 3.4.4 – confirmed color collapse levels
 levels(meat$color) # Expected: "red" "white" ✅
 ```
+
+
 
 ## 3.5 Adding a Country-Code Column
 
