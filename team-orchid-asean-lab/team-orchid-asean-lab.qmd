@@ -7,8 +7,9 @@ Assigned Role
 1. Coder - Quan Yi
 2. Navigator - Shi Min
 3. Verifier - Subhashini
-4. Constructive Critic + Reporter - Jabar
+4. Constructive Critic - MinXuan
 5. AI Liaison - Aiman
+6. Reporter - Jabar
 
 ```{r}
 #| label: setup-meat
@@ -17,34 +18,129 @@ library(tidyverse)
 meat <- read_csv("meat.csv")
 ```
 
+This document contains each group member's individual predictions for the `meat` dataset, made **before** running any code or consulting AI.
 
+Each member predicts:
 
-Prediction:
+- **a.** The class of each column (`country`, `animal`, `year`, `production`)
+- **b.** The number of distinct values in `country`, `animal`, and `year`
+- **c.** The dataset dimensions: `nrow(meat)` and `ncol(meat)`
 
-a.
-country: Brunei Darussalam, Malaysia, Singapore, China, Japan, Korea
+---
 
-animal: beef and buffalo, chicken, pig, cow
+Quan Yi's Predictions
 
-year: 2021, 2022, 2023
+a. Class Prediction
 
-production: 4.26741, 4.33234, 4.68384
+- **country:** character (e.g., "Brunei Darussalam", "Malaysia", "Singapore", "China", "Japan", "Korea")
+- **animal:** character (e.g., beef and buffalo, chicken, pig, cow)
+- **year:** numeric (e.g., 2021, 2022, 2023)
+- **production:** numeric (e.g., 4.26741, 4.33234, 4.68384)
 
-b.
-country: 6
-animal: 4
-year: 3
+b. Number of Distinct Values
 
-c.
-nrow(meat) -> 160
-ncol(meat) -> 4
+- **country:** 6
+- **animal:** 4
+- **year:** 3
+
+c. Dataset Dimensions
+
+- `nrow(meat)` → Predicted: 160
+- `ncol(meat)` → Predicted: 4
+
+---
+
+Shi Min's Predictions
+
+a. Class Prediction
+
+- **country:** character
+- **animal:** character
+- **year:** date
+- **production:** double
+
+b. Number of Distinct Values
+
+- **country:** 10
+- **animal:** 20
+- **year:** 4
+
+c. Dataset Dimensions
+
+- `nrow(meat)` → Predicted: 1000
+- `ncol(meat)` → Predicted: 10
+
+---
+
+Aiman's Predictions
+
+a. Class Prediction
+
+- **country:** character
+- **animal:** character
+- **year:** integer
+- **production:** numeric
+
+b. Number of Distinct Values
+
+- **country:** 3
+- **animal:** 4
+- **year:** 4
+
+c. Dataset Dimensions
+
+- `nrow(meat)` → Predicted: 20
+- `ncol(meat)` → Predicted: 15
+
+---
+
+Subhashini's Predictions
+
+a. Class Prediction
+
+- **country:** character (e.g., Brunei Darussalam, Indonesia, Cambodia, Singapore, Malaysia, Vietnam, Thailand)
+- **animal:** character (e.g., pig, chicken, beef)
+- **year:** numeric (e.g., 2018–2021)
+- **production:** numeric (e.g., 60.8341)
+
+b. Number of Distinct Values
+
+- **country:** 10
+- **animal:** 7
+- **year:** 4
+
+c. Dataset Dimensions
+
+- `nrow(meat)` → Predicted: 100
+- `ncol(meat)` → Predicted: 10
+
+---
+
+Jabar's Predictions
+
+a. Class Prediction
+
+- **country:** character
+- **animal:** factor
+- **year:** integer
+- **production:** numeric
+
+b. Number of Distinct Values
+
+- **country:** 10
+- **animal:** 4
+- **year:** 4
+
+c. Dataset Dimensions
+
+- `nrow(meat)` → Predicted: 110
+- `ncol(meat)` → Predicted: 8
 
 ## 3.1 Inspecting the tibble
 
 ### Task 3.1.2
 ```{r}
 #| label: meat-reveal
-
 class(meat$country)
 class(meat$animal)
 class(meat$year)
@@ -61,24 +157,27 @@ head(meat)
 tail(meat)
 ```
 
+Majority of teammates correctly predicted the class country and animal as character.  Most of us were surprised by the dataset's dimensions and the number of different ASEAN nations. In addition, some almost accurately anticipated the exact nrow and ncol.
+
+
+
 #### VERIFIER CHECK 3.1
 
 Independently re-ran the same checks to confirm coder's output.
 
 ```{r}
 #| label: verifier-classes
-
-class(meat$country)    # Expected: "character" ✅
-class(meat$animal)     # Expected: "character" ✅
-class(meat$year)       # Expected: "numeric" ✅
+class(meat$country) # Expected: "character" ✅
+class(meat$animal) # Expected: "character" ✅
+class(meat$year) # Expected: "numeric" ✅
 class(meat$production) # Expected: "numeric" ✅
 
-nrow(meat)  # Expected: 160 ✅
-ncol(meat)  # Expected: 4 ✅
+nrow(meat) # Expected: 160 ✅
+ncol(meat) # Expected: 4 ✅
 
-length(unique(meat$country))  # Expected: 10 ✅
-length(unique(meat$animal))   # Expected: 4 ✅
-length(unique(meat$year))     # Expected: 4 ✅
+length(unique(meat$country)) # Expected: 10 ✅
+length(unique(meat$animal)) # Expected: 4 ✅
+length(unique(meat$year)) # Expected: 4 ✅
 
 # head() and tail() outputs match coder's rendered results ✅
 ```
@@ -87,7 +186,6 @@ length(unique(meat$year))     # Expected: 4 ✅
 
 ```{r}
 #| label: handle-missing-values
-
 any(is.na(meat))
 mask <- is.na(meat$production)
 
@@ -100,10 +198,8 @@ In the rows where production is `NA`, the countries are always **Cambodia**, for
 
 ```{r}
 #| label: total-production
-
 sum(meat$production)
 sum(meat$production, na.rm = TRUE)
-
 ```
 
 As there is a `NA` value in the production column, it will return `NA`. 
@@ -120,14 +216,13 @@ Used `meat$production` specifically (coder used `any(is.na(meat))` on the whole 
 
 ```{r}
 #| label: verifier-missing-values
-
-any(is.na(meat$production))  # Expected: TRUE ✅
+any(is.na(meat$production)) # Expected: TRUE ✅
 
 # Confirmed the same 4 NA rows: Cambodia, mutton and goat, years 2018–2021
-meat[is.na(meat$production), c("country", "animal", "year")]  # ✅
+meat[is.na(meat$production), c("country", "animal", "year")] # ✅
 
-sum(meat$production)              # Expected: NA ✅
-sum(meat$production, na.rm = TRUE)  # Expected: 83937.52 ✅
+sum(meat$production) # Expected: NA ✅
+sum(meat$production, na.rm = TRUE) # Expected: 83937.52 ✅
 ```
 
 ## 3.3 Country Comparison
@@ -135,20 +230,17 @@ sum(meat$production, na.rm = TRUE)  # Expected: 83937.52 ✅
 ### Task 3.3.1
 ```{r}
 #| label: compare-countries
-
 poultry_2020 <- meat[meat$animal == "poultry" & meat$year == 2020, ]
 
 max_poultry <- max(poultry_2020$production, na.rm = TRUE)
 
 poultry_2020$country[poultry_2020$production == max_poultry]
-
 ```
 
 ### Task 3.3.2
 
 ```{r}
 #| label: find-second-highest
-
 ranks <- min_rank(desc(poultry_2020$production))
 poultry_2020$country[ranks == 2]
 ```
@@ -157,13 +249,11 @@ poultry_2020$country[ranks == 2]
 
 ```{r}
 #| label: poultry-to-pig
-
 pig_2020 <- meat[meat$animal == "pig" & meat$year == 2020, ]
 
 identical(poultry_2020$country, pig_2020$country)
 
 sum(poultry_2020$production > pig_2020$production, na.rm = TRUE)
-
 ```
 
 #### VERIFIER CHECK 3.3
@@ -172,17 +262,16 @@ Used alternative approaches to independently confirm coder's results.
 
 ```{r}
 #| label: verifier-country-comparison
-
 # Task 3.3.1 – used which.max() instead of max(); same answer
-poultry_2020$country[which.max(poultry_2020$production)]  # Expected: "Indonesia" ✅
+poultry_2020$country[which.max(poultry_2020$production)] # Expected: "Indonesia" ✅
 
 # Task 3.3.2 – used order() instead of min_rank(); same answer
 ranked <- poultry_2020[order(-poultry_2020$production), ]
-ranked$country[2]  # Expected: "Thailand" ✅
+ranked$country[2] # Expected: "Thailand" ✅
 
 # Task 3.3.3 – confirmed row order match and count
-identical(poultry_2020$country, pig_2020$country)           # Expected: TRUE ✅
-sum(poultry_2020$production > pig_2020$production)          # Expected: 6 ✅
+identical(poultry_2020$country, pig_2020$country) # Expected: TRUE ✅
+sum(poultry_2020$production > pig_2020$production) # Expected: 6 ✅
 ```
 
 ## 3.4 Construct Factors
@@ -201,10 +290,12 @@ meat
 ### Task 3.4.2
 ```{r}
 #| label: looking-at-factor
-
 levels(meat$animal_factor)
 
-identical(min_rank(levels(meat$animal_factor)), 1:length(levels(meat$animal_factor)))
+identical(
+  min_rank(levels(meat$animal_factor)),
+  1:length(levels(meat$animal_factor))
+)
 ```
 
 ### Task 3.4.3
@@ -213,10 +304,9 @@ It is not necessary for the meat to be an ordered factor, as there is no need fo
 ### Task 3.4.4
 ```{r} 
 #| label: collapsing-color
-
 meat$color <- fct_collapse(
   meat$animal_factor,
-  red   = c("beef and buffalo", "mutton and goat", "pig"),
+  red = c("beef and buffalo", "mutton and goat", "pig"),
   white = "poultry"
 )
 levels(meat$color)
@@ -226,9 +316,8 @@ levels(meat$color)
 
 ```{r}
 #| label: verifier-factors
-
 # Task 3.4.1 – confirmed animal_factor is a factor
-is.factor(meat$animal_factor)  # Expected: TRUE ✅
+is.factor(meat$animal_factor) # Expected: TRUE ✅
 
 # Task 3.4.2 – confirmed levels are in alphabetical order using two approaches
 levels(meat$animal_factor)
@@ -237,41 +326,40 @@ levels(meat$animal_factor)
 identical(
   levels(meat$animal_factor),
   levels(meat$animal_factor)[order(levels(meat$animal_factor))]
-)  # Expected: TRUE — confirms alphabetical ordering ✅
+) # Expected: TRUE — confirms alphabetical ordering ✅
 
 identical(
   min_rank(levels(meat$animal_factor)),
   seq_along(levels(meat$animal_factor))
-)  # Expected: TRUE ✅
+) # Expected: TRUE ✅
 
 # Task 3.4.4 – confirmed color collapse levels
-levels(meat$color)  # Expected: "red" "white" ✅
+levels(meat$color) # Expected: "red" "white" ✅
 ```
 
 ## 3.5 Adding a Country-Code Column
 
 ### Task 3.5.1
 ```{r}
-# | label: assign-iso3
+#| label: assign-iso3
 meat$iso3 <- recode_values(
   meat$country,
   "Brunei Darussalam" ~ "BRN",
-  "Cambodia"          ~ "KHM",
-  "Indonesia"         ~ "IDN",
-  "Lao PDR"           ~ "LAO",
-  "Malaysia"          ~ "MYS",
-  "Myanmar"           ~ "MMR",
-  "Philippines"       ~ "PHL",
-  "Singapore"         ~ "SGP",
-  "Thailand"          ~ "THA",
-  "Viet Nam"          ~ "VNM"
+  "Cambodia" ~ "KHM",
+  "Indonesia" ~ "IDN",
+  "Lao PDR" ~ "LAO",
+  "Malaysia" ~ "MYS",
+  "Myanmar" ~ "MMR",
+  "Philippines" ~ "PHL",
+  "Singapore" ~ "SGP",
+  "Thailand" ~ "THA",
+  "Viet Nam" ~ "VNM"
 )
 ```
 
 ```{r}
 #| label: confirmation
-
-any(is.na(meat$iso3))       
+any(is.na(meat$iso3))
 
 length(unique(meat$country))
 length(unique(meat$iso3))
@@ -281,22 +369,27 @@ length(unique(meat$iso3))
 
 ```{r}
 #| label: verifier-iso3
-
 # Confirmed no NAs in iso3 column after assignment
-any(is.na(meat$iso3))  # Expected: FALSE ✅
+any(is.na(meat$iso3)) # Expected: FALSE ✅
 
 # Confirmed 1-to-1 mapping: 10 unique countries, 10 unique iso3 codes
-length(unique(meat$country))  # Expected: 10 ✅
-length(unique(meat$iso3))     # Expected: 10 ✅
+length(unique(meat$country)) # Expected: 10 ✅
+length(unique(meat$iso3)) # Expected: 10 ✅
 
 # Cross-verified each country maps to the correct iso3 code
 expected <- c(
-  "Brunei Darussalam" = "BRN", "Cambodia" = "KHM", "Indonesia" = "IDN",
-  "Lao PDR" = "LAO", "Malaysia" = "MYS", "Myanmar" = "MMR",
-  "Philippines" = "PHL", "Singapore" = "SGP", "Thailand" = "THA",
+  "Brunei Darussalam" = "BRN",
+  "Cambodia" = "KHM",
+  "Indonesia" = "IDN",
+  "Lao PDR" = "LAO",
+  "Malaysia" = "MYS",
+  "Myanmar" = "MMR",
+  "Philippines" = "PHL",
+  "Singapore" = "SGP",
+  "Thailand" = "THA",
   "Viet Nam" = "VNM"
 )
-all(meat$iso3 == expected[meat$country])  # Expected: TRUE ✅
+all(meat$iso3 == expected[meat$country]) # Expected: TRUE ✅
 ```
 
 
