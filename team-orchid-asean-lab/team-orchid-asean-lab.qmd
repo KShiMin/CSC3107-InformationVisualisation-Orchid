@@ -136,6 +136,28 @@ c. Dataset Dimensions
 - `nrow(meat)` → Predicted: 110
 - `ncol(meat)` → Predicted: 8
 
+---
+
+Min Xuan's Predictions
+
+a. Class Prediction
+
+- **country:** character
+- **animal:** character
+- **year:** numeric
+- **production:** numeric
+
+b. Number of Distinct Values
+
+- **country:** 10
+- **animal:** 4
+- **year:** 4
+
+c. Dataset Dimensions
+
+- `nrow(meat)` → Predicted: 160
+- `ncol(meat)` → Predicted: 4
+
 ## 3.1 Inspecting the tibble
 
 ### Task 3.1.2
