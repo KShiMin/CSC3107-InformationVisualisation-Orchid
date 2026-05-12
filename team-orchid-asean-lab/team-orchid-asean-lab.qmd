@@ -1,0 +1,321 @@
+---
+title: "ASEAN-Lab"
+format: html
+---
+
+Assigned Role 
+1. Coder - Quan Yi
+2. Navigator - Shi Min
+3. Verifier - Subhashini
+4. Constructive Critic + Reporter - Jabar
+5. AI Liaison - Aiman
+
+```{r}
+#| label: setup-meat
+#| message: false
+library(tidyverse)
+meat <- read_csv("meat.csv")
+```
+
+
+
+Prediction:
+
+a.
+country: Brunei Darussalam, Malaysia, Singapore, China, Japan, Korea
+
+animal: beef and buffalo, chicken, pig, cow
+
+year: 2021, 2022, 2023
+
+production: 4.26741, 4.33234, 4.68384
+
+b.
+country: 6
+animal: 4
+year: 3
+
+c.
+nrow(meat) -> 160
+ncol(meat) -> 4
+
+## 3.1 Inspecting the tibble
+
+### Task 3.1.2
+```{r}
+#| label: meat-reveal
+
+class(meat$country)
+class(meat$animal)
+class(meat$year)
+class(meat$production)
+
+nrow(meat)
+ncol(meat)
+
+length(unique(meat$country))
+length(unique(meat$animal))
+length(unique(meat$year))
+
+head(meat)
+tail(meat)
+```
+
+#### VERIFIER CHECK 3.1
+
+Independently re-ran the same checks to confirm coder's output.
+
+```{r}
+#| label: verifier-classes
+
+class(meat$country)    # Expected: "character" ✅
+class(meat$animal)     # Expected: "character" ✅
+class(meat$year)       # Expected: "numeric" ✅
+class(meat$production) # Expected: "numeric" ✅
+
+nrow(meat)  # Expected: 160 ✅
+ncol(meat)  # Expected: 4 ✅
+
+length(unique(meat$country))  # Expected: 10 ✅
+length(unique(meat$animal))   # Expected: 4 ✅
+length(unique(meat$year))     # Expected: 4 ✅
+
+# head() and tail() outputs match coder's rendered results ✅
+```
+
+## 3.2 Handle Missing Values
+
+```{r}
+#| label: handle-missing-values
+
+any(is.na(meat))
+mask <- is.na(meat$production)
+
+meat[mask, c("country", "animal", "year")]
+```
+
+In the rows where production is `NA`, the countries are always **Cambodia**, for **mutton and goat** and for the years 2018 to 2021
+
+
+
+```{r}
+#| label: total-production
+
+sum(meat$production)
+sum(meat$production, na.rm = TRUE)
+
+```
+
+As there is a `NA` value in the production column, it will return `NA`. 
+
+By adding `na.rm = TRUE`, it will remove the rows with NA values and add the sum, therefore returning a value of 83937.52
+
+When we use `na.rm = TRUE`, we assume that there are no production for that country for the animal product in that year and is thus `NA`. 
+
+This assumption is valid, as since Cambodia did not have any production for mutton and goat through the years 2018 - 2021. Therefore we can assume that they do not have such produce in Cambodia
+
+#### VERIFIER CHECK 3.2
+
+Used `meat$production` specifically (coder used `any(is.na(meat))` on the whole tibble). Both return `TRUE` since the only NAs are in the production column.
+
+```{r}
+#| label: verifier-missing-values
+
+any(is.na(meat$production))  # Expected: TRUE ✅
+
+# Confirmed the same 4 NA rows: Cambodia, mutton and goat, years 2018–2021
+meat[is.na(meat$production), c("country", "animal", "year")]  # ✅
+
+sum(meat$production)              # Expected: NA ✅
+sum(meat$production, na.rm = TRUE)  # Expected: 83937.52 ✅
+```
+
+## 3.3 Country Comparison
+
+### Task 3.3.1
+```{r}
+#| label: compare-countries
+
+poultry_2020 <- meat[meat$animal == "poultry" & meat$year == 2020, ]
+
+max_poultry <- max(poultry_2020$production, na.rm = TRUE)
+
+poultry_2020$country[poultry_2020$production == max_poultry]
+
+```
+
+### Task 3.3.2
+
+```{r}
+#| label: find-second-highest
+
+ranks <- min_rank(desc(poultry_2020$production))
+poultry_2020$country[ranks == 2]
+```
+
+### Task 3.3.3
+
+```{r}
+#| label: poultry-to-pig
+
+pig_2020 <- meat[meat$animal == "pig" & meat$year == 2020, ]
+
+identical(poultry_2020$country, pig_2020$country)
+
+sum(poultry_2020$production > pig_2020$production, na.rm = TRUE)
+
+```
+
+#### VERIFIER CHECK 3.3
+
+Used alternative approaches to independently confirm coder's results.
+
+```{r}
+#| label: verifier-country-comparison
+
+# Task 3.3.1 – used which.max() instead of max(); same answer
+poultry_2020$country[which.max(poultry_2020$production)]  # Expected: "Indonesia" ✅
+
+# Task 3.3.2 – used order() instead of min_rank(); same answer
+ranked <- poultry_2020[order(-poultry_2020$production), ]
+ranked$country[2]  # Expected: "Thailand" ✅
+
+# Task 3.3.3 – confirmed row order match and count
+identical(poultry_2020$country, pig_2020$country)           # Expected: TRUE ✅
+sum(poultry_2020$production > pig_2020$production)          # Expected: 6 ✅
+```
+
+## 3.4 Construct Factors
+
+### Task 3.4.1
+
+```{r}
+#| label: assigning-animal-factor
+meat$animal_factor <- factor(meat$animal)
+
+is.factor(meat$animal_factor)
+
+meat
+```
+
+### Task 3.4.2
+```{r}
+#| label: looking-at-factor
+
+levels(meat$animal_factor)
+
+identical(min_rank(levels(meat$animal_factor)), 1:length(levels(meat$animal_factor)))
+```
+
+### Task 3.4.3
+It is not necessary for the meat to be an ordered factor, as there is no need for a comparison of e.g. poultry > pig.
+
+### Task 3.4.4
+```{r} 
+#| label: collapsing-color
+
+meat$color <- fct_collapse(
+  meat$animal_factor,
+  red   = c("beef and buffalo", "mutton and goat", "pig"),
+  white = "poultry"
+)
+levels(meat$color)
+```
+
+#### VERIFIER CHECK 3.4
+
+```{r}
+#| label: verifier-factors
+
+# Task 3.4.1 – confirmed animal_factor is a factor
+is.factor(meat$animal_factor)  # Expected: TRUE ✅
+
+# Task 3.4.2 – confirmed levels are in alphabetical order using two approaches
+levels(meat$animal_factor)
+# Expected: "beef and buffalo" "mutton and goat" "pig" "poultry" ✅
+
+identical(
+  levels(meat$animal_factor),
+  levels(meat$animal_factor)[order(levels(meat$animal_factor))]
+)  # Expected: TRUE — confirms alphabetical ordering ✅
+
+identical(
+  min_rank(levels(meat$animal_factor)),
+  seq_along(levels(meat$animal_factor))
+)  # Expected: TRUE ✅
+
+# Task 3.4.4 – confirmed color collapse levels
+levels(meat$color)  # Expected: "red" "white" ✅
+```
+
+## 3.5 Adding a Country-Code Column
+
+### Task 3.5.1
+```{r}
+# | label: assign-iso3
+meat$iso3 <- recode_values(
+  meat$country,
+  "Brunei Darussalam" ~ "BRN",
+  "Cambodia"          ~ "KHM",
+  "Indonesia"         ~ "IDN",
+  "Lao PDR"           ~ "LAO",
+  "Malaysia"          ~ "MYS",
+  "Myanmar"           ~ "MMR",
+  "Philippines"       ~ "PHL",
+  "Singapore"         ~ "SGP",
+  "Thailand"          ~ "THA",
+  "Viet Nam"          ~ "VNM"
+)
+```
+
+```{r}
+#| label: confirmation
+
+any(is.na(meat$iso3))       
+
+length(unique(meat$country))
+length(unique(meat$iso3))
+```
+
+#### VERIFIER CHECK 3.5
+
+```{r}
+#| label: verifier-iso3
+
+# Confirmed no NAs in iso3 column after assignment
+any(is.na(meat$iso3))  # Expected: FALSE ✅
+
+# Confirmed 1-to-1 mapping: 10 unique countries, 10 unique iso3 codes
+length(unique(meat$country))  # Expected: 10 ✅
+length(unique(meat$iso3))     # Expected: 10 ✅
+
+# Cross-verified each country maps to the correct iso3 code
+expected <- c(
+  "Brunei Darussalam" = "BRN", "Cambodia" = "KHM", "Indonesia" = "IDN",
+  "Lao PDR" = "LAO", "Malaysia" = "MYS", "Myanmar" = "MMR",
+  "Philippines" = "PHL", "Singapore" = "SGP", "Thailand" = "THA",
+  "Viet Nam" = "VNM"
+)
+all(meat$iso3 == expected[meat$country])  # Expected: TRUE ✅
+```
+
+
+## AI Liaison Report
+
+**Tool used:** Perplexity (Claude Sonnet 4.6)
+
+### One Suboptimal AI Response
+
+During Section 3.5, AI suggested the following line to verify the iso3 mapping:
+
+```r
+length(unique(paste(meat$country, meat$iso3)))
+```
+
+This response was suboptimal because `paste()` was not within the list of permitted functions specified for this task. Despite being clearly informed of the constraints upfront, the AI defaulted to its own preferred method rather than working within the given boundaries. This highlights how AI tools can fail to fully adhere to specified restrictions even when they have been explicitly stated.
+
+The issue was caught when the coder was typing out the code and the team subsequently prompted the AI to do a full check on all of its output. The AI was able to identify the violation itself and provide a corrected alternative that used only permitted functions — which is what the team adopted as the final solution.
+
+### Reflection
+
+When using AI tools, it is important to **clearly specify the parameters of the task**, including any constraints on which functions or methods are permitted. Being explicit about what is and is not allowed helps the AI give more accurate and appropriate responses. Additionally, performing a final full-output review by prompting the AI to self-check its own suggestions is a useful practice, as demonstrated here — the AI was able to catch and correct its own mistake when prompted to do so.
