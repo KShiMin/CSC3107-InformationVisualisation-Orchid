@@ -146,7 +146,38 @@ tail(meat_tidy)
 
 ```{r}
 #| label: verifier-3.3
+# Verifier checks
+# Confirm column names and classes
+colnames(meat_tidy)
+map_chr(
+  c("country", "animal", "year", "production"),
+  ~ class(meat_tidy[[.x]])[1]
+)
+# Confirm row count
+nrow(meat_tidy)
+# Confirm sort order: descending year, then animal, then country
+identical(
+  meat_tidy |> select(country, animal, year, production),
+  meat_tidy |>
+    arrange(desc(year), animal, country) |>
+    select(country, animal, year, production)
+)
+# Confirm first row values
+meat_tidy$country[1] == "Brunei Darussalam" &&
+  meat_tidy$animal[1] == "beef and buffalo" &&
+  meat_tidy$year[1] == 2021 &&
+  abs(meat_tidy$production[1] - 4.26741) < 1e-6
+# Confirm animal labels
+sort(unique(meat_tidy$animal))
 ```
+
+**Verifier Notes :**
+- `colnames()` confirms the four expected columns: `country`, `animal`, `year`, `production`  
+- Column classes are `character`, `character`, `numeric`, `numeric` as expected  
+- `nrow()` returns **160 rows** (10 countries × 4 animal types × 4 years)  
+- Sort order verified — identical to `arrange(desc(year), animal, country)`  
+- First row confirmed: Brunei Darussalam / beef and buffalo / 2021 / 4.26741  
+- Animal labels are correctly cleaned to: `beef and buffalo`, `mutton and goat`, `pig`, `poultry`  
 
 ## Task 3.4 Correcting Cambodia's Mutton-and-goat Entries
 
@@ -178,9 +209,19 @@ We use `NA_real_` as the column contains decimal numbers/is numeric and standard
 
 ```{r}
 #| label: verifier-3.4
-
-
+# Verifier checks
+# Confirm Cambodia mutton and goat rows are all NA
+cambodia_rows <- meat_tidy |>
+  filter(country == "Cambodia", animal == "mutton and goat")
+cambodia_rows
+# All production values should be NA
+all(is.na(cambodia_rows$production))
 ```
+
+**Verifier Notes :**
+- Filtered Cambodia's mutton and goat rows — all 4 rows (2018–2021) confirmed as `NA`  
+- `all(is.na())` returns `TRUE` — the 0 → `NA` replacement was applied correctly
+- `NA_real_` was correctly used instead of plain `NA` to avoid type mismatch in a numeric column 
 
 
 ## 3.5 Checkpoint: Compare meat_tidy to Reference Data
@@ -240,8 +281,20 @@ pop_tidy
 
 ```{r}
 #| label: verifier-3.6
-
+# Verifier checks
+# Confirm first row of pop_tidy
+pop_tidy |> slice(1)
+pop_tidy$country[1] == "Brunei Darussalam" &&
+  pop_tidy$year[1] == 2022 &&
+  abs(pop_tidy$pop[1] - 445.4) < 1e-6
+# Check no trailing whitespace in country names (e.g. "Malaysia ")
+any(str_detect(pop_tidy$country, "Malaysia\\s$"))
 ```
+
+**Verifier Notes :**
+- First row confirmed: Brunei Darussalam / 2022 / 445.4  
+- No trailing whitespace detected in country names — `str_detect` returns `FALSE`  
+- Column names correctly renamed to `country`, `year`, `pop` 
 
 ## 3.7 Checkpoint: Compare pop_tidy to Reference Data
 
@@ -266,8 +319,20 @@ merged
 
 ```{r}
 #| label: verifier-3.8
+# Verifier checks
 meat_tidy
+# Confirm merged has same row count as meat_tidy
+nrow(merged) == nrow(meat_tidy)
+# Confirm row order is preserved from meat_tidy
+identical(
+  merged |> select(country, animal, year, production),
+  meat_tidy |> select(country, animal, year, production)
+)
 ```
+**Verifier Notes :**
+- `nrow(merged)` matches `nrow(meat_tidy)` — 160 rows, no rows were lost or duplicated in the join  
+- Row order from `meat_tidy` is fully preserved in `merged` after the left join  
+- `left_join()` correctly matched on both `country` and `year`  
 
 ## 3.9 Derive Per-Capita Production
 
@@ -295,9 +360,22 @@ check_rows2
 
 ```{r}
 #| label: verifier-3.9
-
-
+# Verifier checks
+# Confirm meat_per_cap is calculated correctly
+all.equal(
+  merged$meat_per_cap,
+  merged$production / merged$pop * 1e3,
+  tolerance = 1e-9
+)
+# Spot-check Cambodia mutton and goat — meat_per_cap should also be NA
+merged |> filter(country == "Cambodia", animal == "mutton and goat")
 ```
+
+**Verifier Notes :**
+- `meat_per_cap` formula verified: `production / pop * 1000` — `all.equal()` returns `TRUE`  
+- Cambodia's mutton and goat `meat_per_cap` is correctly `NA` (propagated from `NA` production)  
+- Per-capita values are consistent across all 160 rows 
+
 
 ## 3.10 Checkpoint: Compare meat_per_cap to Reference Data
 
@@ -359,10 +437,43 @@ This pattern is supported by a report from Myanmar Digital News on October 6, 20
 
 **Tool used:** Perplexity (Claude Sonnet 4.6)
 
+### One Useful AI Response
+
+During Section 3.3 and 3.6, when tidying the meat production data, the AI suggested using `pivot_longer()` with `matches("^20[0-9]{2}$")` to select all four year columns (2018–2021) at once:
+
+```r
+pivot_longer(
+  cols      = matches("^20[0-9]{2}$"),
+  names_to  = "year",
+  values_to = "production"
+)
+```
+This response was particularly helpful because the regex pattern is able to cleanly target the year column starting with "20", making the code more scalable and less error-prone if the year range were to change in the future. It avoided hardcoding individual column names and neatly integrated with tidyverse functions with no additional pacakages being needed.
+
+However, as the team was unfamilliar with how matches() and regex patterns work within pivot_longer(), the team opted not to use this in the final code and proceeded with hardcoded approach instead, which was more readable for the team.
+
 ### One Suboptimal AI Response
 
-During Section .., 
+In section 3.3, the AI initially suggested using 'rename()' to handle the first two columns:
+
+```r
+rename(country_raw = 1, animal_raw = 2)
+```
+
+This response was suboptimal as it was not within the list of permitted functions that I have already explicitly specified to the AI. The AI defauled to its own preferred method rather than working strictly within boundaries of the task. This shows how AI can fail to prepare fully adhere to specified restrictions even when they have beeen explicitly stated.
+
+This issue was realised when the team reviewed the full output against Section 2.2. After further prompting, the AI was able to provide a revised code in which we could have the intended output (by using mutate) and without using 'rename()'.
+
+```r
+mutate(
+  country = .[],[1]
+  animal  = .[]
+) |>
+select(-1, -2)
+```
 
 ### Reflection
 
-When using AI tools, it is important to **clearly specify the parameters of the task**, including any constraints on which functions or methods are permitted. Being explicit about what is and is not allowed helps the AI give more accurate and appropriate responses. Additionally, performing a final full-output review by prompting the AI to self-check its own suggestions is a useful practice, as demonstrated here — the AI was able to catch and correct its own mistake when prompted to do so.
+From this lab, the team further understands the importance of data tidying and how it can be done in R. On the other hand, the use of AI in this lab has been a mixed experience.
+
+While AI is able to give smart suggestions and can be a very useful tool for further brainstorming, improving and troubleshooting of code, there can be cases of suboptimal responses where the AI may not fully adhere to the specified requirements of constraints. The team has to be vigilant in reviewing the AI's output and testing them to ensure that they meet the intended goals of the task.
