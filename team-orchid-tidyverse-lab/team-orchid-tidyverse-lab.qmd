@@ -6,3 +6,120 @@ format:
   html:
     toc: true
 ---
+
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)
+library(readxl)
+library(waldo)
+```
+
+## 3.1 Member's Analysis of Dataset
+
+
+**a. What should be the columns and their classes (character, numeric, integer, etc.) in the tidy data frame?
+**
+
+| Member | country | class |
+|---|---|---|
+
+Quan Yi:
+
+
+Animal Type: character
+
+Brunei Darussalam: numeric
+
+Cambodia: numeric
+
+Indonesia: numeric
+
+Lao PDR: numeric
+
+Malaysia: numeric
+
+Myanmar: numeric
+
+Philippines: numeric
+
+Singapore: numeric
+
+Thailand: numeric
+
+Viet Nam: numeric
+
+ASEAN: numeric
+
+b. How many rows should the tidy data frame have? Why?
+
+It should have 16 rows as some rows are labels such as 'Livestock production' and year and should be omitted 
+
+c. Why is the current layout of sheet X.14 not tidy? List at least three specific reasons, identifying rows or columns that violate tidy-data principles.
+
+Tidy data requires 
+
+1. Each variable forms a column. [This is violated as the meat should be the column and the country should be the rows]
+2. Each observation forms a row. [This is violated as livestock production is a row but there are no values]
+3. Each type of observational unit forms a table. [This is violated as each table should be its own year, e.g. we have 4 tables, and each year has its own livestock and poultry production table]
+
+## 3.2 
+
+```{r}
+#| label: loading-data
+
+meat_raw <- read_xlsx("ASEAN-Statistical-Yearbook-2023.xlsx", sheet="X.14", range="A4:L36")
+meat_raw
+```
+
+## Task 3.3 Tidying the data
+
+```{r}
+#| label: tidying-meat
+meat_tidy <- meat_raw |>
+  mutate(year = recode_values(
+    `Animal Type`,
+    "2021" ~ 2021,
+    "2020" ~ 2020,
+    "2019" ~ 2019,
+    "2018" ~ 2018
+  ))|>
+  fill(year, .direction = "down") |>
+  mutate(`Animal Type` = str_to_lower(`Animal Type`)) |>
+  filter(str_detect(`Animal Type`, "meat")) |>
+  mutate(
+    `Animal Type` = recode_values(
+      `Animal Type`,
+      "beef and buffalo meat" ~ "beef and buffalo",
+      "mutton and goat meat"  ~ "mutton and goat",
+      "pig meat"              ~ "pig",
+      "poultry meat"          ~ "poultry"
+  )) |>
+  drop_na(`Animal Type`) |>
+  pivot_longer(
+    cols = -c(`Animal Type`, year),
+    names_to = "country",
+    values_to = "production"
+  ) |>
+  filter(country != "ASEAN") |>
+  select(country, animal = `Animal Type`,year, production) |>
+  arrange(desc(year), animal, country)
+  
+```
+
+```{r}
+#| label: tidy-check
+
+head(meat_tidy)
+tail(meat_tidy)
+
+```
+
+
+```{r}
+#| label: verifier-3.3
+```
+
+## Task 3.4 Correcting Cambodia's Mutton-and-goat Entries
+
+
