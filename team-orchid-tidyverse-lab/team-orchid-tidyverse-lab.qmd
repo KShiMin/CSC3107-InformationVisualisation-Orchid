@@ -171,13 +171,14 @@ meat_tidy$country[1] == "Brunei Darussalam" &&
 sort(unique(meat_tidy$animal))
 ```
 
-**Verifier Notes :**
-- `colnames()` confirms the four expected columns: `country`, `animal`, `year`, `production`  
-- Column classes are `character`, `character`, `numeric`, `numeric` as expected  
-- `nrow()` returns **160 rows** (10 countries × 4 animal types × 4 years)  
-- Sort order verified — identical to `arrange(desc(year), animal, country)`  
-- First row confirmed: Brunei Darussalam / beef and buffalo / 2021 / 4.26741  
-- Animal labels are correctly cleaned to: `beef and buffalo`, `mutton and goat`, `pig`, `poultry`  
+**Verifier Notes:**
+
+- `colnames()` confirms the four expected columns: `country`, `animal`, `year`, `production`
+- Column classes are confirmed as `character`, `character`, `numeric`, `numeric`
+- `nrow()` returns **160 rows** (10 countries × 4 animal types × 4 years)
+- Sort order verified — identical to `arrange(desc(year), animal, country)`
+- First row confirmed: `Brunei Darussalam` / `beef and buffalo` / `2021` / `4.26741`
+- Animal labels are correctly cleaned to: `beef and buffalo`, `mutton and goat`, `pig`, `poultry` 
 
 ## Task 3.4 Correcting Cambodia's Mutton-and-goat Entries
 
@@ -219,6 +220,7 @@ all(is.na(cambodia_rows$production))
 ```
 
 **Verifier Notes :**
+
 - Filtered Cambodia's mutton and goat rows — all 4 rows (2018–2021) confirmed as `NA`  
 - `all(is.na())` returns `TRUE` — the 0 → `NA` replacement was applied correctly
 - `NA_real_` was correctly used instead of plain `NA` to avoid type mismatch in a numeric column 
@@ -292,6 +294,7 @@ any(str_detect(pop_tidy$country, "Malaysia\\s$"))
 ```
 
 **Verifier Notes :**
+
 - First row confirmed: Brunei Darussalam / 2022 / 445.4  
 - No trailing whitespace detected in country names — `str_detect` returns `FALSE`  
 - Column names correctly renamed to `country`, `year`, `pop` 
@@ -330,6 +333,7 @@ identical(
 )
 ```
 **Verifier Notes :**
+
 - `nrow(merged)` matches `nrow(meat_tidy)` — 160 rows, no rows were lost or duplicated in the join  
 - Row order from `meat_tidy` is fully preserved in `merged` after the left join  
 - `left_join()` correctly matched on both `country` and `year`  
@@ -372,6 +376,7 @@ merged |> filter(country == "Cambodia", animal == "mutton and goat")
 ```
 
 **Verifier Notes :**
+
 - `meat_per_cap` formula verified: `production / pop * 1000` — `all.equal()` returns `TRUE`  
 - Cambodia's mutton and goat `meat_per_cap` is correctly `NA` (propagated from `NA` production)  
 - Per-capita values are consistent across all 160 rows 
