@@ -137,7 +137,7 @@ meat_tidy <- mutate(
 ```
 
 ```{r}
-#| label: check-cambodia
+#| label: check-cambodia-values
 
 check_rows <- meat_tidy |>
   filter(country == "Cambodia" & animal == "mutton and goat")
@@ -216,7 +216,89 @@ compare(pop_tidy, pop_ref, tolerance = 1e-6)
 ```{r}
 #| label: join-meat-and-pop
 
+merged <- left_join(meat_tidy, pop_tidy, join_by(country, year))
+merged
+```
+
+```{r}
+#| label: verifier-3.8
+
+meat_tidy
+```
+
+## 3.9 Derive Per-Capita Production
+
+```{r}
+#| label: add-meat-per-cap
+
+merged <- mutate(
+  merged,
+  meat_per_cap = production/pop * (10^3)
+)
+
+merged
 
 ```
+
+```{r}
+#| label: check-merged-cambodia-values
+
+check_rows2 <- merged |>
+  filter(country == "Cambodia" & animal == "mutton and goat")
+
+check_rows2
+```
+
+
+```{r}
+#| label: verifier-3.9
+
+
+```
+
+## 3.10 Checkpoint: Compare meat_per_cap to Reference Data
+
+```{r}
+#| label: checkpoint-3
+#| message: false
+
+merged_ref <- read_csv("merged_reference.csv")
+compare(merged, merged_ref, tolerance = 1e-6)
+```
+
+## 3.11 Visualization of Result
+
+```{r}
+#| label: visualize-result
+
+ggplot(
+    merged,
+    aes(x = year, y = meat_per_cap, color = animal)
+  ) +
+  geom_line() +
+  geom_point() +
+  labs(
+    x = NULL,
+    y = "Production (kg per person)",
+    color = "Animal",
+    title = "Per-Capita Meat Production in ASEAN, 2018–2021",
+    caption = "Source: ASEAN Statistical Yearbook 2023"
+  ) +
+  xlim(2017.9, 2021.1) +
+  scale_y_log10(
+  breaks = c(0.01, 0.1, 1, 10, 100),
+  labels = c("0.01", "0.1", "1", "10", "100")
+  ) +
+  facet_wrap(~country) +
+  theme(
+    legend.position = "inside",
+    legend.position.inside = c(1, 0),
+    legend.justification.inside = c(1, 0.05)
+)
+```
+
+## 3.12 Comments on Plot
+
+
 
 
