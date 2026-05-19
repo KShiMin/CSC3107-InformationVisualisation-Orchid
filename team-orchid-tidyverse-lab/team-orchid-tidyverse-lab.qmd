@@ -299,6 +299,11 @@ ggplot(
 
 ## 3.12 Comments on Plot
 
+It was observed that from 2020 to 2021, there was a sharp decline for the production of mutton and goat in Myanmar. 
+
+This pattern is supported by a report from Myanmar Digital News on October 6, 2020, which noted that neighboring countries like China and Thailand completely suspended live goat purchases amid the COVID-19 crisis. This trade suspension left local breeders with no export market for months, causing prices to plummet. The news also mentioned that the other meat markets were not doing well which explains the decline across the other meat production in the dataset during this period.
+
+*Reference: https://www.mdn.gov.mm/en/domestic-goat-market-experiencing-downward-trend-due-covid-19-crisis*
 
 
 
