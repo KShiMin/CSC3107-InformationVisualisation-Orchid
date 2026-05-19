@@ -122,4 +122,101 @@ tail(meat_tidy)
 
 ## Task 3.4 Correcting Cambodia's Mutton-and-goat Entries
 
+```{r}
+#| label: correcting-cambodia-values
+
+meat_tidy <- mutate(
+  meat_tidy,
+  production = if_else(
+    country == "Cambodia" & animal == "mutton and goat" & production == 0,
+    NA_real_,
+    production
+  )
+)
+
+```
+
+```{r}
+#| label: check-cambodia
+
+check_rows <- meat_tidy |>
+  filter(country == "Cambodia" & animal == "mutton and goat")
+
+check_rows
+```
+
+We use `NA_real_` as the column contains decimal numbers/is numeric and standard NA can cause a mismatch error. `NA_real_` tells R to insert a missing value that is safe for numeric columns.
+
+
+```{r}
+#| label: verifier-3.4
+
+
+```
+
+
+## 3.5 Checkpoint: Compare meat_tidy to Reference Data
+
+```{r}
+#| label: checkpoint-1
+#| message: false
+
+meat_ref <- read_csv("meat_tidy_reference.csv")
+compare(meat_tidy, meat_ref, tolerance = 1e-6)
+```
+
+## 3.6 Tidy of Population Data
+
+```{r}
+#| label: tidy-population
+pop_raw <- read_xlsx("ASEAN-Statistical-Yearbook-2023.xlsx", sheet="I.1", range="A5:K15")
+
+pop_tidy <- pop_raw |>
+  pivot_longer(
+    cols = -Country,
+    names_to = "year",
+    values_to = "population"
+  ) |>
+  mutate(year = recode_values(
+    year,
+    "2022" ~ 2022,
+    "2021" ~ 2021,
+    "2020" ~ 2020,
+    "2019" ~ 2019,
+    "2018" ~ 2018,
+    "2017" ~ 2017,
+    "2016" ~ 2016,
+    "2015" ~ 2015,
+    "2014" ~ 2014,
+    "2013" ~ 2013
+  )) |>
+  select(country = "Country", year, pop = "population")|>
+  arrange(desc(year), country)
+
+pop_tidy
+```
+
+```{r}
+#| label: verifier-3.6
+
+```
+
+## 3.7 Checkpoint: Compare pop_tidy to Reference Data
+
+```{r}
+#| label: checkpoint-2
+#| message: false
+
+pop_ref <- read_csv("population_tidy_reference.csv")
+compare(pop_tidy, pop_ref, tolerance = 1e-6)
+```
+
+## 3.8 Join Meat Production to Population
+
+```{r}
+#| label: join-meat-and-pop
+
+
+```
+
 
