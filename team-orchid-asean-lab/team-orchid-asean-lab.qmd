@@ -50,7 +50,7 @@ Each member predicts:
 | Member | country | animal | year | production |
 |---|---|---|---|---|
 | Quan Yi | character (e.g., "Brunei Darussalam", "Malaysia", "Singapore", "China", "Japan", "Korea") | character (e.g., beef and buffalo, chicken, pig, cow) | numeric (e.g., 2021, 2022, 2023) | numeric (e.g., 4.26741, 4.33234, 4.68384) |
-| Shi Min | character | character | date | double |
+| Shi Min | character | character | date | double | 
 | Aiman | character | character | integer | numeric |
 | Subhashini | character (e.g., Brunei Darussalam, Indonesia, Cambodia, Singapore, Malaysia, Vietnam, Thailand) | character (e.g., pig, chicken, beef) | numeric (e.g., 2018–2021) | numeric (e.g., 60.8341) |
 | Jabar | character | factor | integer | numeric |
