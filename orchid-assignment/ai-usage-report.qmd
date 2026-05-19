@@ -1,0 +1,10 @@
+---
+title: "AI Usage Report"
+author: "Team Orchid"
+date: ""
+format:
+  docx: default
+---
+
+
+**word count: 2000 [TO BE UPDATED]**
