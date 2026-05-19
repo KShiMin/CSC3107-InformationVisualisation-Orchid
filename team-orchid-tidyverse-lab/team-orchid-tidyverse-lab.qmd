@@ -355,5 +355,14 @@ This pattern is supported by a report from Myanmar Digital News on October 6, 20
 
 *Reference: https://www.mdn.gov.mm/en/domestic-goat-market-experiencing-downward-trend-due-covid-19-crisis*
 
+## AI Liaison Report
 
+**Tool used:** Perplexity (Claude Sonnet 4.6)
 
+### One Suboptimal AI Response
+
+During Section .., 
+
+### Reflection
+
+When using AI tools, it is important to **clearly specify the parameters of the task**, including any constraints on which functions or methods are permitted. Being explicit about what is and is not allowed helps the AI give more accurate and appropriate responses. Additionally, performing a final full-output review by prompting the AI to self-check its own suggestions is a useful practice, as demonstrated here — the AI was able to catch and correct its own mistake when prompted to do so.
