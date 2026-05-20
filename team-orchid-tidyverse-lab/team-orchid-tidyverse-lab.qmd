@@ -459,23 +459,23 @@ However, as the team was unfamilliar with how matches() and regex patterns work 
 
 ### One Suboptimal AI Response
 
-In section 3.3, the AI initially suggested using 'rename()' to handle the first two columns:
+In the initial Section 3.3 pipeline, the AI applied `str_to_lower()` *after* the
+`filter(str_detect(...))` step rather than before it:
 
 ```r
-rename(country_raw = 1, animal_raw = 2)
+filter(str_detect(`Animal Type`, regex("beef|pig|mutton|poultry", ignore_case = TRUE))) |>
+mutate(animal = str_to_lower(animal))
 ```
 
-This response was suboptimal as it was not within the list of permitted functions that I have already explicitly specified to the AI. The AI defauled to its own preferred method rather than working strictly within boundaries of the task. This shows how AI can fail to prepare fully adhere to specified restrictions even when they have beeen explicitly stated.
+This ordering is incomplete where the filter runs on the original mixed-case strings and
+relies on the `ignore_case = TRUE` flag to compensate. Had any animal labels contained
+unexpected capitalisation or formatting inconsistencies, the filter could have silently
+dropped valid rows without any error. 
 
-This issue was realised when the team reviewed the full output against Section 2.2. After further prompting, the AI was able to provide a revised code in which we could have the intended output (by using mutate) and without using 'rename()'.
-
-```r
-mutate(
-  country = .[],[1]
-  animal  = .[]
-) |>
-select(-1, -2)
-```
+The issue was identified during the team's review of the code. The team
+corrected this in the final code by lowercasing the `Animal Type` column with
+`str_to_lower()` in an earlier `mutate()` step before any `filter()` was applied,
+ensuring consistent and predictable behaviour. Furthermore, the method in which AI suggested also brought in higher complexity of code which was out of the team's current understanding when suggesting regex patterns.
 
 ### Reflection
 
