@@ -73,7 +73,7 @@ Each member predicts:
 | Jabar | Empty visual separator rows create rows with missing values. | Year should be a variable instead of appearing as an observation/header. | Aggregate rows, such as ASEAN totals, are not single country observations. |
 | Min Xuan | Year of production should be in its own column. | Country names are stored as column headers instead of under `country`. | Empty separator rows and aggregate rows make the data untidy. |
 
-## 3.2 
+## 3.2 Import the ASEAN Meat Production Data
 
 ```{r}
 #| label: loading-data
@@ -87,7 +87,7 @@ meat_raw
 
 `read_xlsx()` loads data from an Excel file specifically sheet "X.14" and grabbing a specific range.
 
-## Task 3.3 Tidying the data
+## 3.3 Tidying the data
 
 ```{r}
 #| label: tidying-meat
@@ -144,9 +144,9 @@ tail(meat_tidy)
 `head()` shows the first six rows.
 `tail()` shows the last six rows.
 
+### Verifier checks
 ```{r}
 #| label: verifier-3.3
-# Verifier checks
 # Confirm column names and classes
 colnames(meat_tidy)
 map_chr(
@@ -180,7 +180,7 @@ sort(unique(meat_tidy$animal))
 - First row confirmed: `Brunei Darussalam` / `beef and buffalo` / `2021` / `4.26741`
 - Animal labels are correctly cleaned to: `beef and buffalo`, `mutton and goat`, `pig`, `poultry` 
 
-## Task 3.4 Correcting Cambodia's Mutton-and-goat Entries
+## 3.4 Correcting Cambodia's Mutton-and-goat Entries
 
 ```{r}
 #| label: correcting-cambodia-values
@@ -207,10 +207,9 @@ check_rows
 
 We use `NA_real_` as the column contains decimal numbers/is numeric and standard NA can cause a mismatch error. `NA_real_` tells R to insert a missing value that is safe for numeric columns.
 
-
+### Verifier checks
 ```{r}
 #| label: verifier-3.4
-# Verifier checks
 # Confirm Cambodia mutton and goat rows are all NA
 cambodia_rows <- meat_tidy |>
   filter(country == "Cambodia", animal == "mutton and goat")
@@ -281,9 +280,9 @@ pop_tidy
 `select()` keeps the three intended columns and renames them.
 `arrange()` sorts the table by most recent year then alphabetical by country.
 
+### Verifier checks
 ```{r}
 #| label: verifier-3.6
-# Verifier checks
 # Confirm first row of pop_tidy
 pop_tidy |> slice(1)
 pop_tidy$country[1] == "Brunei Darussalam" &&
@@ -320,9 +319,9 @@ merged
 
 `left_join()` merges both by matching country and year. 
 
+### Verifier checks
 ```{r}
 #| label: verifier-3.8
-# Verifier checks
 meat_tidy
 # Confirm merged has same row count as meat_tidy
 nrow(merged) == nrow(meat_tidy)
@@ -332,6 +331,7 @@ identical(
   meat_tidy |> select(country, animal, year, production)
 )
 ```
+
 **Verifier Notes :**
 
 - `nrow(merged)` matches `nrow(meat_tidy)` — 160 rows, no rows were lost or duplicated in the join  
@@ -362,9 +362,9 @@ check_rows2
 
 `filter()` spot-checks if Cambodia's mutton and goat carried NA.
 
+### Verifier checks
 ```{r}
 #| label: verifier-3.9
-# Verifier checks
 # Confirm meat_per_cap is calculated correctly
 all.equal(
   merged$meat_per_cap,
