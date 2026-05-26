@@ -34,7 +34,7 @@ library(ggbeeswarm)
 ```{r}
 #| label: data-preparation
 
-penguins <- palmerpenguins::penguins
+penguins <- datasets::penguins
 
 nrow(penguins)
 ncol(penguins)
@@ -44,7 +44,7 @@ tail(penguins)
 glimpse(penguins)
 
 penguins_bill <- penguins |>
-    select(species, bill_len = bill_length_mm , bill_dep = bill_depth_mm) |>
+    select(species, bill_len = bill_len , bill_dep = bill_dep) |>
     drop_na()
 
 nrow(penguins_bill)
@@ -60,6 +60,16 @@ c. Data Cleaning: After removing all the missing values using `drop_na()`, it re
 #| label: verifier-3.1
 
 ```
+
+**Verifier Checks — 3.1**
+
+- 344 rows, 8 columns confirmed via dim(penguins)
+- NAs visible in row 4 of head() 
+- Factor columns: species, island, sex; numeric: rest
+- anyNA(penguins_bill) returns FALSE ; no NAs remain after drop_na()
+- 342 rows remain after drop_na()
+- 2 rows removed confirmed via filter(if_any(everything(), is.na))
+- 344 - 2 == 342 returns TRUE
 
 ## 3.2 Distribution of Bill Length
 
@@ -100,6 +110,11 @@ gg_hist_bins(1)
 
 
 ```
+
+**Verifier Checks — 3.2a**
+
+- Bill length range confirmed: min = 32.1mm, max = 59.6mm
+- Histogram x-axis spans approximately 30–65mm — full range is displayed without clipping
 
 ### 3.2b Bin Width
 
@@ -299,6 +314,14 @@ Therefore the two measurements help to separate different species
 
 ```
 
+**Verifier Checks — 3.3c**
+
+- Species mean bill lengths: Adelie = 38.79mm, Chinstrap = 48.83mm, Gentoo = 47.50mm
+- Species mean bill depths: Adelie = 18.35mm, Chinstrap = 18.42mm, Gentoo = 14.98mm
+- Coder's claim holds — Adelie is separable by bill length (notably shorter mean)
+- Coder's claim holds — Gentoo is separable by bill depth (notably shallower mean)
+- The two measurements separate different species, consistent with the visual claims
+
 ## 3.4 Bivariate View: Bill Depth vs Bill length
 
 ### 3.4a Scatter plot
@@ -414,6 +437,14 @@ The statistical phenomenon observed is called **Simpson's Paradox**.
 
 This occurs when a trend appears in different groups of data but disappears or reverses when these groups are combined.
 
+**Verifier Checks — 3.4c & 3.4f**
+
+- Hidden points confirmed via distinct(): 342 total - 338 distinct = 4 hidden points
+- Matches coder's count() result of 4 hidden points
+- Pooled correlation = -0.235 (negative) — matches the negative slope in 3.4a
+- Per-species correlations all positive: Adelie = 0.391, Gentoo = 0.643, Chinstrap = 0.654
+
+
 ## 3.5 Summarizing the Insights gained
 
 Yes, bill length and bill depth are highly effective at distinguishing the three Pygoscelis species. As shown in the colored count-symbol plot (`3.4f`), the species cluster into distinct regions, Gentoo penguins occupy a unique space characterized by lower bill depths, while Adelie and Chinstrap penguins show clear separation based on bill length, with Chinstrap penguins tending toward longer bills and Adelie penguins exhibiting shorter bills.
@@ -421,3 +452,12 @@ Yes, bill length and bill depth are highly effective at distinguishing the three
 Ignoring species leads to a misleading view because it obscures the true relationship between these two traits. When the data was combined, as seen in `3.4a`, the regression line suggests a negative correlation, implying that as bill length increases, bill depth decreases. However, the colored plot (`3.4f`) reveals that within each species, the relationship is actually positive.
 
 This illustrates Simpson's Paradox, a statistical phenomenon where a trend observed within individual groups reverses when the data is aggregated. By ignoring the species as a grouping variable, the pooled analysis creates a trend that reflects the differences in mean bill dimensions between the species rather than the actual relationship between the measurements within those populations.
+
+**Verifier Checks — 3.5 (Cross-referenced with Horst, Hill and Gorman, 2022)**
+
+- Team claims Gentoo has lower bill depth which is consistent with paper's Figure 1 showing Gentoo clustering at lower bill depth values compared to Adelie and Chinstrap
+- Team claims Adelie has shorter bill length and Chinstrap tends toward longer bills which is consistent with paper's Figure 1 showing clear separation between Adelie and the other two species on bill length
+- Team states Chinstrap and Gentoo cannot be separated by bill length alone. This is supported by the paper, but the team does not explicitly note that bill depth does help separate Chinstrap from Gentoo (Chinstrap has deeper bills)
+- Team correctly identifies that pooled trend shows a negative correlation. The paper confirms this reversal occurs when species grouping is ignored
+- Team correctly identifies within-species trends as positive. The paper's Figure 1 confirms all three species show significant positive bill length vs bill depth correlations
+- Simpson's Paradox correctly named and explained. The paper highlights this as a key property of the dataset and uses it as a teaching example
