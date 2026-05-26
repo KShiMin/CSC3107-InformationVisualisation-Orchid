@@ -1,0 +1,45 @@
+---
+title: "Penguins-Lab"
+author: "Team Orchid"
+date: "2026-05-26"
+format:
+  html:
+    toc: true
+---
+
+## Assigned Roles
+
+The table below lists the assigned roles for each team member in this lab:
+
+| Member | Role | 
+|---|---|
+| Quan Yi | Coder |
+| Shi Min | Navigator |
+| Aiman | AI Liaison |
+| Subhashini | Verifier |
+| Jabar | Reporter |
+| Min Xuan | Constructive Critic |
+
+## Setup
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)
+library(ggbeeswarm)
+```
+
+## Task 3.1 Data Preparation
+
+
+## Task 3.2 Distribution of Bill Length
+
+
+## Task 3.3 Distribution of Bill Depth
+
+
+## Task 3.4 Bivariate View: Bill Depth versus Bill Length
+
+
+## Task 3.5 Summarize the Insights Gained
+
+
