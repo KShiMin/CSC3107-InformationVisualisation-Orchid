@@ -34,7 +34,6 @@ library(ggbeeswarm)
 
 ```{r}
 #| label: data-preparation
-
 penguins <- datasets::penguins
 
 nrow(penguins)
@@ -45,8 +44,8 @@ tail(penguins)
 glimpse(penguins)
 
 penguins_bill <- penguins |>
-    select(species, bill_len = bill_len , bill_dep = bill_dep) |>
-    drop_na()
+  select(species, bill_len = bill_len, bill_dep = bill_dep) |>
+  drop_na()
 
 nrow(penguins_bill)
 ```
@@ -91,32 +90,30 @@ c. Data Cleaning: After removing all the missing values using `drop_na()`, it re
 ### 3.2a Ungrouped Bill-Length Histogram
 ```{r}
 #| label: bill-length-histogram
-
 caption_source <- "Palmer Station Antarctica LTER and K. Gorman, 2020"
 
 gg_hist_bins <- function(w) {
-    ggplot(penguins_bill, aes(x = .data$bill_len)) +
-        geom_histogram(
-            binwidth = w,
-            fill = "lightyellow",
-            color = "darkblue"
-        ) +
-        geom_rug(
-            aes(y = 0),
-            position = position_jitter( height = 0 ),
-            alpha = 0.5,
-            sides = "b"
-        ) +
-        labs(
-            x = "Bill Length (mm)",
-            y = "Count",
-            title = "Bill Length Histogram",
-            caption = caption_source
-        )
+  ggplot(penguins_bill, aes(x = .data$bill_len)) +
+    geom_histogram(
+      binwidth = w,
+      fill = "lightyellow",
+      color = "darkblue"
+    ) +
+    geom_rug(
+      aes(y = 0),
+      position = position_jitter(height = 0),
+      alpha = 0.5,
+      sides = "b"
+    ) +
+    labs(
+      x = "Bill Length (mm)",
+      y = "Count",
+      title = "Bill Length Histogram",
+      caption = caption_source
+    )
 }
 
 gg_hist_bins(1)
-
 ```
 
 `caption_source` stores data source credit string to be reused
@@ -141,11 +138,9 @@ Adds a rug plot showing individual data points and adds slight horizontal jitter
 
 ```{r}
 #| label: histogram-bin-width
-
 gg_hist_bins(0.8)
 
 gg_hist_bins(1.5)
-
 ```
 
 Comparing the binwidth of `0.8` and `1.5`, more of the data points are "joined together", which leads it to have a higher count at the same part of the histogram. In addition, a smaller bin width shows more detailed variation but can look noisy. A larger bin width smooths the distribution but may hide important structure
@@ -160,18 +155,16 @@ There are multiple peaks in different parts of the histogram, where there are 3 
 
 ```{r}
 #| label: raw-point-plot
-
 labs_len_by_species <- labs(
-    x = "Bill Length (mm)",
-    y = "Species",
-    caption = caption_source
+  x = "Bill Length (mm)",
+  y = "Species",
+  caption = caption_source
 )
 
 ggplot(penguins_bill, aes(x = .data$bill_len, y = .data$species)) +
-    geom_point() + 
-    labs_len_by_species +
-    labs(title = "Raw Point Plot")
-
+  geom_point() +
+  labs_len_by_species +
+  labs(title = "Raw Point Plot")
 ```
 
 `labs_len_by_species <- labs()` stores the shared axis labels for all species against bill kength plots to be reused
@@ -184,16 +177,14 @@ It was noted that the Adelie penguins have a shorter bill length amongst the 3 p
 
 ```{r}
 #| label: jitter-point-plot
-
 ggplot(penguins_bill, aes(x = .data$bill_len, y = .data$species)) +
-    geom_jitter(
-        alpha = 0.5,
-        width = 0,
-        height = 0.25
-    ) + 
-    labs_len_by_species +
-    labs(title = "Jitter Point Plot")
-
+  geom_jitter(
+    alpha = 0.5,
+    width = 0,
+    height = 0.25
+  ) +
+  labs_len_by_species +
+  labs(title = "Jitter Point Plot")
 ```
 
 `geom_jitter()` randomly nudges points so overlaps become visible
@@ -210,15 +201,12 @@ It helps to show the density of each penguin at their respective bill length ver
 
 ```{r}
 #| label: beeswarm-plot
-
 ggplot(penguins_bill, aes(x = .data$bill_len, y = .data$species)) +
-    geom_beeswarm( 
-        cex = 1.5
-    ) +
-    labs_len_by_species +
-    labs(title = "Beeswarm Plot")
-
-
+  geom_beeswarm(
+    cex = 1.5
+  ) +
+  labs_len_by_species +
+  labs(title = "Beeswarm Plot")
 ```
 
 `geom_beeswarm()` offsets points and no randomness. The `cex = 1.5` controls the spacing between points 
@@ -235,24 +223,22 @@ One disadvantage of Beeswarm plots is that it can tend to give a misleading dens
 
 ```{r}
 #| label: faceted-histogram
-
 ggplot(penguins_bill, aes(x = .data$bill_len)) +
-    geom_histogram(
-        bins = 20,
-        fill = "lightyellow",
-        color = "darkblue"
-    ) +
-    geom_rug(
-        aes(y = 0),
-        position = position_jitter( height = 0 ),
-        alpha = 0.5,
-        sides = "b"
-    ) +
-    facet_wrap(vars(species), ncol = 1) +
-    geom_vline(aes(xintercept = mean(bill_len)), color = "red") +
-    labs_len_by_species +
-    labs(title = "Faceted Bill Length Histogram")
-
+  geom_histogram(
+    bins = 20,
+    fill = "lightyellow",
+    color = "darkblue"
+  ) +
+  geom_rug(
+    aes(y = 0),
+    position = position_jitter(height = 0),
+    alpha = 0.5,
+    sides = "b"
+  ) +
+  facet_wrap(vars(species), ncol = 1) +
+  geom_vline(aes(xintercept = mean(bill_len)), color = "red") +
+  labs_len_by_species +
+  labs(title = "Faceted Bill Length Histogram")
 ```
 
 `facet_wrap()` splits the histogram into 3 stacked panels, one per species, for a distinct side by side comparison
@@ -262,13 +248,11 @@ ggplot(penguins_bill, aes(x = .data$bill_len)) +
 ### 3.2i Violin-with-Box Plot
 ```{r}
 #| label: violin-with-box-plot
-
 ggplot(penguins_bill, aes(bill_len, species)) +
-    geom_violin() +
-    geom_boxplot(aes(fill = species), width = 0.2) +
-    labs_len_by_species +
-    labs(title = "Violin and Box Plot")
-
+  geom_violin() +
+  geom_boxplot(aes(fill = species), width = 0.2) +
+  labs_len_by_species +
+  labs(title = "Violin and Box Plot")
 ```
 
 `geom_violin()` draws the distribution shape
@@ -293,26 +277,25 @@ Using both, we know how dense the data is across the penguin species, where the 
 
 ```{r}
 #| label: bill-depth-histogram
-
 gg_depth_bins <- function(w) {
-    ggplot(penguins_bill, aes(x = .data$bill_dep)) +
-        geom_histogram(
-            binwidth = w,
-            fill = "lightyellow",
-            color = "darkblue"
-        ) +
-        geom_rug(
-            aes(y = 0),
-            position = position_jitter( height = 0 ),
-            alpha = 0.5,
-            sides = "b"
-        ) +
-        labs(
-            x = "Bill Depth (mm)",
-            y = "Count",
-            title = str_c("Bill Depth Histogram"),
-            caption = caption_source
-        )
+  ggplot(penguins_bill, aes(x = .data$bill_dep)) +
+    geom_histogram(
+      binwidth = w,
+      fill = "lightyellow",
+      color = "darkblue"
+    ) +
+    geom_rug(
+      aes(y = 0),
+      position = position_jitter(height = 0),
+      alpha = 0.5,
+      sides = "b"
+    ) +
+    labs(
+      x = "Bill Depth (mm)",
+      y = "Count",
+      title = str_c("Bill Depth Histogram"),
+      caption = caption_source
+    )
 }
 
 gg_depth_bins(1)
@@ -325,28 +308,27 @@ There seems to be lesser variation when it comes to Bill depth where the range i
 ### 3.3b Faceted Bill-Depth Histogram
 ```{r}
 #| label: faceted-bill-depth-histogram
-
 global_mean_dep <- mean(penguins_bill$bill_dep)
 
 ggplot(penguins_bill, aes(x = .data$bill_dep)) +
-    geom_histogram(
-        binwidth = 0.5,
-        fill = "lightyellow",
-        color = "darkblue"
-    ) +
-    facet_wrap(vars(species), ncol = 1) +
-    geom_rug(
-        aes(y = 0),
-        position = position_jitter( height = 0 ),
-        alpha = 0.5,
-        sides = "b"
-    ) +
-    geom_vline(aes(xintercept = global_mean_dep), color = "red") +
-    labs_len_by_species +
-    labs(
-        x = "Bill Depth (mm)",
-        title = "Faceted Bill Depth Histogram"
-    )
+  geom_histogram(
+    binwidth = 0.5,
+    fill = "lightyellow",
+    color = "darkblue"
+  ) +
+  facet_wrap(vars(species), ncol = 1) +
+  geom_rug(
+    aes(y = 0),
+    position = position_jitter(height = 0),
+    alpha = 0.5,
+    sides = "b"
+  ) +
+  geom_vline(aes(xintercept = global_mean_dep), color = "red") +
+  labs_len_by_species +
+  labs(
+    x = "Bill Depth (mm)",
+    title = "Faceted Bill Depth Histogram"
+  )
 ```
 
 `global_mean_dep <- mean()` calculates the overall mean bill depth across all species. As it is needed inside `geom_vline()`, the mean has to be global value pre-computed
@@ -380,24 +362,22 @@ Therefore the two measurements help to separate different species
 ### 3.4a Scatter plot
 ```{r}
 #| label: scatter-plot-with-linear-model
-
 labs_len_by_bills <- labs(
-    x = "Bill Length (mm)",
-    y = "Bill Depth (mm)",
-    caption = caption_source
+  x = "Bill Length (mm)",
+  y = "Bill Depth (mm)",
+  caption = caption_source
 )
 
 lm_plot <-
-    ggplot(penguins_bill, aes(x = .data$bill_len, y = .data$bill_dep)) +
-        geom_point() +
-        geom_smooth(
-            method = "lm"
-        ) +
-        labs_len_by_bills
+  ggplot(penguins_bill, aes(x = .data$bill_len, y = .data$bill_dep)) +
+  geom_point() +
+  geom_smooth(
+    method = "lm"
+  ) +
+  labs_len_by_bills
 
 lm_plot +
-    labs( title = "Scatter plot with linear model")
-
+  labs(title = "Scatter plot with linear model")
 ```
 
 `geom_smooth()` fits and draws a linear regression line
@@ -412,7 +392,6 @@ The confidence band has a "hourglass" shape and never crosses or approaches a ho
 
 ```{r}
 #| label: overplotting
-
 coord_counts <- penguins_bill |>
   count(bill_len, bill_dep)
 
@@ -421,7 +400,6 @@ max_stack <- max(coord_counts$n)
 
 hidden_points
 max_stack
-
 ```
 
 `count()` counts how many rows share each exact pair
@@ -438,19 +416,17 @@ No, exactly coincident coordinates are not the only cause of overplotting. While
 
 ```{r}
 #| label: jitter-overplot
-
 ggplot(penguins_bill, aes(x = .data$bill_len, y = .data$bill_dep)) +
-    geom_jitter(
+  geom_jitter(
     alpha = 0.5,
     width = 0,
     height = 0.1
-    ) + 
-    geom_smooth(
-        method = "lm"
-    ) +
-    labs_len_by_bills +
-    labs( title = "Jittered Scatter plot")
-
+  ) +
+  geom_smooth(
+    method = "lm"
+  ) +
+  labs_len_by_bills +
+  labs(title = "Jittered Scatter plot")
 ```
 
 `width = 0` keeps x accurate with minimal jitter to reveal density
@@ -461,14 +437,12 @@ ggplot(penguins_bill, aes(x = .data$bill_len, y = .data$bill_dep)) +
 
 ```{r}
 #| label: count-overplot
-
 ggplot(penguins_bill, aes(x = .data$bill_len, y = .data$bill_dep)) +
-    geom_smooth(method = "lm") +
-    geom_count(alpha = 0.5) +
-    scale_size_area() +
-    labs_len_by_bills +
-    labs(title = "Count-symbol Plot") 
-
+  geom_smooth(method = "lm") +
+  geom_count(alpha = 0.5) +
+  scale_size_area() +
+  labs_len_by_bills +
+  labs(title = "Count-symbol Plot")
 ```
 
 ### 3.4e Assessment of Scatter Plot Variants
@@ -481,17 +455,18 @@ For a journal submission, we would submit (d.ii) the count-symbol plot. Jitterin
 
 ```{r}
 #| label: color-scatter-plot
-
-ggplot(penguins_bill, aes(x = .data$bill_len, y = .data$bill_dep, color = .data$species)) +
-    geom_smooth(method = "lm") +
-    geom_count(alpha = 0.5) +
-    scale_size_area() +
-    labs_len_by_bills +
-    labs(
-        title = "Colored Count-symbol Plot",
-        color = "Species"
-    ) 
-
+ggplot(
+  penguins_bill,
+  aes(x = .data$bill_len, y = .data$bill_dep, color = .data$species)
+) +
+  geom_smooth(method = "lm") +
+  geom_count(alpha = 0.5) +
+  scale_size_area() +
+  labs_len_by_bills +
+  labs(
+    title = "Colored Count-symbol Plot",
+    color = "Species"
+  )
 ```
 
 `color = `plus `aes()` causes both the `geom_count()` and `geom_smooth()` to automatically split by species. Resulting in separate colored dots and separate regression lines per species 
@@ -535,24 +510,88 @@ This illustrates Simpson's Paradox, a statistical phenomenon where a trend obser
 
 ### One Useful AI Response
 
+**In the response :**
+
+Note: ggbeeswarm is an external package and is not part of the restricted tidyverse list. However, since the question explicitly asks you to use it, it is permitted as an exception for this specific task.
+
+
+install.packages("ggbeeswarm")
+
+library(ggbeeswarm)
+library(ggplot2)
+
+The Code
 ```r
-# CODE SAMPLE
-
+#| label: bar-chart
+#| echo: true
+#| eval: false
+ggplot(penguins_bill, aes(x = bill_len, y = species)) +
+  geom_beeswarm(
+    method = "swarm",
+    cex = 1.5,
+    alpha = 0.5,
+    side = 0L,
+    priority = "ascending",
+    corral = "wrap"
+  ) +
+  labs_len_by_species +
+  labs(title = "Beeswarm Plot")
 ```
-This response was particularly helpful because ..
 
-However, ..
+AI is able to explain to me what beeswarm is able to do and also reminds me that it was not initally mentioned as an excepted package. Furthermore, it is able to show me how to use geom_beeswarm() as I had requested to help me answer the question.
 
-### One Suboptimal AI Response
+### Suboptimal AI Response
 
-In the initial Section .. pipeline,
+**1: Prompt that seem to be incomplete/outdated:**
+
+From the Solution:
 
 ```r
-# CODE SAMPLE
+#| label: data-clean
+#| echo: true
+#| eval: false
+library(dplyr)
+library(tidyr)
+
+
+penguins_bill <- penguins %>%
+  select(species, bill_len = bill_length_mm, bill_dep = bill_depth_mm) %>%
+  drop_na()
 ```
+Step-by-Step Breakdown
+select() — picks only the three required columns (species, bill_length_mm, bill_depth_mm) and simultaneously renames the bill columns to bill_len and bill_dep using the new_name = old_name syntax
+
+drop_na() — called with no arguments after select(), so it checks all columns in the already-narrowed tibble and drops any row where any of the three columns has an NA
+
+The result is automatically a tibble since penguins is already a tibble and dplyr verbs preserve that class.
+
+
+**2: Stubbornness in AI:**
+
+In the section of "Here is the updated solution using tibble() explicitly:
+
+Solution
+```r
+#| label: data-clean
+#| echo: true
+#| eval: false
+library(dplyr)
+library(tidyr)
+library(tibble)
+library(palmerpenguins)
+
+penguins_bill <- penguins %>%
+  select(species, bill_len = bill_length_mm, bill_dep = bill_depth_mm) %>%
+  drop_na() %>%
+  as_tibble()
+```
+ 
+AI kept suggesting that penguins_bill was already a tribble therefore did not initially use the tibble() as per requested. After being prompted again, it continued to suggest as_tibble() first before helping me with a solution to use a proper tibble().
 
 ### Reflection
 
-From this lab, the team further understands the importance of building the foundational ability to choose the right plot for the right situation, understanding Simpson's Paradox, overplotting awareness, reproducibility and professional standards and critical evaluation of AI. On the other hand, the use of AI in this lab has been a mixed experience.
+Overall the AI was very useful in explaining unfamiliar functions and also helping the team understand how to use certain functions better to complete the task at hand. Furthermore, the team utilised it alot in the explanation/reporting and theory question which increased our understanding of the topic, the limitation, formatting and answering our simple and/or complicated "why" questions. 
 
-While AI is able to give smart suggestions and can be a very useful tool for further brainstorming, improving and troubleshooting of code, there can be cases of suboptimal responses where the AI may not fully adhere to the specified requirements of constraints. The team has to be vigilant in reviewing the AI's output and testing them to ensure that they meet the intended goals of the task.
+The AI did assume the type of penguin package to be the one from 'palmerpenguins' which resulted in confusion for us.  (Causing the team to use the wrong column names at the start of the lab).
+
+As a result, using AI was very helpful during this lab session however, one needs to be aware of the objectives of the work they do and learn to verify answers using diagnostic commands. 
