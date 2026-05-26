@@ -50,6 +50,19 @@ penguins_bill <- penguins |>
 nrow(penguins_bill)
 ```
 
+`penguins <- datasets::penguins` loads the built-in R penguins dataset and not the palmerpenguins::penguins package
+
+`nrow(penguins)` counts the number of rows
+`ncol(penguins)` counts the number of columns
+
+`head(penguins)` shows the first six rows of penguins dataset
+`tail(penguins)` shows the last six rows of penguins dataset
+`glimpse(penguins)` gives a complete summary and to spot NAs  
+
+The pipeline above takes penguins, selects only three relevant columns using `select()`, then removes rows with missing values via `drop_na()`
+
+`nrow(penguins_bill)` counts the number of rows in new penguins_bill
+
 a. Size of the dataset: 344 rows and 8 columns
 
 b. Preliminary Exploration: We noticed that there were a few data with missing data points when we use `glimpse()`
@@ -70,6 +83,7 @@ c. Data Cleaning: After removing all the missing values using `drop_na()`, it re
 - 342 rows remain after drop_na()
 - 2 rows removed confirmed via filter(if_any(everything(), is.na))
 - 344 - 2 == 342 returns TRUE
+
 
 ## 3.2 Distribution of Bill Length
 
@@ -104,7 +118,9 @@ gg_hist_bins(1)
 
 ```
 
+`caption_source` stores data source credit string to be reused
 
+`gg_hist_bins <- function() {ggplot() + geom_histogram() + geom_rug() + labs()}`\ defines a reusable function, starts a ggplot, draws histogram bars, adds a rug plot showing individual data points
 ```{r}
 #| label: verifier-3.2a
 
