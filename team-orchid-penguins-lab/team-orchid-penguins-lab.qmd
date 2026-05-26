@@ -33,16 +33,35 @@ library(ggbeeswarm)
 ## 3.1 Data Preparation
 
 ```{r}
-#| label: data-preparation
+#| label: load-penguins-dataset
 penguins <- datasets::penguins
+```
 
+`penguins <- datasets::penguins` loads the built-in R penguins dataset and not the palmerpenguins::penguins package
+
+```{r}
+#| label: penguins-dataset-dimension
 nrow(penguins)
 ncol(penguins)
+```
 
+`nrow(penguins)` counts the number of rows and `ncol(penguins)` counts the number of columns
+
+a. The size of the dataset is 344 rows and 8 columns
+
+```{r}
+#| label: data-preparation-exploration
 head(penguins)
 tail(penguins)
 glimpse(penguins)
+```
 
+`head(penguins)` shows the first six rows of penguins dataset, `tail(penguins)` shows the last six rows of penguins dataset and `glimpse(penguins)` gives a complete summary of the dataset and allowed us to spot NAs.
+
+b. Preliminary Exploration: We noticed that there were a few data with missing data points when we use `glimpse()`
+
+```{r}
+#| label: data-preparation-cleaning
 penguins_bill <- penguins |>
   select(species, bill_len = bill_len, bill_dep = bill_dep) |>
   drop_na()
@@ -50,38 +69,20 @@ penguins_bill <- penguins |>
 nrow(penguins_bill)
 ```
 
-`penguins <- datasets::penguins` loads the built-in R penguins dataset and not the palmerpenguins::penguins package
+The pipeline above takes the penguins dataset and selects only three relevant columns using `select()`, it then removes rows with missing values using `drop_na()`
 
-`nrow(penguins)` counts the number of rows
-`ncol(penguins)` counts the number of columns
-
-`head(penguins)` shows the first six rows of penguins dataset
-`tail(penguins)` shows the last six rows of penguins dataset
-`glimpse(penguins)` gives a complete summary and to spot NAs  
-
-The pipeline above takes penguins, selects only three relevant columns using `select()`, then removes rows with missing values via `drop_na()`
-
-`nrow(penguins_bill)` counts the number of rows in new penguins_bill
-
-a. Size of the dataset: 344 rows and 8 columns
-
-b. Preliminary Exploration: We noticed that there were a few data with missing data points when we use `glimpse()`
+`nrow(penguins_bill)` counts the number of rows in `penguins_bill`
 
 c. Data Cleaning: After removing all the missing values using `drop_na()`, it removed 2 rows and now we are left with 342 rows
 
-```{r}
-#| label: verifier-3.1
-
-```
-
-**Verifier Checks — 3.1**
+#### Verifier Checks — 3.1
 
 - 344 rows, 8 columns confirmed via dim(penguins)
 - NAs visible in row 4 of head() 
 - Factor columns: species, island, sex; numeric: rest
 - anyNA(penguins_bill) returns FALSE ; no NAs remain after drop_na()
 - 342 rows remain after drop_na()
-- 2 rows removed confirmed via filter(if_any(everything(), is.na))
+- 2 rows removed confirmed via filter(`if_any(everything(), is.na)`)
 - 344 - 2 == 342 returns TRUE
 
 
@@ -118,18 +119,12 @@ gg_hist_bins(1)
 
 `caption_source` stores data source credit string to be reused
 
-`gg_hist_bins <- function() {ggplot() + geom_histogram() + geom_rug() + labs()}`\ Defines a reusable function taking bin width as input without rewriting the whole plot
+`gg_hist_bins <- function() {ggplot() + geom_histogram() + geom_rug() + labs()}` defines a reusable function taking bin width as input without rewriting the whole plot. 
 Starts a ggplot mapping bill_len to the x-axis and .data$ is a safe and unambiguous way to reference a column within a function
 Draws histogram bars using the bin width passed into a function
 Adds a rug plot showing individual data points and adds slight horizontal jitter so overlapping ticks are visible
 
-```{r}
-#| label: verifier-3.2a
-
-
-```
-
-**Verifier Checks — 3.2a**
+#### Verifier Checks — 3.2a
 
 - Bill length range confirmed: min = 32.1mm, max = 59.6mm
 - Histogram x-axis spans approximately 30–65mm — full range is displayed without clipping
@@ -349,7 +344,7 @@ Therefore the two measurements help to separate different species
 
 ```
 
-**Verifier Checks — 3.3c**
+#### Verifier Checks — 3.3c
 
 - Species mean bill lengths: Adelie = 38.79mm, Chinstrap = 48.83mm, Gentoo = 47.50mm
 - Species mean bill depths: Adelie = 18.35mm, Chinstrap = 18.42mm, Gentoo = 14.98mm
@@ -406,7 +401,7 @@ max_stack
 
 `hidden_points <- sum() - nrow()` calculates the total rows minus number of unique positions to find number of hidden points
 
-No, exactly coincident coordinates are not the only cause of overplotting. While perfectly identical coordinates cause points to sit directly on top of one another, there are other causes such as:
+Exactly coincident coordinates are **not** the only cause of overplotting. While perfectly identical coordinates cause points to sit directly on top of one another, there are other causes such as:
 
 - Data Rounding: Even if data points are not strictly identical, they may be rounded to the same precision (e.g., both measuring 45.1 mm)
 
@@ -479,23 +474,23 @@ The statistical phenomenon observed is called **Simpson's Paradox**.
 
 This occurs when a trend appears in different groups of data but disappears or reverses when these groups are combined
 
-**Verifier Checks — 3.4c & 3.4f**
+#### Verifier Checks — 3.4c & 3.4f
 
-- Hidden points confirmed via distinct(): 342 total - 338 distinct = 4 hidden points
-- Matches coder's count() result of 4 hidden points
+- Hidden points confirmed via `distinct()`: 342 total - 338 distinct = 4 hidden points
+- Matches coder's `count()` result of 4 hidden points
 - Pooled correlation = -0.235 (negative) — matches the negative slope in 3.4a
 - Per-species correlations all positive: Adelie = 0.391, Gentoo = 0.643, Chinstrap = 0.654
 
 
 ## 3.5 Summarizing the Insights gained
 
-Yes, bill length and bill depth are highly effective at distinguishing the three Pygoscelis species. As shown in the colored count-symbol plot (`3.4f`), the species cluster into distinct regions, Gentoo penguins occupy a unique space characterized by lower bill depths, while Adelie and Chinstrap penguins show clear separation based on bill length, with Chinstrap penguins tending toward longer bills and Adelie penguins exhibiting shorter bills
+Yes, bill length and bill depth are highly effective at distinguishing the three Pygoscelis species. As shown in the colored count-symbol plot ([3.4f](#f-grouped-scatter-plot)), the species cluster into distinct regions, Gentoo penguins occupy a unique space characterized by lower bill depths, while Adelie and Chinstrap penguins show clear separation based on bill length, with Chinstrap penguins tending toward longer bills and Adelie penguins exhibiting shorter bills
 
-Ignoring species leads to a misleading view because it obscures the true relationship between these two traits. When the data was combined, as seen in `3.4a`, the regression line suggests a negative correlation, implying that as bill length increases, bill depth decreases. However, the colored plot (`3.4f`) reveals that within each species, the relationship is actually positive
+Ignoring species leads to a misleading view because it obscures the true relationship between these two traits. When the data was combined, as seen in [3.4a](#a-scatter-plot), the regression line suggests a negative correlation, implying that as bill length increases, bill depth decreases. However, the colored plot ([3.4f](#f-grouped-scatter-plot)) reveals that within each species, the relationship is actually positive
 
 This illustrates Simpson's Paradox, a statistical phenomenon where a trend observed within individual groups reverses when the data is aggregated. By ignoring the species as a grouping variable, the pooled analysis creates a trend that reflects the differences in mean bill dimensions between the species rather than the actual relationship between the measurements within those populations
 
-**Verifier Checks — 3.5 (Cross-referenced with Horst, Hill and Gorman, 2022)**
+#### Verifier Checks — 3.5 (Cross-referenced with Horst, Hill and Gorman, 2022)
 
 - Team claims Gentoo has lower bill depth which is consistent with paper's Figure 1 showing Gentoo clustering at lower bill depth values compared to Adelie and Chinstrap
 - Team claims Adelie has shorter bill length and Chinstrap tends toward longer bills which is consistent with paper's Figure 1 showing clear separation between Adelie and the other two species on bill length
@@ -538,7 +533,7 @@ ggplot(penguins_bill, aes(x = bill_len, y = species)) +
   labs(title = "Beeswarm Plot")
 ```
 
-AI is able to explain to me what beeswarm is able to do and also reminds me that it was not initally mentioned as an excepted package. Furthermore, it is able to show me how to use geom_beeswarm() as I had requested to help me answer the question.
+AI is able to explain to me what beeswarm is able to do and also reminds me that it was not initally mentioned as an excepted package. Furthermore, it is able to show me how to use `geom_beeswarm()` as I had requested to help me answer the question.
 
 ### Suboptimal AI Response
 
@@ -559,16 +554,17 @@ penguins_bill <- penguins %>%
   drop_na()
 ```
 Step-by-Step Breakdown
-select() — picks only the three required columns (species, bill_length_mm, bill_depth_mm) and simultaneously renames the bill columns to bill_len and bill_dep using the new_name = old_name syntax
 
-drop_na() — called with no arguments after select(), so it checks all columns in the already-narrowed tibble and drops any row where any of the three columns has an NA
+`select()` — picks only the three required columns (species, bill_length_mm, bill_depth_mm) and simultaneously renames the bill columns to bill_len and bill_dep using the new_name = old_name syntax
+
+`drop_na()` — called with no arguments after select(), so it checks all columns in the already-narrowed tibble and drops any row where any of the three columns has an NA
 
 The result is automatically a tibble since penguins is already a tibble and dplyr verbs preserve that class.
 
 
 **2: Stubbornness in AI:**
 
-In the section of "Here is the updated solution using tibble() explicitly:
+In the section of "Here is the updated solution using tibble() explicitly:"
 
 Solution
 ```r
