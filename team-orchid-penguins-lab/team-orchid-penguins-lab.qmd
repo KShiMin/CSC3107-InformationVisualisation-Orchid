@@ -11,14 +11,14 @@ format:
 
 The table below lists the assigned roles for each team member in this lab:
 
-| Member | Role | 
-|---|---|
-| Quan Yi | Coder |
-| Shi Min | Navigator |
-| Aiman | AI Liaison |
-| Subhashini | Verifier |
-| Jabar | Reporter |
-| Min Xuan | Constructive Critic |
+| Member | Role | Contribution |
+|---|---|---|
+| Quan Yi | Coder | Coded out the tasks in the QMD and ensure code rendering |
+| Shi Min | Navigator | Read tasks, ensured all questions are addressed and avoided using unpermitted pacakages. |
+| Aiman | AI Liaison | Queried the AI along the Coder, log AI interaction and ensured AI output quality | 
+| Subhashini | Verifier | Validated plots/calculations and completed the verifier tasks. | 
+| Jabar | Reporter | Detailed the Markdown explaination for the code snippets |
+| Min Xuan | Constructive Critic | Reviewed merged content, suggests refinements, and ensures final ZIP integrity |
 
 ## Setup
 ```{r}
@@ -47,7 +47,7 @@ ncol(penguins)
 
 `nrow(penguins)` counts the number of rows and `ncol(penguins)` counts the number of columns
 
-a. The size of the dataset is 344 rows and 8 columns
+a. Size of the Dataset: The size of the dataset is 344 rows and 8 columns
 
 ```{r}
 #| label: data-preparation-exploration
@@ -58,7 +58,9 @@ glimpse(penguins)
 
 `head(penguins)` shows the first six rows of penguins dataset, `tail(penguins)` shows the last six rows of penguins dataset and `glimpse(penguins)` gives a complete summary of the dataset and allowed us to spot NAs.
 
-b. Preliminary Exploration: We noticed that there were a few data with missing data points when we use `glimpse()`
+b. Preliminary Exploration: Upon exploring the penguins dataset using `head()`, `tail()`, and `glimpse()`, we observed that the data is organized by species and consists of a mix of numerical measurements such as bill length and body mass, and categorical variables including species, island, and sex. 
+
+    A key finding from the `glimpse()` and `head()` output is the presence of missing values (NA), which indicates that specific data cleaning steps will be necessary before proceeding with further analysis. Additionally, the structure reveals that the data is sorted by species, an important feature to note as it influences how observations are aggregated and visualized across the dataset.
 
 ```{r}
 #| label: data-preparation-cleaning
@@ -91,7 +93,7 @@ c. Data Cleaning: After removing all the missing values using `drop_na()`, it re
 ### 3.2a Ungrouped Bill-Length Histogram
 ```{r}
 #| label: bill-length-histogram
-caption_source <- "Palmer Station Antarctica LTER and K. Gorman, 2020"
+caption_source <- "Data: Gorman et al. (2014) | Palmer Station LTER (2020)"
 
 gg_hist_bins <- function(w) {
   ggplot(penguins_bill, aes(x = .data$bill_len)) +
@@ -120,8 +122,11 @@ gg_hist_bins(1)
 `caption_source` stores data source credit string to be reused
 
 `gg_hist_bins <- function() {ggplot() + geom_histogram() + geom_rug() + labs()}` defines a reusable function taking bin width as input without rewriting the whole plot. 
+
 Starts a ggplot mapping bill_len to the x-axis and .data$ is a safe and unambiguous way to reference a column within a function
+
 Draws histogram bars using the bin width passed into a function
+
 Adds a rug plot showing individual data points and adds slight horizontal jitter so overlapping ticks are visible
 
 #### Verifier Checks — 3.2a
@@ -138,13 +143,17 @@ gg_hist_bins(0.8)
 gg_hist_bins(1.5)
 ```
 
-Comparing the binwidth of `0.8` and `1.5`, more of the data points are "joined together", which leads it to have a higher count at the same part of the histogram. In addition, a smaller bin width shows more detailed variation but can look noisy. A larger bin width smooths the distribution but may hide important structure
+Comparing bin widths of 0.8 and 1.5, we observe that the larger bin width aggregates more data points into each bar, resulting in higher counts and a smoother, more generalized appearance. 
 
-We would use a binwidth of 0.8 in the report as it helps to show a clearer distinction as of how many penguins are of `x` bill length
+Conversely, a smaller bin width reveals more granular detail, though it can introduce visual 'noise.' The choice of bin width significantly affects the apparent shape: too large, and important structural features may be obscured. Too small, and the distribution may appear fragmented. 
+
+For the final report, we would select the bin width of `0.8`. This choice is preferable because it provides a more granular view that highlights the underlying distribution of bill lengths, allowing for a more accurate representation of the data's variation without sacrificing the clarity needed to identify patterns.
 
 ### 3.2c Histogram Interpretation
 
-There are multiple peaks in different parts of the histogram, where there are 3 peaks when we use a binwidth of `0.8`. This helps support that the distribution is not unimodal otherwise, there would only be one clean peak. This is probably due to the 3 different penguin species having different average bill lengths
+The histogram of bill lengths exhibits a clear multimodal structure, displaying three different peaks when using a bin width of `0.8`. This indicates that the distribution is not unimodal, as a single, uniform population would typically produce one centered peak. 
+
+Instead, the observed structure is driven by the fact that the dataset aggregates three different penguin species, each with their own average bill lengths.
 
 ### 3.2d Raw Point Plot by Species
 
@@ -166,7 +175,9 @@ ggplot(penguins_bill, aes(x = .data$bill_len, y = .data$species)) +
 
 `ggplot() + geom_point() + labs_len_by_species + labs()` plots each penguin as a dot, uses default settings - no jitter
 
-It was noted that the Adelie penguins have a shorter bill length amongst the 3 penguin species, Gentoo has a entry with a bill length of almost 60mm and Chinstrap seems to have the fewest data point among the 3 species
+By plotting species on the y-axis and bill length on the x-axis, we observe significant overplotting. Because each species is constrained to a single discrete row, points with similar bill lengths are drawn directly on top of one another, masking the density of the observations.
+
+However, we are able to observe that the Adelie penguins have the shortest bills and that Gentoo penguins have a wider range of lengths, including the longest bills and Chinstrap penguins seems to have the fewest data point among the 3 species.
 
 ### 3.2e Jitter Plot
 
@@ -190,7 +201,9 @@ ggplot(penguins_bill, aes(x = .data$bill_len, y = .data$species)) +
 
 `height = 0.25` nudges points slightly up/down so they spread without crossing into another species
 
-It helps to show the density of each penguin at their respective bill length vertically so that we are able to observe that there are mutliple penguins at the same bill length which we could not see previously
+Using `geom_jitter()` reveals that the points were previously stacked, masking the true count of observations at each bill length. By spreading them vertically, we can now observe the 'density centers' for each species. 
+
+We can observe that Adelie and Gentoo penguins have tightly clustered bill length distributions, while Chinstrap penguins show a more spread-out distribution with a higher concentration of individuals at longer bill lengths. The jitter allows us to visualize the local frequency of observations, highlighting that certain bill lengths are much more common within each species than others which we could not see previously.
 
 ### 3.2f Beeswarm Plot
 
@@ -206,13 +219,15 @@ ggplot(penguins_bill, aes(x = .data$bill_len, y = .data$species)) +
 
 `geom_beeswarm()` offsets points and no randomness. The `cex = 1.5` controls the spacing between points 
 
-The beeswarm plot seems to not use a random variable like jitter and stacks each instance of the penguin of `x` bill length instead
+Unlike the `geom_jitter()` plot, which relies on pseudo-random displacement to spread out overlapping points, the beeswarm plot uses a deterministic algorithm to arrange points. It stacks observations in a non-overlapping, 'swarm' pattern based on their density. 
+
+This creates a much cleaner, more organized representation of the data distribution, as it allows us to see the exact density of bill lengths without the artificial 'noise' introduced by random jittering.
 
 ### 3.2g Pros and Cons
 
-One advantage of using beeswarm plot is for showing the exact shape of the distribution as it makes it structurally visible where most points exist. Plus, the beeswarm plot shows overlapping values more systematically than the jitter plot
+One advantage of the beeswarm plot is that it creates a clean, deterministic representation of bill length density, making it immediately visible that Adelie and Gentoo penguins form tightly clustered groups compared to the more dispersed Chinstrap population. This provides a much more organized and readable alternative to the random scattering of a jitter plot, where overlapping points can obscure the true density.
 
-One disadvantage of Beeswarm plots is that it can tend to give a misleading density from a viewer's perception.The width of the swarm depend on point size and spacing settings, not just data density
+A disadvantage, however, is that the beeswarm's deterministic layout can lead to overcrowding. While it works well for these 342 observations, the swarm may become visually cluttered or unreadable if applied to larger datasets, where the algorithm may struggle to accommodate every point clearly.
 
 ### 3.2h Faceted Bill-Length Histogram
 
@@ -260,11 +275,11 @@ Violin plot shows the overall shape and density of the distribution
 
 ### 3.2j Why Combine Violin and Box Plot
 
-With only box plot, we know whether there are any outliers, and we know the median and mean of the data, but we do not know the "shape" of the data
+A box plot is able to highlight summary statistics, such as the median, interquartile range (IQR), and outliers, but it fails to represent the underlying distributional shape. 
 
-With only violin plot, we know approximately how dense the data is across the penguin species but we do not know any more than that
+Meanwhile, a violin plot provides an excellent visualization of data density and multimodality, but it lacks the specific statistical markers necessary for precise interpretation. 
 
-Using both, we know how dense the data is across the penguin species, where the mean and median are, and whether there are any outliers, being the Gentoo species. Moreover, combining them both is useful as we can see both distribution shape and summary statistics
+By combining both, we gain a comprehensive view that overlays clear summary statistics onto the distribution's shape, allowing us to see density patterns alongside other statistics, such as identifying the Gentoo species' outliers in a single, unified visualization.
 
 ## 3.3 Distribution of Bill Depth
 
@@ -293,12 +308,12 @@ gg_depth_bins <- function(w) {
     )
 }
 
-gg_depth_bins(1)
+gg_depth_bins(0.8)
 ```
 
-`Same pattern as gg_hist_bins()` but it's bill_dep 
+When comparing the distributions, bill depth exhibits a more compact spread, ranging approximately from 13 mm to 22 mm, whereas bill length spans a much wider range of approximately 32 mm to 60 mm. 
 
-There seems to be lesser variation when it comes to Bill depth where the range is only from 12.5 to ~ 22mm while Bill length range is much larger, ranging from `30~` to `~60`
+Additionally, while the bill length distribution is distinctly multimodal, the bill depth distribution appears more unimodal or subtly skewed, indicating that the species share more overlap in their bill depth measurements than in their bill lengths.
 
 ### 3.3b Faceted Bill-Depth Histogram
 ```{r}
@@ -307,7 +322,7 @@ global_mean_dep <- mean(penguins_bill$bill_dep)
 
 ggplot(penguins_bill, aes(x = .data$bill_dep)) +
   geom_histogram(
-    binwidth = 0.5,
+    binwidth = 0.8,
     fill = "lightyellow",
     color = "darkblue"
   ) +
@@ -332,11 +347,11 @@ Based of the faceted histogram, Gentoo penguins have a noticeably lower bill dep
 
 ### 3.3c Comparison of Bill Length and Bill Depth
 
-Using the Bill Length, we are able to differentiate the Adelie penguins from the Gentoo and Chinstrap penguins as the Adelie penguins have a shorter bill length compared to the other two penguin species. However, we are unable to differentiate the Chinstrap and Gentoo penguins based on Bill Length alone
+Using the Bill Length, we are able to differentiate the Adelie penguins from the Gentoo and Chinstrap penguins as the Adelie penguins have a shorter bill length compared to the other two penguin species. However, we are unable to differentiate the Chinstrap and Gentoo penguins based on Bill Length alone.
 
-Using Bill Depth, we are able to differentiate the Gentoo penguins as they have a shorter bill depth compared to the Adelie and Chinstrap species
+Using Bill Depth, we are able to differentiate the Gentoo penguins as they have a shorter bill depth compared to the Adelie and Chinstrap species.
 
-Therefore the two measurements help to separate different species 
+Therefore the two measurements help to separate different species. 
 
 ```{r}
 #| label: verifier-3.3c
@@ -375,13 +390,13 @@ lm_plot +
   labs(title = "Scatter plot with linear model")
 ```
 
-`geom_smooth()` fits and draws a linear regression line
+`geom_smooth()` using the method `lm` fits and draws a linear regression line
 
 ### 3.4b Interpretation of Pooled trend
 
-When species information is ignored and all penguins are pooled together, the regression line shows a negative relationship between bill length and bill depth which is; penguins with longer bills have shallower bills
+When data for all species are pooled, the regression line reveals a negative relationship between bill length and bill depth, indicating that penguins with longer bills tend to have shallower bills. 
 
-The confidence band has a "hourglass" shape and never crosses or approaches a horizontal slope, this indicates that the negative trend is statistically significant
+The narrow confidence band, which maintains a distinct negative slope across the entire range of the data, suggests that this inverse relationship is statistically significant and robust
 
 ### 3.4c Exact Overplotting
 
@@ -464,9 +479,9 @@ ggplot(
   )
 ```
 
-`color = `plus `aes()` causes both the `geom_count()` and `geom_smooth()` to automatically split by species. Resulting in separate colored dots and separate regression lines per species 
+Including `color = species` within the `aes()` mapping causes both the `geom_count()` and `geom_smooth()` to automatically group the data by species. Resulting in separate colored dots and separate regression lines per species 
 
-After mapping the `species` to colour, it reveals that the negative trend observed previously was misleading
+After mapping the `species` to colour, it reveals that the negative trend observed previously was misleading.
 
 It originally showed that there was a negative correlation, where as bill length increases, the bill depth decreases. However, for each individual species, there is actually a positive correlation between the bill length and the bill depth
 
