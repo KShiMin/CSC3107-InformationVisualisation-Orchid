@@ -118,7 +118,7 @@ We would use a binwidth of 0.8 in the report as it helps to show a clearer disti
 
 ### 3.2c Histogram Interpretation
 
-There are multiple peaks in different parts of the histogram, where there are 3 peaks when we use a binwidth of `0.8`. This helps support that the distribution is not unimodal otherwise, there would only be one clean peak
+There are multiple peaks in different parts of the histogram, where there are 3 peaks when we use a binwidth of `0.8`. This helps support that the distribution is not unimodal otherwise, there would only be one clean peak. This is probably due to the 3 different penguin species having different average bill lengths
 
 ### 3.2d Raw Point Plot by Species
 
