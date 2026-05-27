@@ -14,7 +14,7 @@ The table below lists the assigned roles for each team member in this lab:
 | Member | Role | Contribution |
 |---|---|---|
 | Quan Yi | Coder | Coded out the tasks in the QMD and ensure code rendering |
-| Shi Min | Navigator | Read tasks, ensured all questions are addressed and avoided using unpermitted pacakages. |
+| Shi Min | Navigator | Read task requirements, ensured all questions were addressed, assisted when needed, and maintained QMD readability. |
 | Aiman | AI Liaison | Queried the AI along the Coder, log AI interaction and ensured AI output quality | 
 | Subhashini | Verifier | Validated plots/calculations and completed the verifier tasks. | 
 | Jabar | Reporter | Detailed the Markdown explaination for the code snippets |
@@ -79,13 +79,37 @@ c. Data Cleaning: After removing all the missing values using `drop_na()`, it re
 
 #### Verifier Checks — 3.1
 
+``` {r}
+#| label: verifier-3.1c
+
+# Confirm overall dataset dimensions
+dim(penguins)
+
+# Confirm no NAs remain after cleaning
+anyNA(penguins_bill)
+
+# Confirm cleaned row count
+nrow(penguins_bill)
+
+# Confirm exactly 2 rows were removed
+removed_rows <- penguins |>
+  select(species, bill_len, bill_dep) |>
+  filter(if_any(everything(), is.na)) |>
+  nrow()
+
+removed_rows
+
+# Confirm 344 - 2 == 342
+nrow(penguins) - removed_rows == nrow(penguins_bill)
+```
+
 - 344 rows, 8 columns confirmed via dim(penguins)
 - NAs visible in row 4 of head() 
 - Factor columns: species, island, sex; numeric: rest
 - anyNA(penguins_bill) returns FALSE ; no NAs remain after drop_na()
 - 342 rows remain after drop_na()
 - 2 rows removed confirmed via filter(`if_any(everything(), is.na)`)
-- 344 - 2 == 342 returns TRUE
+- Original 344 rows minus the 2 removed rows equals to 342 rows in penguins_bill, which returned TRUE. 
 
 
 ## 3.2 Distribution of Bill Length
@@ -130,6 +154,21 @@ Draws histogram bars using the bin width passed into a function
 Adds a rug plot showing individual data points and adds slight horizontal jitter so overlapping ticks are visible
 
 #### Verifier Checks — 3.2a
+
+``` {r}
+#| label: verifier-3.2a
+
+# Confirm bill length range
+range(penguins_bill$bill_len, na.rm = TRUE)
+
+# Confirm per-species mean bill length and depth
+penguins_bill |>
+  summarize(
+    mean_bill_len = mean(bill_len),
+    mean_bill_dep = mean(bill_dep),
+    .by = species
+  )
+```
 
 - Bill length range confirmed: min = 32.1mm, max = 59.6mm
 - Histogram x-axis spans approximately 30–65mm — full range is displayed without clipping
@@ -361,6 +400,16 @@ Therefore the two measurements help to separate different species.
 
 #### Verifier Checks — 3.3c
 
+``` {r}
+means_by_species <- penguins_bill |>
+  summarize(
+    mean_bill_len = mean(bill_len, na.rm = TRUE),
+    mean_bill_dep = mean(bill_dep, na.rm = TRUE),
+    .by = species
+  )
+
+means_by_species
+```
 - Species mean bill lengths: Adelie = 38.79mm, Chinstrap = 48.83mm, Gentoo = 47.50mm
 - Species mean bill depths: Adelie = 18.35mm, Chinstrap = 18.42mm, Gentoo = 14.98mm
 - Coder's claim holds — Adelie is separable by bill length (notably shorter mean)
@@ -490,6 +539,30 @@ The statistical phenomenon observed is called **Simpson's Paradox**.
 This occurs when a trend appears in different groups of data but disappears or reverses when these groups are combined
 
 #### Verifier Checks — 3.4c & 3.4f
+
+``` {r}
+#| label: verifier-3.4
+
+# Confirm hidden points via distinct()
+total_rows <- nrow(penguins_bill)
+
+distinct_rows <- penguins_bill |>
+  distinct(bill_len, bill_dep) |>
+  nrow()
+
+hidden_points <- total_rows - distinct_rows
+hidden_points
+
+# Confirm pooled correlation
+cor(penguins_bill$bill_len, penguins_bill$bill_dep)
+
+# Confirm per-species correlations
+penguins_bill |>
+  summarize(
+    correlation = cor(bill_len, bill_dep),
+    .by = species
+  )
+```
 
 - Hidden points confirmed via `distinct()`: 342 total - 338 distinct = 4 hidden points
 - Matches coder's `count()` result of 4 hidden points
