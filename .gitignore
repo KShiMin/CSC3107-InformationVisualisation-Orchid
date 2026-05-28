@@ -41,14 +41,9 @@ _book/
 
 # Rendered outputs
 *.html
-*.pdf
 *.docx
 *.pptx
 *.epub
-
-# Keep this commented if you want to commit rendered output
-# !docs/
-# !*.html
 
 # =========================================================
 # knitr / R Markdown
