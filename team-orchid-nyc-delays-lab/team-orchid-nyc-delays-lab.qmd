@@ -15,9 +15,9 @@ The table below lists the assigned roles for each team member in this lab:
 |---|---|---|
 | Quan Yi | Coder | Coded out the tasks in the QMD and ensure code rendering |
 | Shi Min | Navigator | Read task requirements, ensured all questions were addressed, assisted when needed, and maintained QMD readability. |
-| Aiman | AI Liaison | Queried the AI along the Coder, log AI interaction and ensured AI output quality | 
+| Aiman | Reporter | Detailed the Markdown explanation for the code snippets | 
 | Subhashini | Verifier | Validated plots/calculations and completed the verifier tasks. | 
-| Jabar | Reporter | Detailed the Markdown explanation for the code snippets |
+| Jabar | AI Liaison | Queried the AI along the Coder, log AI interaction and ensured AI output quality |
 | Min Xuan | Constructive Critic | Reviewed merged content, suggests refinements, and ensures final ZIP integrity |
 
 ## Setup
