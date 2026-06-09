@@ -38,8 +38,23 @@ library(ggrepel)
 #| label: data-preparation
 
 departures <- flights |>
-    drop_na(dep_delay) |>
-    mutate(airport = replace_values(origin,
+    drop_na(dep_delay)
+
+departures
+```
+
+We start to create a new tibble named `departures` from the `flights` tibble in the `nycflights13` package 
+
+- `drop_na()` is to remove any row where `dep_delay` is `NA`
+
+### 3.1b Select and rename columns, create new variables
+```{r}
+#| label: select-rename-create
+
+departures <- departures |>
+  mutate(
+    airport = replace_values(
+      origin,
       "EWR" ~ "Newark",
       "LGA" ~ "LaGuardia",
     )) |>
@@ -49,7 +64,13 @@ departures <- flights |>
 departures
 ```
 
-### 3.1b Join tables
+We now create two new variables and reduce `departures` to only the columns needed
+
+- The first `mutate()` is to convert the three letter IATA airport codes in `origin` into human-readable names
+- The second `mutate()` creates a logical (`TRUE`/`FALSE`) column
+- `select()` keeps only the five required columns and renames two of them 
+
+### 3.1c Join tables
 
 ```{r}
 #| label: joining-with-carrier
@@ -63,6 +84,12 @@ departures <- departures |>
 departures
 
 ```
+
+The `airline_code` column uses two letter IATA codes which are not self-explanatory to public. We replaced them using a lookup table
+
+- `read_csv()` imports the relevant csv dataset
+- `left_join()` matches each row in `departures` to its subsequent airline name in `carriers` using `airline_code` as the referral
+- `select()` keeps only the four required columns
 
 ### 3.1 Verifier Task
 
@@ -88,6 +115,15 @@ missing_vals <- sum(is.na(departures))
 cat("Missing values in departures:", missing_vals, "\n")
 stopifnot(missing_vals == 0)
 ```
+
+A join can silently add rows if the lookup table contains duplicate airline codes
+
+- `flights |> drop_na(dep_delay) |> nrow()` recomputes by applying only the cancellation filter to the expected row count of raw `flights` tibble, giving a clean reference value that is independent of the join 
+- `nrow(departures)` counts rows in the final `departures` tibble after the join and column selection
+- `stopifnot(rows_before_join == rows_after_join)` halts execution with an error if the counts differ, preventing silently incorrect data
+- `cat()` print both counts and their comparison to the rendered output 
+- `sum(is.na(departures))` counts every `NA` across all columns and rows of `departures`
+- `stopifnot(missing_vals == 0)` — halts if any missing values remain, catching unmatched airline codes that the join would have left as `NA`
 
 ## 3.2 Airlines Ranked by Departures
 ### 3.2a Creating Tibble `departures_by_airline`
@@ -116,6 +152,16 @@ departure_labs <- function (...) {
 
 ```
 
+We first determine the number of departures each airline made from airports in the New York City area in 2013 before comparing carriers based on their on-time records by creating a summary tibble `departures_by_airline` with one row per airline consisting of its total departure count and on-time percentage
+
+- `summarize()` collapses rows by each airline into a single summary row
+- `n = n()` counts the total number of departures for each airline
+- `on_time_pct` returns the proportion of on-time departures by multiplying hundred which converts it to a percentage
+- `fct_reorder()` converts `airline` in ascending order of `n`
+- `arrange()` sorts the rows of tibble itself
+-  `levels()` confirms whether the factor level matches the ascending sort of `n`
+- `departure_labs()` is a reusable function which appends the data source caption to any plot 
+
 ### 3.2b Horizontal Lollipop Chart
 
 ```{r}
@@ -133,10 +179,18 @@ ggplot(departures_by_airline, aes(x = n, y = airline)) +
 
 ```
 
+We then draw a horizontal lollipop chart to rank airlines based on their overall number of departures
+
+- `ggplot()` initialises the plot with x-axis the departure count and y-axis the airline name
+- since `airline` is an ordered factor, ggplot2 automatically ranks the airlines in the right order
+- `geom_segment()` draws a horizontal stem where starts at zero for each airline and ends at its departure count; `color = "grey"` keeps stem noticeable so the dots stand out
+`geom_point()` draws a dot at the end of each stem at position `(n, airline)`; `size = 3` refers to the dot dimension enough to see clearly
+`departure_labs()` adds the data source caption and plot title
+
 ### 3.2c Advantage of Placing the Airline Names on the y-axis Rather than the x-axis
 
 The advantage of placing the airline names on the y-axis rather than the x-axis in
-this plot is that there are 16 airlines and the airline names are relatively long. If it was to be plotted on the x-axis, it may have to be tilted to fit all the airline names along the x-axis, making it harder to read.
+this plot is that there are 16 airlines and the airline names are relatively long. If it was to be plotted on the x-axis, it may have to be tilted to fit all the airline names along the x-axis, making it harder to read
 
 ### 3.2d Labelling Lollipop
 
@@ -155,6 +209,15 @@ ggplot(departures_by_airline, aes(x = n, y = airline)) +
     ) +
     guides(x = "none")
 ```
+
+We incorporate count labels directly to the chart to discard the redundant x-axis eliminating duplication
+
+- `geom_text(aes(label = n))` places the departure count as a text label at each dot position
+- `hjust = 0` left-aligns the label 
+- `nudge_x = 500` shifts the label 500 units to the right so it does not overlap with the dot
+- `expansion(mult = c(0, 0.15))` adds no padding on the left side and adds 15% extra space on the right
+- `x = NULL` discards the x-axis title
+- `guides(x = "none")` discards the x-axis ticks and text wholely.  
 
 ### 3.2e One Advantage and Disadvantage of a Lollipop Chart compared to a Bar Chart
 
@@ -177,6 +240,12 @@ cat("Counts match:", total_from_summary == total_from_departures, "\n")
 stopifnot(total_from_summary == total_from_departures)
 ```
 
+The `summarize()` must account for every row in `departures` as in no flight should be lost or double-counted during aggregation
+- `sum(departures_by_airline$n)` adds up the departure counts across all airlines in the summary tibble and the `$n` extracts only the numeric count column 
+- `nrow(departures)` the number of non-canceled flights in the cleaned `departures` tibble 
+- `stopifnot(total_from_summary == total_from_departures)` confirms the two totals are identical
+- `cat()` display both values side by side so the match is immediately readable in the rendered output
+
 ## 3.3 On-Time Departures by Airline
 ### 3.3a Remove airlines that departed fewer than 1000 flights
 
@@ -189,6 +258,12 @@ filtered_departures <- departures_by_airline |>
 filtered_departures
 ```
 
+Airlines with a low number of departures may report an exceptionally high or low on-time due to the sample size being insufficient for statistical inference. Hence, we limit the research to airlines which have at least 1000 departures.
+
+- `departures_by_airlines` is similar to the summary tibble from section 3.2
+- `filter(n >= 1000)` keeps only rows where airline departure count is 1000 or more
+- The result is saved as `filtered_departures`
+
 ### 3.3b Sort factor levels of `airline` in ascending order
 
 ```{r}
@@ -200,6 +275,12 @@ filtered_departures <- filtered_departures |>
 
 levels(filtered_departures$airline)
 ```
+
+We amend the factor order of `airline` so the y-axis reflects the punctuality order rather than volume ranking.
+
+- `fct_drop(airline)` discard unused factor levels 
+- `fct_reorder(airline, on_time_pct)` reorders the factor levels in ascending order of `on_time_pct`
+`levels()` makes sure the reordering was applied correctly
 
 ### 3.3c Cleveland Dot Plot
 
@@ -222,6 +303,17 @@ ggplot(filtered_departures, aes(x = on_time_pct, y = airline)) +
     )
 
 ```
+
+We then draw a Cleveland dot plot ranking airlines based on their on-time departure percentage. Unlike the lollipop chart in Section 3.2, this plot uses no stem and only dots as the x-axis is not starting from zero
+
+- `fct_rev(airline)` reverses the factor order with the highest on-time percentage appearing at the top of y-axis
+- `geom_point()` draws one dot per airline
+- `geom_text(aes(label = round(on_time_pct, 1)))` inputs the on-time percentage as a text label next to each dot rounding off to one decimal place
+- `hjust = 0` left-aligns label from its anchor point
+- `nudge_x = 0.3` shifts the label 0.3% to the right avoiding overlapping with the dot
+- `size = 3` config the text size to be small enough to not crowd each other
+- `expansion(mult = c(0.05, 0.1))` adds 5% padding on the left and 10% on the right
+- `departure_labs()` labels x and y-axis with the y-axis removed
 
 ### 3.3d Cleveland Dot Plot vs. Bar Chart Baselines
 
@@ -263,6 +355,12 @@ cat("Values match:", isTRUE(all.equal(direct_pct, summary_pct)), "\n")
 stopifnot(isTRUE(all.equal(direct_pct, summary_pct)))
 ```
 
+- `slice_max(n, n = 1)` selects the single row with the largest departure count from `departures_by_airline`
+- `pull(airline) |> as.character()` extracts the airline name as a plain string, stripping the factor class so it can be used in `filter()`
+- `filter(airline == busiest_airline)` subsets `departures` to only the rows belonging to the busiest airline 
+- `summarize(on_time_pct = mean(on_time) * 100)` recomputes the on-time percentage using the raw `on_time` logical values
+- `all.equal(direct_pct, summary_pct)` compares the two values with a small numerical tolerance to account for floating-point arithmetic
+- `isTRUE()` wraps `all.equal()` because it returns a character string describing differences when values do not match
 
 ## 3.4 Airport Mix by Airline
 ### 3.4a Airlines with at least 1,000 departures
@@ -288,6 +386,18 @@ airport_mix <- departures |>
 airport_mix
 ```
 
+We compute each of the airline its departure percentage that came from each of the three NYC-area airports
+
+- `arrange(on_time_pct)` sorts `filtered_departures` in ascending order of on-time percentage to match the punctuality ranking in Section 3.3
+- `pull(airline)` extracts the `airline` column as plain character vector
+- `as.character()` strips factor class for reassigning later without inheriting any prior ordering
+- `airline_levels` stores the correct airline ordering as a character vector and to be used in `airport_mix`
+- `filter(airline %in% airline_levels)` maintains only airlines that passed the 1000 threshold 
+- `summarize(n = n(), .by = c(airline, airport))` counts the number of departures for every airline-airport
+- `mutate(pct = n/sum(n) * 100, .by = airline)` computes each airline total departure
+- `factor(airline, levels = airline_levels)` converts `airline` back to a factor using the punctuality ordered levels `airline_levels`
+- `arrange(airline, pct)` sorts the rows by airline and then percentage   
+
 ### 3.4b Horizontal, Stacked Bar Chart
 
 ```{r}
@@ -305,6 +415,12 @@ ggplot(airport_mix, aes(x = pct, y = airline, fill = airport)) +
   )
 
 ```
+
+We draw a horizontal stacked bar chart showing how each airline departures are distributed across the three airports
+
+- `aes(x = pct, y = airline, fill = airport)` maps the percentage to x-axis, the airline to y-axis and fills each segment by airport
+- `geom_col()` draws stacked bars as `x = pct` is already computed, `geom_col()` is used instead of `geom_bar()`
+- `departure_labs()` labels the respective x and y-axis with `fill = Airport` and `y = NULL` discarding y-axis title
 
 ### 3.4c Labelled Segments
 
@@ -328,6 +444,15 @@ ggplot(airport_mix, aes(x = pct, y = airline, fill = airport)) +
 
 
 ```
+
+We add percentage labels inside every segment which its exact values could be read directly without needing to estimate from axis
+
+- `geom_text(aes(label = ifelse(pct >= 8, ..)))` conditionally displays label if segment is wide enough to fit text
+- `paste0(round(pct, 1), "%")` formats label by rounding to one decimal place and appending a symbol `%`
+- `position_stack(vjust = 0.5)` places each label at the horizontal midpoint so the text sits cleanly 
+`size = 3` keeps the text small enough to fit within the narrow segments
+- `color = white` sets the color to white 
+
 
 ### 3.4d Which airport does the busiest airline depart from most, and how lopsided is that share?
 
@@ -355,6 +480,11 @@ cat("All airline percentages sum to 100%:", isTRUE(check), "\n")
 stopifnot(isTRUE(check))
 ```
 
+- `summarize(total_pct = sum(pct), .by = airline)` adds up the three airport percentages for each airline
+- `print(airline_pct_sums)` displays the full table so every airline's total is visible in the rendered submission 
+- `rep(100, nrow(airline_pct_sums))` generates a vector of 100 with one entry per airline, forming the expected target for `all.equal()` 
+- `all.equal(.., tolerance = 0.01)` allows a tolerance of 0.01 percentage points to account for floating-point rounding during division
+- `isTRUE(check)` — safely converts `all.equal()`'s output to a logical for use in `stopifnot()`
 
 ## 3.5 On-Time Departures by Airport
 ### 3.5a Airport Number of Departures and the On-Time Percentage
@@ -373,6 +503,11 @@ departures_on_time <- departures |>
 departures_on_time
 
 ```
+
+We compute for each of the three NYC-area airports its total number of departures and the on-time departure percentage 
+
+- `summarize()` similar to the previous sections collapses rows sharing same airport into a single summary row
+- `arrange(desc(on_time_pct))` sorts from highest to lowest on-time percentage so the best performance airport is at the top
 
 ### 3.5b Dominant Departure Airport of the Busiest Airline also the Airport with the Lowest On-Time Percentage?
 
@@ -405,6 +540,11 @@ cat("Unweighted mean of airport on-time % (incorrect):", round(unweighted_pct, 4
 cat("Difference from true overall:", round(abs(unweighted_pct - overall_pct), 4), "pp\n")
 ```
 
+- `mean(departures$on_time) * 100` computes the overall on-time percentage directly from every row of `departures`
+- `weighted.mean(on_time_pct, n)` computes the departure-weighted average of the three airport on-time percentages, giving larger airports proportionally more influence
+- `all.equal(overall_pct, weighted_pct)` confirms the weighted mean reproduces the overall percentage within floating-point tolerance
+- `mean(departures_on_time$on_time_pct)` the plain unweighted average, which treats all three airports equally regardless of size
+- `"pp\n"` — the unit `pp` stands for percentage points, the correct unit for differences between percentages
 
 ## 3.6 On-Time Departures by Time of Day and Airport
 ### 3.6a On-Time Percentage Computation
@@ -420,6 +560,10 @@ ontime_by_hour_airport <- departures |>
 
 ontime_by_hour_airport
 ```
+
+We compute the on-time departure percentage for every combination of airport and scheduled hour of departure
+
+- `summarize()` similar to the previous sections but this time it collapses rows sharing same airport and hour into a single summary row 
 
 ### 3.6b Line-and-point plot
 
@@ -442,6 +586,17 @@ ggplot(
     )
 
 ```
+
+We draw a line and point plot showing how the changes of the on-time percentage across the hours of the day
+
+- `aes(x = hour, y = on_time_pct)` inputs the x-axis to be of the scheduled departure hour and y-axis the on-time percentage
+- `color = airport` assigns a distinct color to each airport line 
+- `linetype = airport` assigns a distinct line type (solid, dashed, dotted) to each airport 
+- `geom-line()` connects with a line for the hourly points of each airport showing a trend across the day
+- `geom_point()` adds a dot at each hourly data point
+- `scale_x_continuous(breaks = seq(5, 23, by =2))` sets the x-axis tick every two hours from 5 to 23, maintaining readibility without crowding every single hour
+- `color = Airport` and `linetype = Airport` merges them into a single legend 
+
 
 ### 3.6c Two Visual Properties for One Variable Redundancy
 
@@ -469,6 +624,12 @@ cat("Mean on-time % for hours >= 18:", round(late_avg, 2), "\n")
 cat("Early hours more punctual than late hours:", early_avg > late_avg, "\n")
 ```
 
+- `filter(hour <= 10)` selects the early morning slots from 5 to 10, where on-time rates are expected to be highest
+- `filter(hour >= 18)` — selects the late evening slots from 18 to 23, where delay propagation from earlier flights is expected to have depressed
+- `summarize(mean_pct = mean(on_time_pct))` averages the on-time percentages across all airports within each time window
+- `pull(mean_pct)` — extracts the single computed value as a plain number for use in `cat()` and the comparison 
+- `early_avg > late_avg` — the key logical check and if it should return `TRUE`, the data supports the declining trend visible in the plot but if it returns `FALSE`, the team should re-examine the line plot and the underlying data
+
 **Verifier Task 3.6b — Evidence that On-Time Rate Declines Through the Day**
 
 The line-and-point plot in Section 3.6b shows a clear downward trend in on-time departure rates as the day progresses across all three airports. This pattern is consistent with the known phenomenon of delay propagation described in airline operations research:
@@ -494,6 +655,12 @@ airline_hourly_pct <- departures |>
 airline_hourly_pct
 ```
 
+We compute the percentage for each airline its own departures that fall in each scheduled hour of the day
+
+- `count(airline, hour, name = "n_flights")` counts the number of departures for every airline-hour and names the count column `n_flights`
+- `complete(airline, hour = 5:23, fill = list(n_flights = 0))` makes sure every airline has a row for every hour from 5 to 23. Even missing combinations are set to `n_flights = 0` rather than `NA` to avoid gaps in the heatmap
+- `mutate(pct = n_flights/sum(n_flights) * 100, .by = airline)` ensures independent(adds up only that airline flights hourly percentages) sum to 100%  
+
 ### 3.7b Heatmap
 
 ```{r}
@@ -512,6 +679,13 @@ airline_hourly_pct
 
 ```
 
+We fixated each airline on-time percentage to match the punctuality ranking to the order of heatmap rows
+
+- `summarize()` similar to the previous sections collapses rows sharing same airport into a single summary row
+
+- `left_join(airline_performance, by = "airline")` brings the `on_time_pct` column into `airline_hourly_pct` for factor reordering; `left_join` preserves all rows in `airline_hourly_pct`
+- `fct_reorder(airline, on_time_pct)` reorders the factor levels in ascending order of `on_time_pct` so the heatmap follows the same top-to-bottom ordering
+
 ```{r}
 #| label: heatmap-plot
 
@@ -525,6 +699,10 @@ ggplot(airline_hourly_pct, aes(x = hour, y = airline, fill = pct)) +
     fill = "Share of Daily Flights"
   )
 ```
+
+We draw a heatmap where the fill color encodes what share of that airline flights depart in that hour with one tile per airline-hour
+
+`aes(x = hour, y = fct_rev(airline), fill = pct)` inputs the x-axis to be of the hour, y-axis the airlines and maps the hourly percentage to the fill color; `fct_rev()` flips the factor order so the most punctual airline sits on top 
 
 ### 3.7c Heatmap Interpretation
 
@@ -566,6 +744,17 @@ airline_performance
 
 ```
 
+We first compute a baseline on-time rate for every airport-hour slot and then with those baselines to calculate each airline expected on-time percentage given its own schedule
+
+- `summarize(.by = c(airport, hour))` groups every departures by airport and hour simultaneously
+- `baseline_on_time_pct = mean(on_time) * 100` this is the circumstancial baseline the on-time percentage across all flights in that airport-hour slot
+
+- The first `left_join(slots, by = c("airport", "hour"))` attaches the slot baseline to every row of `departures` so each flight carries both its own `on_time` and baseline rate value for its airport-hour slot
+- `expected_on_time_pct = mean(baseline_on_time_plot)` the average of slot baselines across all airline departures
+-  The second `left_join()` identifies each airline dominant airport by counting airline-airport with `count()` and taking the maximum with `slice_max()`
+- `with_ties = FALSE` ensures exactly one dominant airport is returned per airline
+
+
 ### Bubble Plot
 
 ```{r}
@@ -596,6 +785,17 @@ ggplot(
   ) 
 
 ```
+
+We draw a bubble plot to compare the rate expected from the airport-hour circumstances to each airline observed on-time percentage
+
+- `aes(x = expected_on_time_pct, y = on_time_pct)` places the circumstantial baseline on the x-axis and the airline's actual performance on the y-axis
+- `size = n` — scales each bubble's area by the airline's departure count so larger airlines are visually more prominent
+- `color = dominant_airport` colours each bubble by the airport from which that airline operates the most flights
+- `geom_abline(slope = 1, intercept = 0)` — draws the line of equality where observed equals expected
+- `geom_point(alpha = 0.7)` draws the bubbles with slight transparency so overlapping points remain visible 
+- `geom_text_repel()` — labels each bubble with its airline name, automatically repositioning labels to avoid overlap with other bubbles 
+- `scale_size_area(max_size = 15, guide = "none")` maps `n` to bubble area rather than radius, capping the largest bubble at size 15; `guide = "none"` suppresses the size legend since the exact departure counts are less important than the relative sizes 
+- `show.legend = FALSE` in `geom_text_repel()` — prevents the text labels from generating their own legend entry
 
 ## 3.9 Summary and Interpretation
 
@@ -631,4 +831,32 @@ Using a chart instead of a table for the `3.8` bubble plot showcased the accurac
 
 #### Jabar
 
+Approaching this lab, I thought that a simple on-time ranking would be a straighforward measure of airline quality. Section 3.4 stacked bar chart was the turning point in my perspective. The ranking was clearly influenced by airport effects that I had not taken into account when I saw how much United relied on Newark.
+
 #### Min Xuan
+
+## AI Liaison Report
+
+**Tool used:** Perplexity (Claude Sonnet 4.6)
+
+### One Useful AI Response
+
+**In the response :**
+
+
+
+### Suboptimal AI Response
+
+**1: Prompt that seem to be incomplete/outdated:**
+
+
+
+**2: Stubbornness in AI:**
+
+
+
+### Reflection
+
+Overall the AI was very useful in explaining unfamiliar functions and also helping the team understand how to use certain functions better to complete the task at hand. Furthermore, the team utilised it alot in the explanation/reporting and theory question which increased our understanding of the topic, the limitation, formatting and answering our simple and/or complicated "why" questions. 
+
+As a result, using AI was very helpful during this lab session however, one needs to be aware of the objectives of the work they do and learn to verify answers using diagnostic commands. 

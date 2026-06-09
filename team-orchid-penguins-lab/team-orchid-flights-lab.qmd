@@ -1,0 +1,175 @@
+---
+title: "Untitled"
+format: html
+---
+
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)
+library(nycflights13)
+library(ggrepel)
+library(dplyr)
+```
+
+
+```{r}
+# carriers <- read_csv("carriers.csv")
+```
+
+
+```{r}
+# departures <- flights |>
+#     drop_na(dep_delay)
+```
+
+```{r}
+carriers <- read_csv("carriers.csv")
+
+departures <- flights |>
+    drop_na(dep_delay) |>
+    mutate(
+        on_time = dep_delay < 15,
+        airport = case_when(
+            origin == "EWR" ~ "Newark",
+            origin == "LGA" ~ "LaGuardia",
+            origin == "JFK" ~ "JFK"
+        )
+    ) |>
+    select(
+        airline_code = carrier,
+        airport_code = origin,
+        airport,
+        hour,
+        on_time
+    ) |>
+    left_join(carriers, by = "airline_code") |>
+    select(-airline_code, -airport_code)
+```
+
+```{r}
+nrow(departures)
+sum(is.na(departures))
+```
+
+```{r}
+departures_by_airline <- departures |>
+    summarize(
+        n = n(), # Counts how many each departures each airline has
+        on_time_pct = mean(on_time) * 100, # on_time is True/False so mean gives proportion-> *100 for percentage
+        .by = airline
+    ) |>
+        mutate(
+            airline = fct_reorder(airline, n) # Converts airline to a factor sorted in ascending order of n
+        )
+```
+
+```{r}
+# Use $n to extract just the n column before summing
+sum(departures_by_airline$n) == nrow(departures)
+```
+
+## 3.2b
+```{r}
+ggplot(departures_by_airline, aes(x = n, y= fct_rev(airline))) + 
+    
+
+    # geom_segment draws a straight line for each airline
+    #hjust = 0 means the text is left-aligned
+    geom_segment(aes(x = 0, xend = n, yend = airline)) +
+    geom_point() +
+
+```
+
+## 3.2c
+Horizontal placement allows long airline names to be read naturally from left-right 
+
+## 3.2d
+```{r}
+
+ggplot(departures_by_airline, aes(x = n, y= fct_rev(airline))) + # geom_segment draws a straight line for each airline
+    #hjust = 0 means the text is left-aligned
+    geom_segment(aes(x = 0, xend = n, yend = airline)) +
+    geom_point() + 
+    geom_text(aes(label = n), hjust = 0, nudge_x = 500) +
+    # Controls the x-axis scale
+    scale_x_continuous(expand = expansion(mult = c(0, 0.15))) +
+    theme(axis.title.x = element_blank()) # Controls non-data visual elements; element_blank() draws naughting 
+    +
+    labs()
+```
+
+## 3.2e
+Advantage - Less visual clutter
+Disadvantage - Harder to judge magnitude unlike a bar with full width 
+
+## 3.3a
+```{r}
+departures_by_airline_filtered <- departures_by_airline |>
+    filter(n >= 1000)
+```
+
+## 3.3b
+```{r}
+departures_by_airline_filtered <- departures_by_airline_filtered |>
+    mutate(airline = fct_reorder(airline, on_time_pct))
+```
+
+## 3.3c
+```{r}
+ggplot(departures_by_airline_filtered, aes(x=on_time_pct, y = fct_rev(airline))) +
+    geom_point() +
+    geom_text(
+        aes(label = round(on_time_pct, 1
+    )),
+    hjust = 0,
+    nudge_x = 0.3) +
+        scale_continuous(expand = expansion(mult = c(0.05, 0.1)) +
+        labs()
+```
+
+## 3.3d
+The plot encodes values as position rather than length(bar/lollipop chart)
+
+## 3.3e
+```{r}
+departures |>
+    filter(airline == "United") |>
+    summarize(on_time_pct = mean(on_time) * 100)
+```
+
+## 3.4a
+```{r}
+airport_mix <- departures |>
+    filter(airline %in% departures_by_airline_filtered$airline) |>
+    summarize(n = n(), .by = c(airline, airport)) |>
+    mutate(pct = n/sum(n) * 100, .by = airline) |>
+    left_join(departures_by_airline_filtered |>
+    select(airline, on_time_pct), by = "airline") |> mutate(airline = fct_reorder(airline, on_time_pct))
+
+
+```
+
+## 3.4b
+```{r}
+ggplot(airport_mix, aes(x = pct, y = airline, fill = airport)) + geom_col()
+```
+
+## 3.4c
+```{r}
+ggplot(airport_mix, aes(x = pct, y = fct_rev(airline), fill = airport)) +
+    geom_col() +
+    geom_text(
+        aes(label = ifelse(pct >= 10, paste0(round(pct, 1), "%"), "")),
+        position = position_stack(vjust = 0.5),
+        size = 3
+    ) +
+    labs(
+        x = "Percentage of Departures (%)",
+        y = "Airline",
+        fill = "Airport",
+        title = "Airport Mix by Airline (NYC Airports, 2013)",
+        caption = "Data source: nycflights13 package"
+    )
+
+```
