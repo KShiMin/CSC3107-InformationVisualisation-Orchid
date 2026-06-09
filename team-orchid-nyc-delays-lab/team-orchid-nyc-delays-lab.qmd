@@ -69,7 +69,24 @@ departures
 ```{r}
 #| label: verifier-task-3.1
 
+# Record row count before the join (after filtering NAs)
+rows_before_join <- flights |>
+  drop_na(dep_delay) |>
+  nrow()
 
+# Row count after the join and column selection
+rows_after_join <- nrow(departures)
+
+# Check: row counts must match (join should not add or drop rows)
+stopifnot(rows_before_join == rows_after_join)
+cat("Row count before join:", rows_before_join, "\n")
+cat("Row count after join: ", rows_after_join, "\n")
+cat("Row counts match:", rows_before_join == rows_after_join, "\n")
+
+# Check: no missing values in final departures tibble
+missing_vals <- sum(is.na(departures))
+cat("Missing values in departures:", missing_vals, "\n")
+stopifnot(missing_vals == 0)
 ```
 
 ## 3.2 Airlines Ranked by Departures
@@ -147,7 +164,18 @@ One disadvantage is that in datasets with few categories, e.g. 2 or 3 categories
 
 ### 3.2 Verifier Task
 
+```{r}
+#| label: verifier-task-3.2
 
+# sum of all airline departure counts must equal total rows in departures
+total_from_summary <- sum(departures_by_airline$n)
+total_from_departures <- nrow(departures)
+
+cat("Sum of counts in departures_by_airline:", total_from_summary, "\n")
+cat("nrow(departures):                       ", total_from_departures, "\n")
+cat("Counts match:", total_from_summary == total_from_departures, "\n")
+stopifnot(total_from_summary == total_from_departures)
+```
 
 ## 3.3 On-Time Departures by Airline
 ### 3.3a Remove airlines that departed fewer than 1000 flights
@@ -207,6 +235,33 @@ The busiest airline is the United airline and it ranks 6 from the top of the pun
 
 ### 3.3 Verifier Task
 
+```{r}
+#| label: verifier-task-3.3
+
+# Identify the busiest airline directly from departures_by_airline
+busiest_airline <- departures_by_airline |>
+  slice_max(n, n = 1) |>
+  pull(airline) |>
+  as.character()
+
+cat("Busiest airline:", busiest_airline, "\n")
+
+# Compute on-time % directly from departures tibble
+direct_pct <- departures |>
+  filter(airline == busiest_airline) |>
+  summarize(on_time_pct = mean(on_time) * 100) |>
+  pull(on_time_pct)
+
+# Get the value from departures_by_airline
+summary_pct <- departures_by_airline |>
+  filter(as.character(airline) == busiest_airline) |>
+  pull(on_time_pct)
+
+cat("On-time % from departures_by_airline:", round(summary_pct, 4), "\n")
+cat("On-time % computed directly:         ", round(direct_pct, 4), "\n")
+cat("Values match:", isTRUE(all.equal(direct_pct, summary_pct)), "\n")
+stopifnot(isTRUE(all.equal(direct_pct, summary_pct)))
+```
 
 
 ## 3.4 Airport Mix by Airline
@@ -280,6 +335,25 @@ In United airline, the most dominant airport is Newark. The split is highly lops
 
 ### 3.4 Verifier Task
 
+```{r}
+#| label: verifier-task-3.4
+
+# Each airline's airport percentages must sum to 100% (within rounding tolerance)
+airline_pct_sums <- airport_mix |>
+  summarize(total_pct = sum(pct), .by = airline)
+
+cat("Per-airline percentage sums:\n")
+print(airline_pct_sums)
+
+# all.equal checks they are all within tolerance of 100
+check <- all.equal(
+  airline_pct_sums$total_pct,
+  rep(100, nrow(airline_pct_sums)),
+  tolerance = 0.01
+)
+cat("All airline percentages sum to 100%:", isTRUE(check), "\n")
+stopifnot(isTRUE(check))
+```
 
 
 ## 3.5 On-Time Departures by Airport
@@ -309,6 +383,27 @@ This suggests that United's rank of 6th in punctuality is likely dragged down by
 This implies that the airline’s raw rank partly reflect where it flies rather than its schedule-adjusted punctuality as looking at US Airways, which has a 87.4% punctuality rate, flies 63.3% of their flights from LaGuardia, which is the most punctual airport. Additionally, ExpressJet which has a 68.9% punctuality flies 81.3% of their flights from Newark. Therefore, the difference in ranking may say more about airport choice than airline quality.
 
 ### 3.5 Verifier Task
+
+```{r}
+#| label: verifier-task-3.5
+
+# Overall on-time % across all departures
+overall_pct <- mean(departures$on_time) * 100
+cat("Overall on-time %:", round(overall_pct, 4), "\n")
+
+# Departure-weighted mean of the three airport on-time percentages
+weighted_pct <- with(departures_on_time, weighted.mean(on_time_pct, n))
+cat("Weighted mean of airport on-time %:", round(weighted_pct, 4), "\n")
+
+# Check they match
+cat("Weighted mean matches overall:", isTRUE(all.equal(overall_pct, weighted_pct)), "\n")
+stopifnot(isTRUE(all.equal(overall_pct, weighted_pct)))
+
+# For comparison: unweighted (incorrect) average
+unweighted_pct <- mean(departures_on_time$on_time_pct)
+cat("Unweighted mean of airport on-time % (incorrect):", round(unweighted_pct, 4), "\n")
+cat("Difference from true overall:", round(abs(unweighted_pct - overall_pct), 4), "pp\n")
+```
 
 
 ## 3.6 On-Time Departures by Time of Day and Airport
@@ -353,6 +448,34 @@ ggplot(
 Relying strictly on color to distinguish between the different data groups can make the visualization inaccessible to those with color deficiencies. With the line plots, the readers are able to tell the lines apart because one is solid and the others are dashed. 
 
 ### 3.6 Verifier Task
+
+```{r}
+#| label: verifier-task-3.6
+
+# Confirm the declining trend: on-time % should generally fall across hours
+# Check that the mean on-time % for hours <= 10 is higher than for hours >= 18
+early_avg <- ontime_by_hour_airport |>
+  filter(hour <= 10) |>
+  summarize(mean_pct = mean(on_time_pct)) |>
+  pull(mean_pct)
+
+late_avg <- ontime_by_hour_airport |>
+  filter(hour >= 18) |>
+  summarize(mean_pct = mean(on_time_pct)) |>
+  pull(mean_pct)
+
+cat("Mean on-time % for hours <= 10:", round(early_avg, 2), "\n")
+cat("Mean on-time % for hours >= 18:", round(late_avg, 2), "\n")
+cat("Early hours more punctual than late hours:", early_avg > late_avg, "\n")
+```
+
+**Verifier Task 3.6b — Evidence that On-Time Rate Declines Through the Day**
+
+The line-and-point plot in Section 3.6b shows a clear downward trend in on-time departure rates as the day progresses across all three airports. This pattern is consistent with the known phenomenon of delay propagation described in airline operations research:
+
+> "Flights scheduled later in the day are more likely to be delayed because delays accumulate throughout the day — an aircraft that arrives late from an earlier flight will depart late on its next segment, a phenomenon known as delay propagation or reactionary delay."
+
+— U.S. Bureau of Transportation Statistics, *Understanding the Reporting of Causes of Flight Delays and Cancellations* (BTS, 2020). Available at: <https://www.bts.gov/topics/airlines-and-airports/understanding-reporting-causes-flight-delays-and-cancellations>
 
 ## 3.7 Schedule Mix by Airline
 ### 3.7a Airline’s Own Departures Falling
@@ -503,6 +626,8 @@ The hour column in the dataset does not seem the most impactful, and it could be
 #### Aiman
 
 #### Subhashini
+
+Using a chart instead of a table for the `3.8` bubble plot showcased the accuracy of the expected on-time departure percentages for each airline, and how they compare to the observed on-time departure percentages. The bubble plot made it easy to identify which airlines were overperforming or underperforming relative to their expected values, and also highlighted the relationship between the airport and punctuality. A table with the same data would have been less clear and would not have provided the same visual insights into the performance of each airline in relation to their expected on-time departure rates.
 
 #### Jabar
 
