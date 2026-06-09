@@ -837,6 +837,8 @@ Approaching this lab, I thought that a simple on-time ranking would be a straigh
 
 #### Min Xuan
 
+Before this lab, I thought a simple ranking was enough to judge an airline. Making the charts showed me why that is wrong. The bubble plot in Section 3.8 changed my mind completely. It put United above the expected line, showing the airline actually performs better than normal for its tough Newark schedule. Meanwhile, ExpressJet falls far below the line even though it faces the exact same airport problems. A normal table of percentages hides this entirely. Seeing the dots mapped out proved you have to visualise the bad schedules to see how well an airline really runs.
+
 ## AI Liaison Report
 
 **Tool used:** Perplexity (Claude Sonnet 4.6)
