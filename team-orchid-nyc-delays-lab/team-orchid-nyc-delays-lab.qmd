@@ -824,6 +824,7 @@ The hour column in the dataset does not seem the most impactful, and it could be
 #### Shi Min
 
 #### Aiman
+When I first started doing the tasks, I was able to understand what the on-time percentages meant but did not see how it tied with airlines and airports. When we starting on tasks 3.7 to 3.8 is when I started seeing how United airline sat above the equality line that showed its actual performance relative to the difficult Newark heavy schedule. I was surprised by how ExpressJet and United share similar airport-hour circumstance despite having observed the rates diverging by nearly 10%. This experience made me appreciate that visualization is very much part of the analysis and can contribute to its effectiveness in realising the data.
 
 #### Subhashini
 
@@ -842,21 +843,22 @@ Approaching this lab, I thought that a simple on-time ranking would be a straigh
 ### One Useful AI Response
 
 **In the response :**
-
+```r
+#| eval: false
+And what is fct_reorder()?
+fct_reorder() is a function from the forcats package (part of the tidyverse) that reorders the levels of a factor based on the values of another variable. This is especially useful in ggplot2 charts — without it, categorical variables like airline codes or airport names appear in arbitrary alphabetical order instead of a meaningful order.
+```
+In multiple occasions where the team was uncertain of how a specific function should be used and formatted, AI was able to help understand with much each and even clearing our doubts regarding multiple questions that the team had. This greatly helped the team complete each tasks and clear our doubts.
 
 
 ### Suboptimal AI Response
 
-**1: Prompt that seem to be incomplete/outdated:**
 
+It is difficult to point out a sub-optimal response this week as the group took a more manual approach of referring to the lab sheet and tackling one task at a time together instead of prompting the AI at each stage of each task. 
 
-
-**2: Stubbornness in AI:**
-
+However, if there was a need to force out a sub-optimal response of the team's choice, it would be the fact that in most cases, AI would assume fully that it already knows what the full dataset and result would look like within it's answers which may vary from the actual results that the team has. This could be seen from page 11 through 14 (of the AI_log.pdf) when the team needed help in approaching a question followed by asking if answer that we finally derived is on the right track.
 
 
 ### Reflection
 
-Overall the AI was very useful in explaining unfamiliar functions and also helping the team understand how to use certain functions better to complete the task at hand. Furthermore, the team utilised it alot in the explanation/reporting and theory question which increased our understanding of the topic, the limitation, formatting and answering our simple and/or complicated "why" questions. 
-
-As a result, using AI was very helpful during this lab session however, one needs to be aware of the objectives of the work they do and learn to verify answers using diagnostic commands. 
+The team found AI broadly useful for explaining unfamiliar functions, theory questions, and formatting areas where the AI's general knowledge is much better than ours. However, blindly copy pasting the questions, even with guidelines on the limitations of packages, is not always reliable and in-line with what is being taught to us, thus making the team refer to notes to do it in a manual way whilst using AI to check for formatting and correctness. As always, AI proves itself as a tool that can get the job done, but not always in the way one would intend for it to be.
