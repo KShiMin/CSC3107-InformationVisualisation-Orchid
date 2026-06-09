@@ -1,0 +1,141 @@
+---
+title: "NYC-Delays-Lab"
+author: "Team Orchid"
+date: "2026-06-09"
+format:
+  html:
+    toc: true
+---
+
+## Assigned Roles
+
+The table below lists the assigned roles for each team member in this lab:
+
+| Member | Role | Contribution |
+|---|---|---|
+| Quan Yi | Coder | Coded out the tasks in the QMD and ensure code rendering |
+| Shi Min | Navigator | Read task requirements, ensured all questions were addressed, assisted when needed, and maintained QMD readability. |
+| Aiman | AI Liaison | Queried the AI along the Coder, log AI interaction and ensured AI output quality | 
+| Subhashini | Verifier | Validated plots/calculations and completed the verifier tasks. | 
+| Jabar | Reporter | Detailed the Markdown explanation for the code snippets |
+| Min Xuan | Constructive Critic | Reviewed merged content, suggests refinements, and ensures final ZIP integrity |
+
+## Setup
+
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)
+library(nycflights13)
+library(ggrepel)
+```
+
+## 3.1 Data Preparation
+### 3.1a Creating Tibble
+
+### 3.1b Keeping required columns
+
+### 3.1c Join tables
+
+### 3.1 Verifier Task
+
+
+
+## 3.2 Airlines Ranked by Departures
+### 3.2a Creating Tibble `departures_by_airline`
+
+### 3.2b Horizontal Ranking
+
+### 3.2c Advantage of Placing the Airline Names on the y-axis Rather than the x-axis
+
+### 3.2d Labelling Lollipop
+
+### 3.2e One Advantage and Disadvantage of a Lollipop Chart compared to a Bar Chart
+
+### 3.2 Verifier Task
+
+
+
+## 3.3 On-Time Departures by Airline
+### 3.3a Remove airlines that departed fewer than 1000 flights
+
+### 3.3b Sort factor levels of `airline` in ascending order
+
+### 3.3c Cleveland Dot Plot
+
+### 3.3d Cleveland Dot Plot vs. Bar Chart Baselines
+
+### 3.3e Busiest Airline
+
+### 3.3 Verifier Task
+
+
+
+## 3.4 Airport Mix by Airline
+### 3.4a Airlines with at least 1,000 departures
+
+### 3.4b Horizontal, Stacked Bar Chart
+
+### 3.4c Segment Labels
+
+### 3.4d Which airport does the busiest airline depart from most, and how lopsided is that share?
+
+### 3.4 Verifier Task
+
+
+
+## 3.5 On-Time Departures by Airport
+### 3.5a Airport Number of Departures and the On-Time Percentage
+
+### 3.5b Dominant Departure Airport of the Busiest Airline also the Airport with the Lowest On-Time Percentage?
+
+### 3.5 Verifier Task
+
+
+
+
+## 3.6 On-Time Departures by Time of Day and Airport
+### 3.6a On-Time Percentage Computation
+
+### 3.6b Line-and-point plot
+
+### 3.6c Two Visual Properties for One Variable Redundancy
+
+### 3.6 Verifier Task
+
+
+
+## 3.7 Schedule Mix by Airline
+### 3.7a Airline’s Own Departures Falling
+
+### 3.7b Heatmap
+
+### 3.7c Heatmap Interpretation
+
+### 3.7 Verifier Task
+
+
+
+## 3.8 Observed versus Expected On-Time Departure Percentage
+
+### Bubble Plot
+
+### 3.8 Verifier Task
+
+
+
+## 3.9 Summary and Interpretation
+
+### Personal Reflections
+
+#### Quan Yi
+
+#### Shi Min
+
+#### Aiman
+
+#### Subhashini
+
+#### Jabar
+
+#### Min Xuan
