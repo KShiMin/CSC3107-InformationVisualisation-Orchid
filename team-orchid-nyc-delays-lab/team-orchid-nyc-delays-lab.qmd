@@ -182,8 +182,7 @@ We then draw a horizontal lollipop chart to rank airlines based on their overall
 
 ### 3.2c Advantage of Placing the Airline Names on the y-axis Rather than the x-axis
 
-The advantage of placing the airline names on the y-axis rather than the x-axis in
-this plot is that there are 16 airlines and the airline names are relatively long. If it was to be plotted on the x-axis, it may have to be tilted to fit all the airline names along the x-axis, making it harder to read
+The advantage of placing the airline names on the y-axis rather than the x-axis in this plot is that there are 16 airlines and the airline names are relatively long. If it was to be plotted on the x-axis, it may have to be tilted to fit all the airline names along the x-axis, making it harder to read
 
 ### 3.2d Labelling Lollipop
 
@@ -276,7 +275,7 @@ We amend the factor order of `airline` so the y-axis reflects the punctuality or
 ### 3.3c Cleveland Dot Plot
 
 ```{r}
-#| label: cleaveland-dot-plot
+#| label: cleveland-dot-plot
 #| fig-width: 7
 #| fig-height: 5
 ggplot(filtered_departures, aes(x = on_time_pct, y = airline)) +
@@ -587,7 +586,7 @@ We draw a line and point plot showing how the changes of the on-time percentage 
 - `linetype = airport` assigns a distinct line type (solid, dashed, dotted) to each airport 
 - `geom-line()` connects with a line for the hourly points of each airport showing a trend across the day
 - `geom_point()` adds a dot at each hourly data point
-- `scale_x_continuous(breaks = seq(5, 23, by =2))` sets the x-axis tick every two hours from 5 to 23, maintaining readibility without crowding every single hour
+- `scale_x_continuous(breaks = seq(5, 23, by =2))` sets the x-axis tick every two hours from 5 to 23, maintaining readability without crowding every single hour
 - `color = Airport` and `linetype = Airport` merges them into a single legend 
 
 
@@ -809,7 +808,7 @@ By accounting for these airport-hour circumstances, we can separate operational 
 
 #### Quan Yi
 
-The hour column in the dataset does not seem the most impactful, and it could be debatable as of whether there is a difference for a morning flight vs an afternoon flight. To me, it is usually a preference thing as of whether you would want to start the trip at night to book in at a hotel, so you take the afternoon flight or take the morning/night flight so you get to start the trip once you land. However, after plotting the line-and-point-plot in `3.6b`, I noticed that all the airports tend to have a downdward trend of on-time departure from morning till evening, which could not be observed until plotted. This shows that morning flights tend to be on-time and that afternoon/evening flights tend to not be on-time.
+The hour column in the dataset does not seem the most impactful, and it could be debatable as of whether there is a difference for a morning flight vs an afternoon flight. To me, it is usually a preference thing as of whether you would want to start the trip at night to book in at a hotel, so you take the afternoon flight or take the morning/night flight so you get to start the trip once you land. However, after plotting the line-and-point-plot in `3.6b`, I noticed that all the airports tend to have a downward trend of on-time departure from morning till evening, which could not be observed until plotted. This shows that morning flights tend to be on-time and that afternoon/evening flights tend to not be on-time.
 
 #### Shi Min
 Over the course of this lab, I was able to visually see the data, which allowed me to gain a deeper understanding compared to just reading it in a table. This helped me understand how powerful visualisation can be in revealing patterns that may not be obvious from raw values alone. Personally, I feel that the line-and-point plot in [Section 3.6b](#b-line-and-point-plot) revealed something that a column of numbers would have hidden, as it clearly shows the trend of on-time departures by airport and scheduled departure hour. If I only looked at the table, I might have noticed some individual values, but the overall downward trend from morning to evening would not have stood out as clearly. 
@@ -823,7 +822,7 @@ Using a chart instead of a table for the `3.8` bubble plot showcased the accurac
 
 #### Jabar
 
-Approaching this lab, I thought that a simple on-time ranking would be a straighforward measure of airline quality. Section 3.4 stacked bar chart was the turning point in my perspective. The ranking was clearly influenced by airport effects that I had not taken into account when I saw how much United relied on Newark.
+Approaching this lab, I thought that a simple on-time ranking would be a straightforward measure of airline quality. Section 3.4 stacked bar chart was the turning point in my perspective. The ranking was clearly influenced by airport effects that I had not taken into account when I saw how much United relied on Newark.
 
 #### Min Xuan
 
