@@ -634,9 +634,9 @@ cat("Early hours more punctual than late hours:", early_avg > late_avg, "\n")
 
 The line-and-point plot in Section 3.6b shows a clear downward trend in on-time departure rates as the day progresses across all three airports. This pattern is consistent with the known phenomenon of delay propagation described in airline operations research:
 
-> "Flights scheduled later in the day are more likely to be delayed because delays accumulate throughout the day — an aircraft that arrives late from an earlier flight will depart late on its next segment, a phenomenon known as delay propagation or reactionary delay."
+> "The average delays are larger in the evening. The reason for this is delay propagation. Delay propagation is a phenomenon in which delays caused by earlier flights using the same aircraft lead to later flights delayed because of the short maintenance times."
 
-— U.S. Bureau of Transportation Statistics, *Understanding the Reporting of Causes of Flight Delays and Cancellations* (BTS, 2020). Available at: <https://www.bts.gov/topics/airlines-and-airports/understanding-reporting-causes-flight-delays-and-cancellations>
+— Kawasaki et al. (2016). *Effect of Burstiness on the Air Transportation System*. arXiv:1608.01786. Available at: <https://arxiv.org/pdf/1608.01786>
 
 ## 3.7 Schedule Mix by Airline
 ### 3.7a Airline’s Own Departures Falling
