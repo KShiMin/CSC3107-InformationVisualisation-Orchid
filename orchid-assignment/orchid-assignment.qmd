@@ -3,5 +3,82 @@ title: "Assignment Report"
 author: "Team Orchid"
 date: ""
 format:
-  pptx: default
+  html:
+    toc: true
+  # pptx:
 ---
+
+# Setup
+```{r}
+#| label: qmd-setup
+#| message: false
+library(tidyverse)
+library(readxl) # for excel files
+```
+
+# Data Import
+
+```{r}
+#| label: assignment-data-import
+data <- read_excel(
+  "data/export_of_agriculture_products_data.xlsx",
+  sheet = "Exports qties",
+  skip = 3,
+  range = "A4:M4559" # Limit import to only relevant data range
+)
+head(data)
+```
+
+# Data Exploration
+
+Now let's explore the data to ensure that it is clean and ready for analysis. We will check for
+
+1. Missing Values
+2. Data Types Used
+3. Summary Statistics
+4. Unique Values in Categorical Variables
+
+## Missing Values
+```{r}
+total_missing_values <- data |>
+  summarise(across(everything(), ~ sum(is.na(.)))) |>
+  # For readability
+  pivot_longer(
+    cols = everything(),
+    names_to = "column",
+    values_to = "missing_values"
+  )
+
+total_missing_values
+```
+
+From the above pivoted table used to enhanced readability, we can see that there are no missing values in any of the columns. This indicates that the dataset does not requires any imputation or handling of missing data, which is a positive sign for our analysis.
+
+## Data Types Used
+```{r}
+glimpse(data)
+```
+
+From the above `glimpse()`, we can see that the dataset contains **4555 observations and 13 variables**. The variables includes 2 characters `(chr)` which are`ProductDescription` and `ReporterName`, and the remaining 11 are numeric variables representing years starting from 2014 to 2024. 
+
+## Summary Statistics
+```{r}
+data_long <- data |>
+  pivot_longer(
+    cols = where(is.numeric),
+    names_to = "year",
+    values_to = "export_quantity"
+  )
+
+summary_by_year <- data_long |>
+  group_by(year) |>
+  summarize(
+    mean = mean(export_quantity, na.rm = TRUE),
+    median = median(export_quantity, na.rm = TRUE),
+    sd = sd(export_quantity, na.rm = TRUE)
+  )
+
+summary_by_year
+```
+
+Above codes convert the dataset from a wide format to a long format, which is more suitable for analysis. We then group the data by year and calculate the mean, median, and standard deviation of export quantities for each year. This summary provides insights into the central tendency and variability of export quantities across different years.
