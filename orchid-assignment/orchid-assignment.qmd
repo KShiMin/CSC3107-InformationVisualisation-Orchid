@@ -8,6 +8,17 @@ format:
   # pptx:
 ---
 
+# Roles and Contribution
+
+| Member | Student ID | Contribution |
+| ------ | ---------- | -------------|
+| Quan Yi | <add your student id> | <add your contribution> |
+| Shi Min | 2401793 | - imported data and did basic exploratory data analysis to determine if the dataset needs to be cleaned before visualisation |
+| Aiman | <add your student id> | <add your contribution> |
+| Subhashini | <add your student id> | <add your contribution>|
+| Jabar  | <add your student id> | <add your contribution> |
+| Min Xuan | <add your student id> | <add your contribution> |
+
 # Setup
 ```{r}
 #| label: qmd-setup
@@ -17,68 +28,186 @@ library(readxl) # for excel files
 ```
 
 # Data Import
+```{r}
+#| label: data-source-metadata
+source_file <- "data/export_of_agriculture_products_data.xlsx"
+
+excel_sheets(source_file)
+```
 
 ```{r}
-#| label: assignment-data-import
-data <- read_excel(
-  "data/export_of_agriculture_products_data.xlsx",
+#| label: source-unit-note
+source_notes <- read_excel(
+  source_file,
+  sheet = "Exports qties",
+  col_names = FALSE,
+  n_max = 2
+)
+
+source_notes
+```
+
+The dataset was imported from `export_of_agriculture_products_data.xlsx`, specifically the `Exports qties` worksheet. The workbook also contains overview, product definition, and export value sheets, but only export quantity data was used for this analysis. The first three rows contain workbook title/unit metadata, so the data table begins at row 4. The selected range `A4:M4559` keeps only `ProductDescription`, `ReporterName`, and annual export quantity fields from 2014 to 2024.
+
+The source sheet states that values are generally measured as volume in thousand tonnes, but some product groups are reported in USD millions. This affects interpretation, so the variable is treated as a reported export measure rather than assuming all rows share a single physical unit.
+
+# Data Cleaning and Transformation
+
+The raw dataset is stored in wide format, where each year is represented as a separate column. For reproducible analysis and visualisation, the data was transformed into long format so that each row represents one product, reporter and year.
+
+```{r}
+#| label: clean-transform-data
+data_raw <- read_excel(
+  source_file,
   sheet = "Exports qties",
   skip = 3,
   range = "A4:M4559" # Limit import to only relevant data range
 )
-head(data)
+
+data_clean <- data_raw |>
+  rename(
+    product_description = ProductDescription,
+    reporter_name = ReporterName
+  ) |>
+  pivot_longer(
+    cols = matches("^\\d{4}$"),
+    names_to = "year",
+    values_to = "export_quantity"
+  ) |>
+  mutate(
+    year = as.integer(year),
+    product_description = str_squish(product_description),
+    reporter_name = str_squish(reporter_name),
+    export_quantity = as.numeric(export_quantity)
+  )
+
+head(data_clean)
 ```
+
+The cleaning process did the followings:
+
+1. renamed variables into a consistent snake case format
+2. converted the dataset from wide to long format
+3. converted `year` into an integer
+4. ensured `export_quantity` is numeric
+5. removed extra whitespace from product and reporter names using `str_squish()`
+
+
+```{r}
+#| label: data-validation-checks
+validation_checks <- tibble(
+  check = c(
+    "Rows in raw data",
+    "Columns in raw data",
+    "Rows after long transformation",
+    "Missing export values",
+    "Negative export values",
+    "Duplicate product-reporter-year rows"
+  ),
+  result = c(
+    nrow(data_raw),
+    ncol(data_raw),
+    nrow(data_clean),
+    sum(is.na(data_clean$export_quantity)),
+    sum(data_clean$export_quantity < 0, na.rm = TRUE),
+    data_clean |>
+      count(product_description, reporter_name, year) |>
+      filter(n > 1) |>
+      nrow()
+  )
+)
+
+validation_checks
+```
+
+The validation checks confirms that the raw dataset contains **4,555 observations and 13 variables**. After transformation, the cleaned dataset contains **50,105 observations**, representing 4,555 product-reporter combination across 11 years from 2014 to 2024. No missing export values, negative values, or duplicated product-reporter-year rows were detected.
 
 # Data Exploration
 
-Now let's explore the data to ensure that it is clean and ready for analysis. We will check for
+After cleaning and validation, exploratory checks were performed on the cleaned dataset to understand
 
 1. Missing Values
-2. Data Types Used
-3. Summary Statistics
-4. Unique Values in Categorical Variables
+2. Zero Values
+3. Data Types
+4. Numerical Distributions
+5. Categorical Coverage
 
-## Missing Values
+## Missing And Zero Values
 ```{r}
-total_missing_values <- data |>
-  summarise(across(everything(), ~ sum(is.na(.)))) |>
-  # For readability
-  pivot_longer(
-    cols = everything(),
-    names_to = "column",
-    values_to = "missing_values"
-  )
+#| label: eda-missing-values
+total_missing_values <- data_clean |>
+  summarise(across(everything(), ~ sum(is.na(.))))
 
 total_missing_values
 ```
 
-From the above pivoted table used to enhanced readability, we can see that there are no missing values in any of the columns. This indicates that the dataset does not requires any imputation or handling of missing data, which is a positive sign for our analysis.
-
-## Data Types Used
 ```{r}
-glimpse(data)
+#| label: zero-value-checks
+zero_summary_by_year <- data_clean |>
+  group_by(year) |>
+  summarise(
+    observations = n(),
+    zero_values = sum(export_quantity == 0, na.rm = TRUE),
+    zero_percent = zero_values / observations * 100,
+    .groups = "drop"
+  )
+
+zero_summary_by_year
 ```
 
-From the above `glimpse()`, we can see that the dataset contains **4555 observations and 13 variables**. The variables includes 2 characters `(chr)` which are`ProductDescription` and `ReporterName`, and the remaining 11 are numeric variables representing years starting from 2014 to 2024. 
+No missing values were detected in the imported range, so no imputation was applied. However, zero export values were retained and treated as valid observations because they likely represent no recorded exports for a product-reporter-year combination rather than missing data.
+
+## Data Types
+```{r}
+#| label: eda-data-types
+glimpse(data_clean)
+```
+
+Using `glimpse()`, the cleaned dataset contains **50,105 observations and 4 variables**. `product_description` and `reporter_name` are character variables, while `year` and `export_quantity` are numeric variables
 
 ## Summary Statistics
 ```{r}
-data_long <- data |>
-  pivot_longer(
-    cols = where(is.numeric),
-    names_to = "year",
-    values_to = "export_quantity"
-  )
-
-summary_by_year <- data_long |>
+#| label: eda-numerical-data-summary
+summary_by_year <- data_clean |>
   group_by(year) |>
-  summarize(
+  summarise(
+    total_export_quantity = sum(export_quantity, na.rm = TRUE),
     mean = mean(export_quantity, na.rm = TRUE),
     median = median(export_quantity, na.rm = TRUE),
-    sd = sd(export_quantity, na.rm = TRUE)
+    q1 = quantile(export_quantity, 0.25, na.rm = TRUE),
+    q3 = quantile(export_quantity, 0.75, na.rm = TRUE),
+    max = max(export_quantity, na.rm = TRUE),
+    sd = sd(export_quantity, na.rm = TRUE),
+    .groups = "drop"
   )
 
 summary_by_year
 ```
 
-Above codes convert the dataset from a wide format to a long format, which is more suitable for analysis. We then group the data by year and calculate the mean, median, and standard deviation of export quantities for each year. This summary provides insights into the central tendency and variability of export quantities across different years.
+This summary provides insights into the central tendency and variability of export quantities across different years. Since export quantities are likely skewed, median and quartiles are more informative than the mean alone. The maximum value is also included to identify the scale of dominant exporters or product groups.
+
+## Categorical Coverage
+
+```{r}
+#| label: category-coverage
+unique_categorical_data <- data_clean |>
+  summarize(
+    unique_products = n_distinct(product_description),
+    unique_reporters = n_distinct(reporter_name)
+  )
+
+unique_categorical_data
+
+product_coverage <- data_clean |>
+  distinct(product_description) |>
+  arrange(product_description)
+
+reporter_coverage <- data_clean |>
+  distinct(reporter_name) |>
+  arrange(reporter_name)
+
+product_coverage
+head(reporter_coverage, 20)
+```
+
+The dataset contains 33 product groups and 156 reporting economies.
