@@ -70,7 +70,7 @@ data_clean <- data_raw |>
     reporter_name = ReporterName
   ) |>
   pivot_longer(
-    cols = matches("^\\d{4}$"),
+    cols = matches("^\\d{4}$"),    # Select year columns named with exactly four digits, e.g. 2014
     names_to = "year",
     values_to = "export_quantity"
   ) |>
