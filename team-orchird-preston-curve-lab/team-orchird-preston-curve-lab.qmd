@@ -588,7 +588,52 @@ Source: https://www.africanews.com/2025/10/07/nigerias-life-expectancy-ranked-lo
 ### One Useful AI Response
 
 **In the response :**
+```r
+#| eval: false
+The Core Approach
+The task requires you to union five sets of countries (top/bottom 10 by GDP, top/bottom 10 by life expectancy, top 10 by population), then label only those countries with their code, and everyone else with "".
 
+r
+#| label: add-labels
+
+labeled_countries <- c(
+  countries |> slice_max(gdp,      n = 10) |> pull(code),
+  countries |> slice_min(gdp,      n = 10) |> pull(code),
+  countries |> slice_max(life_exp, n = 10) |> pull(code),
+  countries |> slice_min(life_exp, n = 10) |> pull(code),
+  countries |> slice_max(pop,      n = 10) |> pull(code)
+)
+
+countries <- countries |>
+  mutate(label = if_else(code %in% labeled_countries, code, ""))
+
+countries
+```
+
+In multiple instances where the team did not know how to approach a question, a simple prompt regarding a question was able to give accurate and usable code snippets that was directly usable within the lab sheet despite the lack of context given. This greatly helped the team understand what the question is asking for and even help us completing the task at hand.
 
 
 ### Suboptimal AI Response
+
+
+**From the prompt :**
+```r
+#| eval: false
+I tried a similar version to what you suggested but got the following output:
+Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+ℹ Please use `linewidth` instead.
+`geom_smooth()` using formula = 'y ~ x'
+Warning: The following aesthetics were dropped during statistical transformation: size.
+ℹ This can happen when ggplot fails to infer the correct grouping structure in
+the data.
+ℹ Did you forget to specify a `group` aesthetic or to convert a numerical
+variable into a factor?
+r
+
+The AI was not useful in this certain question and was not every helpful in diagnosing the issue. The team did not know how to further question the AI and was able to solve it on our own.
+
+### Reflection
+
+Our team has consistently used Perplexity (Claude Sonnet 4.6) throughout the past lab sessions till present. In several instances, with gardual prompts that help build the understanding of the project has been able to give more accurate answers compared to uploading the entire lab instruction brief for answers. Simple prompts produced accurate, directly usable code snippets that helped us understand what a task was asking for and complete it efficiently. As always, the assistance in understanding functions, formulas, reasoning and more makes it much easier to for the team to complete this lab but, it is only complimentable due to the fact that certain team members are knowledgable in their code and is able to verify the work of what AI suggests.
+
+There will be chances (although rare) that we get answers from the AI that are not very usable nor applicable as mentioned. Therefore, re-reading the task requirements is always a must to ensure the team does not go off-course. This reminded us to always evaluate AI output critically rather than applying it blindly.
