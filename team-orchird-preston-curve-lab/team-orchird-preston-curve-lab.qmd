@@ -32,6 +32,8 @@ library(ggrepel)
 library(scales)
 ```
 
+For this lab, the new R library packages are `readxl` and `scales`.
+
 ## 3.1 Data Import
 ```{r}
 #| label: import-data
@@ -54,6 +56,12 @@ pop
 
 ```
 
+We import the three World Bank indicator files using `read_xls()`. 
+
+The argument `skip = 3` ignores the first three rows of the `Data` sheet. This is necessary as the workbooks place metadata in those first three rows.
+
+Each of the resulting tibbles - `gdp`, `life_exp`, and `pop`contains the actual column headers such as `Country Name`, `Country Code` and etc.
+
 ### 3.1 Verifier Task
 ```{r}
 #| label: verifier-3.1
@@ -71,6 +79,14 @@ stopifnot(any(!is.na(gdp[["2024"]])), any(!is.na(life_exp[["2024"]])), any(!is.n
 
 cat("3.1 checks passed\n")
 ```
+
+We run three sets of checks to determine the success of import.
+
+First we ensure that each tibble contains the three columns subsequent steps rely on: `Country Name`, `Country Code` and `2024`. The `stopifnot` will catch error immediately if any column is missing.
+
+Second, we verify that all three tibbles have the same number of rows. This is crucial as we will later merge them by matching `name` and `code`.
+
+Third, we confirm that the `2024` column is not empty in any tibble.
 
 ## 3.2 Select Columns
 
@@ -91,6 +107,12 @@ life_exp
 pop
 ```
 
+`select()` to retain those three columns and rename them to shorter, consistent names.
+
+The 2024 column is explicitly renamed to match each tibble: `gdp_per_cap` for the gdp tibble and etc.
+
+After this step, each tibble has exactly three columns.
+
 ## 3.3 Merge Indicator Data
 
 ```{r}
@@ -102,6 +124,12 @@ countries <- gdp |>
 
 countries
 ```
+
+`left_join()` argument `join_by()` tells R to match rows where both the country name and country code are identical.
+
+We used `left_join()` rather than `inner_join()` in retaining countries even though it has missing values. 
+
+After both joins, `countries` contains five columns - `name`, `code`, `gdp_per_cap`, `life_exp` and `pop`.
 
 ## 3.4 Import the World Bank Regions
 
@@ -115,6 +143,12 @@ metadata <-
 
 metadata
 ```
+
+We import this sheet by passing `sheet = "Metadata - Countries"`, mapping to each country code.
+
+Unlike the `Data` sheet, this sheet does not have metadata rows at the top so there is no need for `skip` argument.
+
+We then pipe the result through `select` and retain only two columns: `Country Code` renamed to `code` and `Region` renamed to `region`.
 
 ### 3.4 Verifier Task
 
@@ -130,6 +164,12 @@ cat("Codes in countries but NOT in metadata:", length(missing_from_metadata), "\
 cat("3.4 checks passed\n")
 ```
 
+`stopifnot()` to perform checks on the relationship between `metadata` and `countries`.
+
+The first check confirms that every country code in `metadata` also presents in `countries`. Line uses the `%in%` operator to test whether it returns `TRUE` for each code in `metadata` founded somewhere in `countries$code`. `all()` reaffirms that every single one passes.
+
+The second check test the converse: whether every code in `countries` also appears in `metadata`. We compute `missing_from_data` as the subset of `countries$code` values not present in `metadata$code`. It reveals that there is one code appearing in `countries` but absent from `metadata`.
+
 ## 3.5 Merge Regions with Indicators
 
 ```{r}
@@ -140,6 +180,10 @@ countries <- countries |>
 
 countries
 ```
+
+`left_join()` attaches the `region` column from `metadata` to `countries`.
+
+After the join, `countries` gains a sixth column - `region`.
 
 ### 3.5 Verifier Task
 
@@ -153,6 +197,10 @@ stopifnot(nrow(countries) == rows_after_33)
 cat("3.5 checks passed ")
 ```
 
+We confirm that the join function left the row count of `countries` unchanged.
+
+In recomputing the expected row count independently of the current state of `countries`, replaying the three-way merge and compare its row count. The `stopifnot()` throws an error if the counts differ.
+
 ## 3.6 Remove Missing Data
 
 ```{r}
@@ -163,6 +211,10 @@ countries <- countries |>
 
 countries
 ```
+
+Remove every row from `countries` using `drop_na()`.
+
+In the World Bank data sheets, terms like `Arab World` and `Sub-Saharan Africa` seem as if they were countries but they are actually a group statistics rather than specific countries.
 
 ## 3.7 Prepare Country Labels
 
@@ -183,6 +235,10 @@ countries <- countries |>
 countries
 ```
 
+Compute `labeled_countries` by pulling the `code` columsn from each of the five `slice_max()` or `slice_min()` and concatenating the results with `c()`.
+
+We then use `mutate()` with `if_else()` in adding a `label` column to `countries`. For every row whose `code()` are in `labelled_countries`, the label is set to the three-letter code itself. While the all the other rows with empty strings is set to `""`. 
+
 ### 3.7 Verifier Task
 
 ```{r}
@@ -201,6 +257,14 @@ stopifnot(all(countries$label == "" | nchar(countries$label) == 3))
 
 cat("3.7 checks passed\n")
 ```
+
+Run three checks to ensure that `countries` is in the correct format before visualization begins.
+
+First check confirms no extra columns have been accidentally introduced and that all seven expected columns are present via total column count is exactly seven.
+
+Second check confirms there are no missing values using `complete.cases()`. It returns `TRUE` for every row having `NA` in any column. `all(complete.cases())` is `TRUE` only if the whole tibble is clean.
+
+Third check confirms every value in `label` column is either an empty string or a three-letter code.  
 
 # Visualizing the Data
 ## 4.1 Scale Audit
@@ -225,6 +289,12 @@ basic_plot <-
 basic_plot
 ```
 
+Using `ggplot()` to create a bubble chart with four aesthetics mapped from `countries`. 
+
+On the x-axis is GDP per capita and life expectancy on the y-axis, with region mapped to colour and population mapped to bubble size within `geom_point()`.
+
+Setting `alpha = 0.5` makes the bubbles semi-translucent so that overlapping points in dense regions of the chart are still visible.
+
 ## 4.3 Add Country Labels
 
 ```{r}
@@ -240,6 +310,12 @@ basic_plot <- basic_plot + geom_text_repel(
 basic_plot
 ```
 
+`geom_texxt_repel()` automatically nudges labels away from each other avoiding overlap. 
+
+Configure `show.legend = FALSE` ensures that legends is protected from redundant entry.
+
+Only countries with `label` column not empty receive a visible label whereas others pass an empty string and silently skipped.
+
 ## 4.4 Add Trend Curve
 
 ```{r}
@@ -252,6 +328,10 @@ basic_plot
 
 ```
 
+`geom_smooth()` with `aes(weight = pop)` produce a LOESS smooth curve.
+
+Highly populous countries like China and India have a greater influence on the shape of the fitted curve than small nations with similar income levels.
+
 ### 4.4 Verifier Task
 
 ```{r}
@@ -263,6 +343,8 @@ basic_plot
 ```
 
 I visually confirmed that the two curves differ, specifically noticing how the population-weighted curve shifts to account for highly populous countries like China and India.
+
+The weighted curve noticeably shifts in the middle-income range reaffirming that `weight = pop` is active and resourceful.
 
 ## 4.5 Add Annotations
 
@@ -281,6 +363,8 @@ basic_plot
 
 According to the World Bank (under Metadata - Indicators), the GDP indicator is adjusted using purchasing power parities (PPPs) and expressed in constant 2021 international dollars. This adjustment controls for differences in local price levels, allowing for an accurate cross-country comparison of true economic output and standard of living. 
 
+`labs()` to add axis labels, title and a data source caption. 
+
 ## 4.6 Change x-Axis Scale
 
 ```{r}
@@ -295,6 +379,14 @@ basic_plot <- basic_plot +
 
 basic_plot
 ```
+
+Applying `scale_x_log10()`, compresses and spread the points more evenly across the plot.
+
+`breaks_log()` places breaks that are reader-friendly.
+
+`minor_breaks = NULL` suppreses minor gridlines reducing visual clutter.
+
+`label_comma()` are used for the ticks so as to be readable rather than scientific notation.
 
 b. Using `label_currency()` (which prints $ 1,000) would be misleading here because the unit is a "common currency" adjusted for PPP, not nominal US dollars. A reader could incorrectly interpret the values as market-rate USD. Since our x-axis title already explicitly mentions the unit ($ Purchasing Power Parity 2021), using `label_comma()` is the better choice as it presents the numerical values cleanly without introducing confusing, repetitive currency symbols.
 
@@ -319,6 +411,12 @@ basic_plot <- basic_plot +
 
 basic_plot
 ```
+
+`scale_size_area` maps bubble area directly to the data value so if a country is ten times more populous appears exactly ten times larger than area.
+
+breaks are configured at 1M, 10M, 100M and 1B
+
+`label_number()` with `short_cut_scale` formats into readable suffixed readings. 
 
 ### 4.8 Verifier Task
 
@@ -350,6 +448,8 @@ basic_plot
 
 ```
 
+`scale_color_brewer()` makes distinct hues straightforward to visually segregate the seven world regions across the plot.
+
 ### 4.9 Verifier Task
 
 ```{r}
@@ -366,6 +466,8 @@ if (n_regions > 8) {
   cat("Dark2 palette has sufficient colors for", n_regions, "regions.\n")
 }
 ```
+
+I confirmed that the number of colour legend keys matches the number of distinct regions in `countries`. No colour collision as the `Dark2` palette supports up to eight colours with the dataset containing seven distinct regions. Shows exactly seven keys, one per region thru the rendered colour legend.
 
 ## 4.10 Refine Guides
 
@@ -389,6 +491,14 @@ basic_plot <- basic_plot +
 basic_plot
 ```
 
+`guides()` is to arrange both legends in decree of order. 
+
+color legend is placed first, `order = 1` because readers use region to interpret the plot. 
+
+`alpha = 1` meaning its symbols are rendered at full capacity so each colour is clearly visible.
+
+size legend is placed second, `order = 2` with reverse = TRUE` making the largest bubble to be at the top.
+
 a.  The color legend should appear at the top over the size legend. When we look at a chart, we notice the distinct color groupings instantly before we are able to calculate the relative sizes. Therefore, placing the color legend at the top aligns with this visual hierarchy
 
 b. Reversing the size legend makes the population mapping easier to read because we tend to associate the 'top' with larger quantities, similar to how the y-axis increases upwards. However, `ggplot2` defaults to placing the smallest values at the top of the legend. By reversing it, the largest population sizes are placed at the top, making the visual scale much more intuitive to interpret at a glance.
@@ -405,6 +515,8 @@ temp_plot <- basic_plot +
 
 temp_plot
 ```
+
+`guides_axis()` creates a temporary copy of the plot while the x-axis moved to the top.
 
 Moving the x-axis to the top would worsen the presentation of the Preston curve. Currently, our title is "Life Expectancy vs. GDP per Capita (2024)", while the x-axis is "GDP per capita ($ Purchasing Power Parity 2021)". The title in its current state cannot serve as a substitute for the x-axis title, as removing the unit of measurement ($ PPP 2021) obscures vital context and alters the clarity of the visualization.
 
@@ -448,6 +560,18 @@ cat("label: geom_text_repel with no legend confirmed\n")
 
 cat("4.1 scale audit fully implemented\n")
 ```
+
+`basic_plot$scales$scales` is used by the x-axis to inspect log transformation. 
+
+`sapply()` is to loop over each element in the list of scale and apply a checking function which returns a `TRUE`/`FALSE`. 
+
+`any()` collapses the vector to a single `TRUE` if and only if at least one element passes the check.
+
+`grepl()` searches the transformation name string of each scale for the subset string `log`.
+
+`inherits()` verifies that one of the plot layers is a `geom_text_repel()` call and checks that its `show.legend` is `FALSE` meaning no redundant label legend entry appears.
+
+Each finding is wrapped with `stopifnot()` confirming log x-axis, linear y-axis, area-proportional size scale, qualitative color scale and direct text labels are implemented.
 
 ## 4.12 Reason about the Data
 
