@@ -628,7 +628,7 @@ Warning: The following aesthetics were dropped during statistical transformation
 the data.
 ℹ Did you forget to specify a `group` aesthetic or to convert a numerical
 variable into a factor?
-r
+```
 
 The AI was not useful in this certain question and was not every helpful in diagnosing the issue. The team did not know how to further question the AI and was able to solve it on our own.
 
