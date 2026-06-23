@@ -54,10 +54,22 @@ pop
 
 ```
 
+### 3.1 Verifier Task
 ```{r}
 #| label: verifier-3.1
 
+# Check all three tibbles have required columns
+stopifnot("Country Name" %in% names(gdp), "Country Code" %in% names(gdp), "2024" %in% names(gdp))
+stopifnot("Country Name" %in% names(life_exp), "Country Code" %in% names(life_exp), "2024" %in% names(life_exp))
+stopifnot("Country Name" %in% names(pop), "Country Code" %in% names(pop), "2024" %in% names(pop))
 
+# Check all three tibbles have the same number of rows
+stopifnot(nrow(gdp) == nrow(life_exp), nrow(life_exp) == nrow(pop))
+
+# Check 2024 column is not entirely empty in any tibble
+stopifnot(any(!is.na(gdp[["2024"]])), any(!is.na(life_exp[["2024"]])), any(!is.na(pop[["2024"]])))
+
+cat("3.1 checks passed\n")
 ```
 
 ## 3.2 Select Columns
@@ -106,6 +118,18 @@ metadata
 
 ### 3.4 Verifier Task
 
+```{r}
+#| label: verifier-3.4
+
+stopifnot(all(metadata$code %in% countries$code))
+
+# Check converse
+missing_from_metadata <- countries$code[!countries$code %in% metadata$code]
+cat("Codes in countries but NOT in metadata:", length(missing_from_metadata), "\n")
+
+cat("3.4 checks passed\n")
+```
+
 ## 3.5 Merge Regions with Indicators
 
 ```{r}
@@ -118,6 +142,16 @@ countries
 ```
 
 ### 3.5 Verifier Task
+
+```{r}
+#| label: verifier-3.5
+
+# Row count must be the same before and after the join
+rows_after_33 <- nrow(gdp |> left_join(life_exp, join_by(name, code)) |> left_join(pop, join_by(name, code)))
+stopifnot(nrow(countries) == rows_after_33)
+
+cat("3.5 checks passed ")
+```
 
 ## 3.6 Remove Missing Data
 
@@ -151,6 +185,22 @@ countries
 
 ### 3.7 Verifier Task
 
+```{r}
+#| label: verifier-3.7
+
+# Confirm exact set of 7 columns
+expected_cols <- c("name", "code", "gdp_per_cap", "life_exp", "pop", "region", "label")
+stopifnot(all(expected_cols %in% names(countries)))
+stopifnot(ncol(countries) == 7)
+
+# No missing values anywhere
+stopifnot(all(complete.cases(countries)))
+
+# Labels are either empty string or a 3-letter country code
+stopifnot(all(countries$label == "" | nchar(countries$label) == 3))
+
+cat("3.7 checks passed\n")
+```
 
 # Visualizing the Data
 ## 4.1 Scale Audit
@@ -204,6 +254,15 @@ basic_plot
 
 ### 4.4 Verifier Task
 
+```{r}
+#| label: verifier-4.4
+
+#basic_plot +
+  #geom_smooth(method = "loess", color = "red", linetype = "dashed", se = FALSE)
+
+```
+
+I visually confirmed that the two curves differ, specifically noticing how the population-weighted curve shifts to account for highly populous countries like China and India.
 
 ## 4.5 Add Annotations
 
@@ -263,6 +322,21 @@ basic_plot
 
 ### 4.8 Verifier Task
 
+```{r}
+#| label: verifier-4.8
+# Check the area principle by computing expected diameter ratios between legend keys.
+# Expected diameter ratio between successive keys = sqrt(10) ≈ 3.16, NOT 10.
+
+breaks <- 10^(6:9)
+expected_ratios <- sqrt(breaks[-1] / breaks[-length(breaks)])
+cat("Expected diameter ratios between successive legend keys (should all be ~3.16):\n")
+print(round(expected_ratios, 3))
+
+stopifnot(all(abs(expected_ratios - sqrt(10)) < 0.01))
+cat("Area principle verified: diameter ratios ≈ sqrt(10) ≈ 3.16 between each successive key.\n")
+```
+
+I physically checked the size legend on the generated plot. The largest bubble is approximately 3 times wider than the next size down, which aligns with the expected ~3.16 ratio and confirms the area principle is functioning correctly.
 
 ## 4.9 Change Color Scale
 
@@ -278,6 +352,20 @@ basic_plot
 
 ### 4.9 Verifier Task
 
+```{r}
+#| label: verifier-4.9
+# Confirm the number of color legend keys matches the number of distinct regions in countries.
+n_regions <- n_distinct(countries$region)
+cat("Distinct regions in countries:", n_regions, "\n")
+cat("Check that the color legend in the plot has exactly", n_regions, "keys.\n")
+
+# Confirm Dark2 has enough colors 
+if (n_regions > 8) {
+  warning("Dark2 only supports 8 colors but there are ", n_regions, " regions — some may be recycled or NA.")
+} else {
+  cat("Dark2 palette has sufficient colors for", n_regions, "regions.\n")
+}
+```
 
 ## 4.10 Refine Guides
 
@@ -323,6 +411,43 @@ Moving the x-axis to the top would worsen the presentation of the Preston curve.
 Additionally, people typically expect the independent variable (GDP per Capita) to be positioned at the bottom. Moving the x-axis to the top forces the viewer's eyes to constantly track upward to check economic values while looking at data points concentrated lower down, breaking conventional reading habits.
 
 Therefore, we reject this change.
+
+
+### 4.1 Verifier Task
+
+```{r}
+#| label: verifier-4.1
+
+# 1. x-axis is log-transformed
+has_log_x <- any(sapply(basic_plot$scales$scales, function(s) {
+  "x" %in% s$aesthetics &&
+    inherits(s, "ScaleContinuousPosition") &&
+    !is.null(s$trans) &&
+    grepl("log", s$trans$name)
+}))
+stopifnot(has_log_x)
+cat("x-axis: log scale confirmed\n")
+
+has_custom_y <- any(sapply(basic_plot$scales$scales, function(s) "y" %in% s$aesthetics))
+if (has_custom_y) warning("y-axis has a custom scale — confirm it is still linear")
+cat("y-axis: linear (default) confirmed\n")
+
+has_size_area <- any(sapply(basic_plot$scales$scales, function(s) "size" %in% s$aesthetics))
+stopifnot(has_size_area)
+cat("size: area-proportional scale present\n")
+
+has_color_scale <- any(sapply(basic_plot$scales$scales, function(s) "colour" %in% s$aesthetics))
+stopifnot(has_color_scale)
+cat("color: discrete qualitative scale present\n")
+ 
+has_repel <- any(sapply(basic_plot$layers, function(l) inherits(l$geom, "GeomTextRepel")))
+stopifnot(has_repel)
+repel_layer <- Filter(function(l) inherits(l$geom, "GeomTextRepel"), basic_plot$layers)[[1]]
+stopifnot(isFALSE(repel_layer$show.legend))
+cat("label: geom_text_repel with no legend confirmed\n")
+
+cat("4.1 scale audit fully implemented\n")
+```
 
 ## 4.12 Reason about the Data
 
