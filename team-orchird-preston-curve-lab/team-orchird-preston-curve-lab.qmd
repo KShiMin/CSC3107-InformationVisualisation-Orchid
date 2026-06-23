@@ -33,20 +33,153 @@ library(scales)
 ```
 
 ## 3.1 Data Import
+```{r}
+#| label: data-import
+gdp_raw <- read_xls(
+  "API_NY.GDP.PCAP.PP.KD_DS2_en_excel_v2_417139.xls",
+  sheet = "Data",
+  skip = 3
+)
+
+gdp_raw
+
+life_raw <- read_xls(
+  "API_SP.DYN.LE00.IN_DS2_en_excel_v2_404463.xls",
+  sheet = "Data",
+  skip = 3
+)
+
+life_raw
+
+pop_raw <- read_xls(
+  "API_SP.DYN.LE00.IN_DS2_en_excel_v2_404463.xls",
+  sheet = "Data",
+  skip = 3
+)
+
+pop_raw
+```
+
+### 3.1 Verifier Task
+```{r}
+#| label: 3.1-verifier-task-col
+gdp_col_verify <- select(gdp_raw, "Country Name", "Country Code", "2024")
+gdp_col_verify
+
+life_col_verify <- select(life_raw, "Country Name", "Country Code", "2024")
+life_col_verify
+
+pop_col_verify <- select(pop_raw, "Country Name", "Country Code", "2024")
+pop_col_verify
+```
+
+
+
+```{r}
+#| label: 3.1-verifier-task-rows
+nrow(gdp_raw)
+ncol(gdp_raw)
+
+nrow(life_raw)
+ncol(life_raw)
+
+nrow(pop_raw)
+ncol(pop_raw)
+```
+
+```{r}
+#| label: 3.1-verifier-task-na
+gdp_nas <- sum(is.na(gdp_raw["2024"]))
+gdp_nas
+
+life_nas <- sum(is.na(life_raw["2024"]))
+life_nas
+
+pop_nas <- sum(is.na(pop_raw["2024"]))
+pop_nas
+```
 
 ## 3.2 Select Columns
+```{r}
+#| label: select-columns
+gdp_2024 <- rename(
+  gdp_col_verify,
+  name = "Country Name",
+  code = "Country Code",
+  gdp_per_cap = "2024"
+)
+gdp_2024
+
+life_2024 <- rename(
+  life_col_verify,
+  name = "Country Name",
+  code = "Country Code",
+  life_exp = "2024"
+)
+life_2024
+
+
+pop_2024 <- rename(
+  pop_col_verify,
+  name = "Country Name",
+  code = "Country Code",
+  pop = "2024"
+)
+pop_2024
+```
 
 ## 3.3 Merge Indicator Data
+```{r}
+#| label: merge-data
+countries <- inner_join(gdp_2024, life_2024, join_by(name, code)) |>
+  inner_join(pop_2024, join_by(name, code))
+
+countries
+```
 
 ## 3.4 Import the World Bank Regions
+```{r}
+#| label: metadata-countries
+metadata <- read_xls(
+  "API_NY.GDP.PCAP.PP.KD_DS2_en_excel_v2_417139.xls",
+  sheet = "Metadata - Countries"
+) |>
+  select(code = "Country Code", region = "Region")
+
+metadata
+```
 
 ### 3.4 Verifier Task
+```{r}
+#| label: 3.4-verifier
+tibble(
+  check = c(
+    "All metadata country codes are present in countries",
+    "All countries country codes are present in metadata"
+  ),
+  result = c(
+    all(metadata$code %in% countries$code),
+    all(countries$code %in% metadata$code)
+  )
+)
+```
 
 ## 3.5 Merge Regions with Indicators
+```{r}
+#| label: merge-region
+countries <- left_join(countries, metadata, join_by(code))
+countries
+```
 
 ### 3.5 Verifier Task
+Looking at [initial `countries`](#merge-indicator-data), it has 266 rows and 5 columns. The newly merged `countries` shown above, produced a 266 rows and 6 columns.
 
 ## 3.6 Remove Missing Data
+```{r}
+#| label: remove-missing-data
+countries_dropped <- countries |> drop_na()
+countries_dropped
+```
 
 ## 3.7 Prepare Country Labels
 
@@ -73,6 +206,8 @@ library(scales)
 
 
 ## 4.6 Change x-Axis Scale
+
+Harder to read and relate to as GapMinder uses double scaling, e.g. 64,000 vs 100,000. There is no right or wrong. Log scale's distance between each ticks may be slightly difference
 
 
 ## 4.7 Reason about the Choice of Logarithmic Axis Ticks
