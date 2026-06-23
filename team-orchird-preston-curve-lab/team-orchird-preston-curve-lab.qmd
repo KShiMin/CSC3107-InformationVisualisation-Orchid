@@ -33,22 +33,121 @@ library(scales)
 ```
 
 ## 3.1 Data Import
+```{r}
+#| label: import-data
+
+gdp <-
+    "API_NY.GDP.PCAP.PP.KD_DS2_en_excel_v2_417139.xls" |>
+    read_xls(skip = 3)
+
+life_exp <-
+    "API_SP.DYN.LE00.IN_DS2_en_excel_v2_404463.xls" |>
+    read_xls(skip = 3)
+
+pop <-
+    "API_SP.POP.TOTL_DS2_en_excel_v2_417154.xls" |>
+    read_xls(skip = 3)
+
+gdp
+life_exp
+pop
+
+```
+
+```{r}
+#| label: verifier-3.1
+
+
+```
 
 ## 3.2 Select Columns
 
+```{r}
+#| label: selecting-data
+
+gdp <- gdp |>
+    select(name = "Country Name", code = "Country Code", gdp_per_cap = "2024")
+
+life_exp <- life_exp |>
+    select(name = "Country Name", code = "Country Code", life_exp = "2024")
+
+pop <- pop |>
+    select(name = "Country Name", code = "Country Code", pop = "2024")
+
+gdp
+life_exp
+pop
+```
+
 ## 3.3 Merge Indicator Data
 
+```{r}
+#| label: merged-tibbles
+
+countries <- gdp |>
+    left_join(life_exp, join_by(name, code)) |>
+    left_join(pop, join_by(name, code))
+
+countries
+```
+
 ## 3.4 Import the World Bank Regions
+
+```{r}
+#| label: import-metadata
+
+metadata <- 
+    "API_NY.GDP.PCAP.PP.KD_DS2_en_excel_v2_417139.xls" |>
+    read_xls(sheet = "Metadata - Countries") |>
+    select(code = "Country Code", region = "Region")
+
+metadata
+```
 
 ### 3.4 Verifier Task
 
 ## 3.5 Merge Regions with Indicators
 
+```{r}
+#| label: join-metadata
+
+countries <- countries |>
+    left_join(metadata, join_by(code))
+
+countries
+```
+
 ### 3.5 Verifier Task
 
 ## 3.6 Remove Missing Data
 
+```{r}
+#| label: remove-missing-data
+
+countries <- countries |>
+    drop_na()
+
+countries
+```
+
 ## 3.7 Prepare Country Labels
+
+```{r}
+#| label: prepare-labels
+
+labeled_countries <- c(
+  countries |> slice_max(gdp_per_cap,      n = 10) |> pull(code),
+  countries |> slice_min(gdp_per_cap,      n = 10) |> pull(code),
+  countries |> slice_max(life_exp, n = 10) |> pull(code),
+  countries |> slice_min(life_exp, n = 10) |> pull(code),
+  countries |> slice_max(pop,      n = 10) |> pull(code)
+)
+
+countries <- countries |>
+  mutate(label = if_else(code %in% labeled_countries, code, ""))
+
+countries
+```
 
 ### 3.7 Verifier Task
 
@@ -56,48 +155,182 @@ library(scales)
 # Visualizing the Data
 ## 4.1 Scale Audit
 
+|  Aesthetic | Variable | Scale decision | Justification |
+|-----------|----------|----------------|---------------|
+| x | GDP per capita | continuous, log-transformed | GDP per capita is right-skewed; a log₁₀ scale spreads the points more evenly and makes multiplicative differences appear as equal visual distances. |
+| y | Life expectancy | continuous, linear | Life expectancy is roughly symmetric and bounded (~50–90 years), so a linear scale faithfully represents differences without distortion. |
+| size | Population | continuous, area-proportional | Using area to encode population follows Tufte's area principle: equal data ratios should map to equal area ratios, which the default radius-based scale does not guarantee. |
+| color | Region | discrete, qualitative palette | Region is a nominal, unordered categorical variable, so a qualitative palette avoids implying any ordering or magnitude differences between groups. |
+| label | Selected country code | direct annotation, no legend | Direct labels on selected points are more efficient than a lookup legend; labelling every country would cause severe overplotting. |
 
 ## 4.2 Set Up Basic Plot
 
+```{r}
+#| label: basic-plot
+
+basic_plot <-
+    ggplot(countries, aes(x = gdp_per_cap, y = life_exp, color=region))+
+    geom_point(aes(size = pop), alpha = 0.5)
+
+basic_plot
+```
 
 ## 4.3 Add Country Labels
 
+```{r}
+#| label: add-label
+
+basic_plot <- basic_plot + geom_text_repel(
+    aes(label = label),
+    show.legend = FALSE,
+    size = 3,
+    max.overlaps = 20,
+  )
+
+basic_plot
+```
 
 ## 4.4 Add Trend Curve
 
+```{r}
+#| label: add-curve
+
+basic_plot <- basic_plot + 
+    geom_smooth(aes(weight = pop), method = "loess", color = "gray")
+
+basic_plot
+
+```
 
 ### 4.4 Verifier Task
 
 
 ## 4.5 Add Annotations
 
+```{r}
+#| label: add-annotation
+
+basic_plot <- basic_plot + labs(
+        x = "GDP per capita ($ Purchasing Power Parity 2021)",
+        y = "Life Expectancy (years)",
+        title = "Life Expectancy vs. GDP per Capita (2024)",
+        caption = "Source: World Bank (2024)",
+    )
+
+basic_plot
+```
+
+According to the World Bank (under Metadata - Indicators), the GDP indicator is adjusted using purchasing power parities (PPPs) and expressed in constant 2021 international dollars. This adjustment controls for differences in local price levels, allowing for an accurate cross-country comparison of true economic output and standard of living. 
 
 ## 4.6 Change x-Axis Scale
 
+```{r}
+#| label: change-x-axis
+
+basic_plot <- basic_plot +
+    scale_x_log10( 
+        breaks = breaks_log(n = 6),
+        minor_breaks = NULL,
+        labels = label_comma()
+    )
+
+basic_plot
+```
+
+b. Using `label_currency()` (which prints $ 1,000) would be misleading here because the unit is a "common currency" adjusted for PPP, not nominal US dollars. A reader could incorrectly interpret the values as market-rate USD. Since our x-axis title already explicitly mentions the unit ($ Purchasing Power Parity 2021), using `label_comma()` is the better choice as it presents the numerical values cleanly without introducing confusing, repetitive currency symbols.
 
 ## 4.7 Reason about the Choice of Logarithmic Axis Ticks
 
+For the `breaks_log(n=6)` approach, the ticks use familiar base-10 multiples (1 and 3), making it highly intuitive to estimate the GDP figure because each tick is a simple multiple of a power of ten. 
+
+For the successive doublings approach, moving one tick to the right always means the country is exactly twice as wealthy. This makes it immediately intuitive to compare relative income ratios between countries.
 
 ## 4.8 Change Size Scale
 
+```{r}
+#| label: change-size-scale
+
+basic_plot <- basic_plot +
+    scale_size_area(
+        breaks = 10^(6:9),
+        labels = label_number(scale_cut = cut_short_scale()),
+        max_size = 15
+    )
+
+
+basic_plot
+```
 
 ### 4.8 Verifier Task
 
 
 ## 4.9 Change Color Scale
 
+```{r}
+#| label: change-color-scale
+
+basic_plot <- basic_plot +
+    scale_color_brewer(palette = "Dark2")
+
+basic_plot
+
+```
 
 ### 4.9 Verifier Task
 
 
 ## 4.10 Refine Guides
 
+```{r}
+#| label: refine-guides
+
+basic_plot <- basic_plot +
+    guides(
+        color = guide_legend(
+            order = 1,
+            override.aes = list(alpha = 1, size = 4),
+            title = "Region"
+        ),
+        size = guide_legend(
+            order = 2,
+            reverse = TRUE,
+            title = "Population"
+        )
+    )
+
+basic_plot
+```
+
+a.  The color legend should appear at the top over the size legend. When we look at a chart, we notice the distinct color groupings instantly before we are able to calculate the relative sizes. Therefore, placing the color legend at the top aligns with this visual hierarchy
+
+b. Reversing the size legend makes the population mapping easier to read because we tend to associate the 'top' with larger quantities, similar to how the y-axis increases upwards. However, `ggplot2` defaults to placing the smallest values at the top of the legend. By reversing it, the largest population sizes are placed at the top, making the visual scale much more intuitive to interpret at a glance.
+
+c. When we plotted the points with `alpha = 0.5` to reduce overplotting, the legend automatically inherits this transparency. This makes the legend keys faint and difficult to see clearly. Overriding the legend to be fully opaque with `alpha = 1` ensures distinct color contrast in the key, making it much easier for the reader to identify and map the regions at a glance.
 
 ## 4.11 Compare Axis Guides
 
+```{r}
+#| label: move-x-axis
+
+temp_plot <- basic_plot +
+    guides(x = guide_axis(title = NULL, position = "top"))
+
+temp_plot
+```
+
+Moving the x-axis to the top would worsen the presentation of the Preston curve. Currently, our title is "Life Expectancy vs. GDP per Capita (2024)", while the x-axis is "GDP per capita ($ Purchasing Power Parity 2021)". The title in its current state cannot serve as a substitute for the x-axis title, as removing the unit of measurement ($ PPP 2021) obscures vital context and alters the clarity of the visualization.
+
+Additionally, people typically expect the independent variable (GDP per Capita) to be positioned at the bottom. Moving the x-axis to the top forces the viewer's eyes to constantly track upward to check economic values while looking at data points concentrated lower down, breaking conventional reading habits.
+
+Therefore, we reject this change.
 
 ## 4.12 Reason about the Data
 
+From the plot, we are able to observe an sigmodial curve, illustrating a general trend where a higher GDP per capita leads to a higher life expectancy. However, we observe that Nigeria (NGA) sits drastically below the curve, and has one of the lowest life expectancy despite maintaining a mid-range GDP per capita. 
+
+According to Rédaction Africanews (2025), we are able to relate the low life expectancy to persistent health system challenges, which includes a high burden of infectious diseases, low access to quality care, and regular health worker strikes. Therefore, while Nigeria possesses a relatively strong economic output, they seem to have limited medical infrastructure to effectively combat preventable illnesses, leading to a low life expectancy.
+
+Source: https://www.africanews.com/2025/10/07/nigerias-life-expectancy-ranked-lowest-globally/
 
 # AI Liaison Report
 
