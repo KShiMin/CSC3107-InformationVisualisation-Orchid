@@ -1,0 +1,112 @@
+---
+title: "Preston Curve Lab"
+author: "Team Orchid"
+date: "2026-06-23"
+format:
+  html:
+    toc: true
+---
+
+## Assigned Roles
+
+The table below lists the assigned roles for each team member in this lab:
+
+| Member | Role | Specific Contribution  |
+| ------ | ---- | -----------------------|
+| Quan Yi | Coder | Developed the main QMD implementation by coding the data processing steps, creating the required visualisations, and ensuring the code chunks rendered correctly. Also checked that the final QMD could be executed from start to finish without rendering errors. |
+| Shi Min | Navigator  | Read and interpreted the assignment requirements during the lab, kept the group aligned with the required tasks, and ensured that each section of the QMD addressed the relevant questions. Also helped maintain the flow, readability, and organisation of the QMD document. |
+| Aiman | AI Liaison | Managed the team’s AI-assisted workflow by prompting AI tools together with the coder, documenting relevant AI interactions, and reviewing AI-generated suggestions before they were accepted, modified, or rejected. Ensured that AI use supported the assignment without replacing team judgement. |
+| Subhashini | Verifier  | Validated the accuracy of the generated plots, calculations, and interpretations by cross-checking outputs against the dataset and task requirements. Identified possible inconsistencies and ensured that the final answers were supported by the visual evidence.  |
+| Jabar  | Reporter | Prepared the written Markdown explanations for the code and visualisations, including descriptions of what each code section does and how the resulting plots should be interpreted. Helped ensure that the report explanations were clear and connected to the assignment objectives. |
+| Min Xuan | Constructive Critic | Reviewed the combined work after merging individual contributions, suggested improvements to wording, structure, and visual clarity, and checked that the final submission package was complete. Also helped ensure that the final ZIP contained the required files and maintained submission integrity. |
+
+# Data Preparation
+
+## Setup
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)
+library(readxl)
+library(ggrepel)
+library(scales)
+```
+
+## 3.1 Data Import
+
+## 3.2 Select Columns
+
+## 3.3 Merge Indicator Data
+
+## 3.4 Import the World Bank Regions
+
+### 3.4 Verifier Task
+
+## 3.5 Merge Regions with Indicators
+
+### 3.5 Verifier Task
+
+## 3.6 Remove Missing Data
+
+## 3.7 Prepare Country Labels
+
+### 3.7 Verifier Task
+
+
+# Visualizing the Data
+## 4.1 Scale Audit
+
+
+## 4.2 Set Up Basic Plot
+
+
+## 4.3 Add Country Labels
+
+
+## 4.4 Add Trend Curve
+
+
+### 4.4 Verifier Task
+
+
+## 4.5 Add Annotations
+
+
+## 4.6 Change x-Axis Scale
+
+
+## 4.7 Reason about the Choice of Logarithmic Axis Ticks
+
+
+## 4.8 Change Size Scale
+
+
+### 4.8 Verifier Task
+
+
+## 4.9 Change Color Scale
+
+
+### 4.9 Verifier Task
+
+
+## 4.10 Refine Guides
+
+
+## 4.11 Compare Axis Guides
+
+
+## 4.12 Reason about the Data
+
+
+# AI Liaison Report
+
+**Tool used:** Perplexity (Claude Sonnet 4.6)
+
+### One Useful AI Response
+
+**In the response :**
+
+
+
+### Suboptimal AI Response
