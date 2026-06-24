@@ -37,23 +37,21 @@ For this lab, the new R library packages are `readxl` and `scales`.
 ## 3.1 Data Import
 ```{r}
 #| label: import-data
-
 gdp <-
-    "API_NY.GDP.PCAP.PP.KD_DS2_en_excel_v2_417139.xls" |>
-    read_xls(skip = 3)
+  "API_NY.GDP.PCAP.PP.KD_DS2_en_excel_v2_417139.xls" |>
+  read_xls(skip = 3)
 
 life_exp <-
-    "API_SP.DYN.LE00.IN_DS2_en_excel_v2_404463.xls" |>
-    read_xls(skip = 3)
+  "API_SP.DYN.LE00.IN_DS2_en_excel_v2_404463.xls" |>
+  read_xls(skip = 3)
 
 pop <-
-    "API_SP.POP.TOTL_DS2_en_excel_v2_417154.xls" |>
-    read_xls(skip = 3)
+  "API_SP.POP.TOTL_DS2_en_excel_v2_417154.xls" |>
+  read_xls(skip = 3)
 
 gdp
 life_exp
 pop
-
 ```
 
 We import the three World Bank indicator files using `read_xls()`. 
@@ -65,17 +63,32 @@ Each of the resulting tibbles - `gdp`, `life_exp`, and `pop`contains the actual 
 ### 3.1 Verifier Task
 ```{r}
 #| label: verifier-3.1
-
 # Check all three tibbles have required columns
-stopifnot("Country Name" %in% names(gdp), "Country Code" %in% names(gdp), "2024" %in% names(gdp))
-stopifnot("Country Name" %in% names(life_exp), "Country Code" %in% names(life_exp), "2024" %in% names(life_exp))
-stopifnot("Country Name" %in% names(pop), "Country Code" %in% names(pop), "2024" %in% names(pop))
+stopifnot(
+  "Country Name" %in% names(gdp),
+  "Country Code" %in% names(gdp),
+  "2024" %in% names(gdp)
+)
+stopifnot(
+  "Country Name" %in% names(life_exp),
+  "Country Code" %in% names(life_exp),
+  "2024" %in% names(life_exp)
+)
+stopifnot(
+  "Country Name" %in% names(pop),
+  "Country Code" %in% names(pop),
+  "2024" %in% names(pop)
+)
 
 # Check all three tibbles have the same number of rows
 stopifnot(nrow(gdp) == nrow(life_exp), nrow(life_exp) == nrow(pop))
 
 # Check 2024 column is not entirely empty in any tibble
-stopifnot(any(!is.na(gdp[["2024"]])), any(!is.na(life_exp[["2024"]])), any(!is.na(pop[["2024"]])))
+stopifnot(
+  any(!is.na(gdp[["2024"]])),
+  any(!is.na(life_exp[["2024"]])),
+  any(!is.na(pop[["2024"]]))
+)
 
 cat("3.1 checks passed\n")
 ```
@@ -92,15 +105,14 @@ Third, we confirm that the `2024` column is not empty in any tibble.
 
 ```{r}
 #| label: selecting-data
-
 gdp <- gdp |>
-    select(name = "Country Name", code = "Country Code", gdp_per_cap = "2024")
+  select(name = "Country Name", code = "Country Code", gdp_per_cap = "2024")
 
 life_exp <- life_exp |>
-    select(name = "Country Name", code = "Country Code", life_exp = "2024")
+  select(name = "Country Name", code = "Country Code", life_exp = "2024")
 
 pop <- pop |>
-    select(name = "Country Name", code = "Country Code", pop = "2024")
+  select(name = "Country Name", code = "Country Code", pop = "2024")
 
 gdp
 life_exp
@@ -117,10 +129,9 @@ After this step, each tibble has exactly three columns.
 
 ```{r}
 #| label: merged-tibbles
-
 countries <- gdp |>
-    left_join(life_exp, join_by(name, code)) |>
-    left_join(pop, join_by(name, code))
+  left_join(life_exp, join_by(name, code)) |>
+  left_join(pop, join_by(name, code))
 
 countries
 ```
@@ -135,11 +146,10 @@ After both joins, `countries` contains five columns - `name`, `code`, `gdp_per_c
 
 ```{r}
 #| label: import-metadata
-
-metadata <- 
-    "API_NY.GDP.PCAP.PP.KD_DS2_en_excel_v2_417139.xls" |>
-    read_xls(sheet = "Metadata - Countries") |>
-    select(code = "Country Code", region = "Region")
+metadata <-
+  "API_NY.GDP.PCAP.PP.KD_DS2_en_excel_v2_417139.xls" |>
+  read_xls(sheet = "Metadata - Countries") |>
+  select(code = "Country Code", region = "Region")
 
 metadata
 ```
@@ -154,12 +164,15 @@ We then pipe the result through `select` and retain only two columns: `Country C
 
 ```{r}
 #| label: verifier-3.4
-
 stopifnot(all(metadata$code %in% countries$code))
 
 # Check converse
 missing_from_metadata <- countries$code[!countries$code %in% metadata$code]
-cat("Codes in countries but NOT in metadata:", length(missing_from_metadata), "\n")
+cat(
+  "Codes in countries but NOT in metadata:",
+  length(missing_from_metadata),
+  "\n"
+)
 
 cat("3.4 checks passed\n")
 ```
@@ -174,9 +187,8 @@ The second check test the converse: whether every code in `countries` also appea
 
 ```{r}
 #| label: join-metadata
-
 countries <- countries |>
-    left_join(metadata, join_by(code))
+  left_join(metadata, join_by(code))
 
 countries
 ```
@@ -189,9 +201,12 @@ After the join, `countries` gains a sixth column - `region`.
 
 ```{r}
 #| label: verifier-3.5
-
 # Row count must be the same before and after the join
-rows_after_33 <- nrow(gdp |> left_join(life_exp, join_by(name, code)) |> left_join(pop, join_by(name, code)))
+rows_after_33 <- nrow(
+  gdp |>
+    left_join(life_exp, join_by(name, code)) |>
+    left_join(pop, join_by(name, code))
+)
 stopifnot(nrow(countries) == rows_after_33)
 
 cat("3.5 checks passed ")
@@ -205,9 +220,8 @@ In recomputing the expected row count independently of the current state of `cou
 
 ```{r}
 #| label: remove-missing-data
-
 countries <- countries |>
-    drop_na()
+  drop_na()
 
 countries
 ```
@@ -220,13 +234,12 @@ In the World Bank data sheets, terms like `Arab World` and `Sub-Saharan Africa` 
 
 ```{r}
 #| label: prepare-labels
-
 labeled_countries <- c(
-  countries |> slice_max(gdp_per_cap,      n = 10) |> pull(code),
-  countries |> slice_min(gdp_per_cap,      n = 10) |> pull(code),
+  countries |> slice_max(gdp_per_cap, n = 10) |> pull(code),
+  countries |> slice_min(gdp_per_cap, n = 10) |> pull(code),
   countries |> slice_max(life_exp, n = 10) |> pull(code),
   countries |> slice_min(life_exp, n = 10) |> pull(code),
-  countries |> slice_max(pop,      n = 10) |> pull(code)
+  countries |> slice_max(pop, n = 10) |> pull(code)
 )
 
 countries <- countries |>
@@ -235,7 +248,7 @@ countries <- countries |>
 countries
 ```
 
-Compute `labeled_countries` by pulling the `code` columsn from each of the five `slice_max()` or `slice_min()` and concatenating the results with `c()`.
+Compute `labeled_countries` by pulling the `code` columns from each of the five `slice_max()` or `slice_min()` and concatenating the results with `c()`.
 
 We then use `mutate()` with `if_else()` in adding a `label` column to `countries`. For every row whose `code()` are in `labelled_countries`, the label is set to the three-letter code itself. While the all the other rows with empty strings is set to `""`. 
 
@@ -243,9 +256,16 @@ We then use `mutate()` with `if_else()` in adding a `label` column to `countries
 
 ```{r}
 #| label: verifier-3.7
-
 # Confirm exact set of 7 columns
-expected_cols <- c("name", "code", "gdp_per_cap", "life_exp", "pop", "region", "label")
+expected_cols <- c(
+  "name",
+  "code",
+  "gdp_per_cap",
+  "life_exp",
+  "pop",
+  "region",
+  "label"
+)
 stopifnot(all(expected_cols %in% names(countries)))
 stopifnot(ncol(countries) == 7)
 
@@ -281,10 +301,9 @@ Third check confirms every value in `label` column is either an empty string or 
 
 ```{r}
 #| label: basic-plot
-
 basic_plot <-
-    ggplot(countries, aes(x = gdp_per_cap, y = life_exp, color=region))+
-    geom_point(aes(size = pop), alpha = 0.5)
+  ggplot(countries, aes(x = gdp_per_cap, y = life_exp, color = region)) +
+  geom_point(aes(size = pop), alpha = 0.5)
 
 basic_plot
 ```
@@ -299,8 +318,8 @@ Setting `alpha = 0.5` makes the bubbles semi-translucent so that overlapping poi
 
 ```{r}
 #| label: add-label
-
-basic_plot <- basic_plot + geom_text_repel(
+basic_plot <- basic_plot +
+  geom_text_repel(
     aes(label = label),
     show.legend = FALSE,
     size = 3,
@@ -310,7 +329,7 @@ basic_plot <- basic_plot + geom_text_repel(
 basic_plot
 ```
 
-`geom_texxt_repel()` automatically nudges labels away from each other avoiding overlap. 
+`geom_text_repel()` automatically nudges labels away from each other avoiding overlap. 
 
 Configure `show.legend = FALSE` ensures that legends is protected from redundant entry.
 
@@ -320,12 +339,10 @@ Only countries with `label` column not empty receive a visible label whereas oth
 
 ```{r}
 #| label: add-curve
-
-basic_plot <- basic_plot + 
-    geom_smooth(aes(weight = pop), method = "loess", color = "gray")
+basic_plot <- basic_plot +
+  geom_smooth(aes(weight = pop), method = "loess", color = "gray")
 
 basic_plot
-
 ```
 
 `geom_smooth()` with `aes(weight = pop)` produce a LOESS smooth curve.
@@ -336,9 +353,8 @@ Highly populous countries like China and India have a greater influence on the s
 
 ```{r}
 #| label: verifier-4.4
-
 #basic_plot +
-  #geom_smooth(method = "loess", color = "red", linetype = "dashed", se = FALSE)
+#geom_smooth(method = "loess", color = "red", linetype = "dashed", se = FALSE)
 
 ```
 
@@ -350,13 +366,13 @@ The weighted curve noticeably shifts in the middle-income range reaffirming that
 
 ```{r}
 #| label: add-annotation
-
-basic_plot <- basic_plot + labs(
-        x = "GDP per capita ($ Purchasing Power Parity 2021)",
-        y = "Life Expectancy (years)",
-        title = "Life Expectancy vs. GDP per Capita (2024)",
-        caption = "Source: World Bank (2024)",
-    )
+basic_plot <- basic_plot +
+  labs(
+    x = "GDP per capita ($ Purchasing Power Parity 2021)",
+    y = "Life Expectancy (years)",
+    title = "Life Expectancy vs. GDP per Capita (2024)",
+    caption = "Source: World Bank (2024)",
+  )
 
 basic_plot
 ```
@@ -369,13 +385,12 @@ According to the World Bank (under Metadata - Indicators), the GDP indicator is 
 
 ```{r}
 #| label: change-x-axis
-
 basic_plot <- basic_plot +
-    scale_x_log10( 
-        breaks = breaks_log(n = 6),
-        minor_breaks = NULL,
-        labels = label_comma()
-    )
+  scale_x_log10(
+    breaks = breaks_log(n = 6),
+    minor_breaks = NULL,
+    labels = label_comma()
+  )
 
 basic_plot
 ```
@@ -384,7 +399,7 @@ Applying `scale_x_log10()`, compresses and spread the points more evenly across 
 
 `breaks_log()` places breaks that are reader-friendly.
 
-`minor_breaks = NULL` suppreses minor gridlines reducing visual clutter.
+`minor_breaks = NULL` suppresses minor gridlines reducing visual clutter.
 
 `label_comma()` are used for the ticks so as to be readable rather than scientific notation.
 
@@ -400,13 +415,12 @@ For the successive doublings approach, moving one tick to the right always means
 
 ```{r}
 #| label: change-size-scale
-
 basic_plot <- basic_plot +
-    scale_size_area(
-        breaks = 10^(6:9),
-        labels = label_number(scale_cut = cut_short_scale()),
-        max_size = 15
-    )
+  scale_size_area(
+    breaks = 10^(6:9),
+    labels = label_number(scale_cut = cut_short_scale()),
+    max_size = 15
+  )
 
 
 basic_plot
@@ -427,11 +441,15 @@ breaks are configured at 1M, 10M, 100M and 1B
 
 breaks <- 10^(6:9)
 expected_ratios <- sqrt(breaks[-1] / breaks[-length(breaks)])
-cat("Expected diameter ratios between successive legend keys (should all be ~3.16):\n")
+cat(
+  "Expected diameter ratios between successive legend keys (should all be ~3.16):\n"
+)
 print(round(expected_ratios, 3))
 
 stopifnot(all(abs(expected_ratios - sqrt(10)) < 0.01))
-cat("Area principle verified: diameter ratios ≈ sqrt(10) ≈ 3.16 between each successive key.\n")
+cat(
+  "Area principle verified: diameter ratios ≈ sqrt(10) ≈ 3.16 between each successive key.\n"
+)
 ```
 
 I physically checked the size legend on the generated plot. The largest bubble is approximately 3 times wider than the next size down, which aligns with the expected ~3.16 ratio and confirms the area principle is functioning correctly.
@@ -440,12 +458,10 @@ I physically checked the size legend on the generated plot. The largest bubble i
 
 ```{r}
 #| label: change-color-scale
-
 basic_plot <- basic_plot +
-    scale_color_brewer(palette = "Dark2")
+  scale_color_brewer(palette = "Dark2")
 
 basic_plot
-
 ```
 
 `scale_color_brewer()` makes distinct hues straightforward to visually segregate the seven world regions across the plot.
@@ -459,9 +475,13 @@ n_regions <- n_distinct(countries$region)
 cat("Distinct regions in countries:", n_regions, "\n")
 cat("Check that the color legend in the plot has exactly", n_regions, "keys.\n")
 
-# Confirm Dark2 has enough colors 
+# Confirm Dark2 has enough colors
 if (n_regions > 8) {
-  warning("Dark2 only supports 8 colors but there are ", n_regions, " regions — some may be recycled or NA.")
+  warning(
+    "Dark2 only supports 8 colors but there are ",
+    n_regions,
+    " regions — some may be recycled or NA."
+  )
 } else {
   cat("Dark2 palette has sufficient colors for", n_regions, "regions.\n")
 }
@@ -473,20 +493,19 @@ I confirmed that the number of colour legend keys matches the number of distinct
 
 ```{r}
 #| label: refine-guides
-
 basic_plot <- basic_plot +
-    guides(
-        color = guide_legend(
-            order = 1,
-            override.aes = list(alpha = 1, size = 4),
-            title = "Region"
-        ),
-        size = guide_legend(
-            order = 2,
-            reverse = TRUE,
-            title = "Population"
-        )
+  guides(
+    color = guide_legend(
+      order = 1,
+      override.aes = list(alpha = 1, size = 4),
+      title = "Region"
+    ),
+    size = guide_legend(
+      order = 2,
+      reverse = TRUE,
+      title = "Population"
     )
+  )
 
 basic_plot
 ```
@@ -509,9 +528,8 @@ c. When we plotted the points with `alpha = 0.5` to reduce overplotting, the leg
 
 ```{r}
 #| label: move-x-axis
-
 temp_plot <- basic_plot +
-    guides(x = guide_axis(title = NULL, position = "top"))
+  guides(x = guide_axis(title = NULL, position = "top"))
 
 temp_plot
 ```
@@ -529,10 +547,10 @@ Therefore, we reject this change.
 
 ```{r}
 #| label: verifier-4.1
-
 # 1. x-axis is log-transformed
 has_log_x <- any(sapply(basic_plot$scales$scales, function(s) {
-  "x" %in% s$aesthetics &&
+  "x" %in%
+    s$aesthetics &&
     inherits(s, "ScaleContinuousPosition") &&
     !is.null(s$trans) &&
     grepl("log", s$trans$name)
@@ -540,21 +558,34 @@ has_log_x <- any(sapply(basic_plot$scales$scales, function(s) {
 stopifnot(has_log_x)
 cat("x-axis: log scale confirmed\n")
 
-has_custom_y <- any(sapply(basic_plot$scales$scales, function(s) "y" %in% s$aesthetics))
-if (has_custom_y) warning("y-axis has a custom scale — confirm it is still linear")
+has_custom_y <- any(sapply(basic_plot$scales$scales, function(s) {
+  "y" %in% s$aesthetics
+}))
+if (has_custom_y) {
+  warning("y-axis has a custom scale — confirm it is still linear")
+}
 cat("y-axis: linear (default) confirmed\n")
 
-has_size_area <- any(sapply(basic_plot$scales$scales, function(s) "size" %in% s$aesthetics))
+has_size_area <- any(sapply(basic_plot$scales$scales, function(s) {
+  "size" %in% s$aesthetics
+}))
 stopifnot(has_size_area)
 cat("size: area-proportional scale present\n")
 
-has_color_scale <- any(sapply(basic_plot$scales$scales, function(s) "colour" %in% s$aesthetics))
+has_color_scale <- any(sapply(basic_plot$scales$scales, function(s) {
+  "colour" %in% s$aesthetics
+}))
 stopifnot(has_color_scale)
 cat("color: discrete qualitative scale present\n")
- 
-has_repel <- any(sapply(basic_plot$layers, function(l) inherits(l$geom, "GeomTextRepel")))
+
+has_repel <- any(sapply(basic_plot$layers, function(l) {
+  inherits(l$geom, "GeomTextRepel")
+}))
 stopifnot(has_repel)
-repel_layer <- Filter(function(l) inherits(l$geom, "GeomTextRepel"), basic_plot$layers)[[1]]
+repel_layer <- Filter(
+  function(l) inherits(l$geom, "GeomTextRepel"),
+  basic_plot$layers
+)[[1]]
 stopifnot(isFALSE(repel_layer$show.legend))
 cat("label: geom_text_repel with no legend confirmed\n")
 
@@ -575,11 +606,11 @@ Each finding is wrapped with `stopifnot()` confirming log x-axis, linear y-axis,
 
 ## 4.12 Reason about the Data
 
-From the plot, we are able to observe an sigmodial curve, illustrating a general trend where a higher GDP per capita leads to a higher life expectancy. However, we observe that Nigeria (NGA) sits drastically below the curve, and has one of the lowest life expectancy despite maintaining a mid-range GDP per capita. 
+From the plot, we are able to observe an sigmoidal curve, illustrating a general trend where a higher GDP per capita leads to a higher life expectancy. However, we observe that Nigeria (NGA) sits drastically below the curve, and has one of the lowest life expectancy despite maintaining a mid-range GDP per capita. 
 
 According to Rédaction Africanews (2025), we are able to relate the low life expectancy to persistent health system challenges, which includes a high burden of infectious diseases, low access to quality care, and regular health worker strikes. Therefore, while Nigeria possesses a relatively strong economic output, they seem to have limited medical infrastructure to effectively combat preventable illnesses, leading to a low life expectancy.
 
-Source: https://www.africanews.com/2025/10/07/nigerias-life-expectancy-ranked-lowest-globally/
+Source: [https://www.africanews.com/2025/10/07/nigerias-life-expectancy-ranked-lowest-globally/](https://www.africanews.com/2025/10/07/nigerias-life-expectancy-ranked-lowest-globally/)
 
 # AI Liaison Report
 
@@ -634,6 +665,6 @@ The AI was not useful in this certain question and was not every helpful in diag
 
 ### Reflection
 
-Our team has consistently used Perplexity (Claude Sonnet 4.6) throughout the past lab sessions till present. In several instances, with gardual prompts that help build the understanding of the project has been able to give more accurate answers compared to uploading the entire lab instruction brief for answers. Simple prompts produced accurate, directly usable code snippets that helped us understand what a task was asking for and complete it efficiently. As always, the assistance in understanding functions, formulas, reasoning and more makes it much easier to for the team to complete this lab but, it is only complimentable due to the fact that certain team members are knowledgable in their code and is able to verify the work of what AI suggests.
+Our team has consistently used Perplexity (Claude Sonnet 4.6) throughout the past lab sessions till present. In several instances, with gradual prompts that help build the understanding of the project has been able to give more accurate answers compared to uploading the entire lab instruction brief for answers. Simple prompts produced accurate, directly usable code snippets that helped us understand what a task was asking for and complete it efficiently. As always, the assistance in understanding functions, formulas, reasoning and more makes it much easier to for the team to complete this lab but, it is only complimentable due to the fact that certain team members are knowledgable in their code and is able to verify the work of what AI suggests.
 
 There will be chances (although rare) that we get answers from the AI that are not very usable nor applicable as mentioned. Therefore, re-reading the task requirements is always a must to ensure the team does not go off-course. This reminded us to always evaluate AI output critically rather than applying it blindly.
