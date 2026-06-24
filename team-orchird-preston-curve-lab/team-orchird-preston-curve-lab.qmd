@@ -534,7 +534,7 @@ temp_plot <- basic_plot +
 temp_plot
 ```
 
-`guides_axis()` creates a temporary copy of the plot while the x-axis moved to the top.
+`guides_axis()` was used to move the x-axis to the top and the x-axis label was removed using `title = NULL`.
 
 Moving the x-axis to the top would worsen the presentation of the Preston curve. Currently, our title is "Life Expectancy vs. GDP per Capita (2024)", while the x-axis is "GDP per capita ($ Purchasing Power Parity 2021)". The title in its current state cannot serve as a substitute for the x-axis title, as removing the unit of measurement ($ PPP 2021) obscures vital context and alters the clarity of the visualization.
 
