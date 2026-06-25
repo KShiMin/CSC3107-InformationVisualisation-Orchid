@@ -35,6 +35,7 @@ source_file <- "data/export_of_agriculture_products_data.xlsx"
 excel_sheets(source_file)
 ```
 
+## Export Values EDA
 ```{r}
 #| label: source-attribution
 source_notes <- read_excel(
@@ -47,11 +48,11 @@ source_notes <- read_excel(
 source_notes
 ```
 
-The dataset was imported from `export_of_agriculture_products_data.xlsx`, specifically the `Export values` worksheet. The workbook also contains overview, product definition, and export quantity sheets, but only export value data was used for this analysis. The first three rows contain workbook title/unit metadata, so the data table begins at row 4. The selected range `A4:N4839` keeps only `ProductDescription`, `ReporterName`, `GeoRegion`, and annual export value fields from 2014 to 2024.
+The dataset was imported from `export_of_agriculture_products_data.xlsx`, specifically the `Export values` worksheet for the main export value analysis. The workbook also contains overview, product definition, and export quantity sheets. The original quantity-based EDA from the `Exports qties` worksheet is retained later as a supplementary analysis so both monetary value and reported quantity patterns can be examined. The first three rows contain workbook title/unit metadata, so the data table begins at row 4. The selected range `A4:N4839` keeps only `ProductDescription`, `ReporterName`, `GeoRegion`, and annual export value fields from 2014 to 2024.
 
 All annual values in the `Export values` worksheet are measured in USD millions. Therefore, the data represents monetary export value rather than physical export quantity, allowing comparisons across products, reporters, regions, and years using a common monetary unit.
 
-# Data Cleaning and Transformation
+### Data Cleaning and Transformation
 
 The raw dataset is stored in wide format, where each year is represented as a separate column. For reproducible analysis and visualisation, the data was transformed into long format so that each row represents one product-reporter-region-year observation.
 
@@ -93,7 +94,7 @@ The cleaning process performed the following actions:
 4. ensured `export_value_usd_millions` is numeric
 5. Standardised product, reporter and region labels by removing unnecessary whitespace using `str_squish()`
 
-## Validation Checks
+#### Validation Checks
 ```{r}
 #| label: data-validation-checks
 validation_checks <- tibble(
@@ -120,9 +121,9 @@ validation_checks <- tibble(
 validation_checks
 ```
 
-The validation checks confirms that the raw dataset contains **4,835 observations and 14 variables**. After transformation, the cleaned dataset contains **53,185 observations** product-reporter-region-year observations covering 2014–2024. No missing values or duplicate product-reporter-year records were detected. However, **57 negative values** were identified and investigated separately.
+The validation checks confirm that the raw dataset contains **4,835 observations and 14 variables**. After transformation, the cleaned dataset contains **53,185 product-reporter-region-year observations** covering 2014-2024. No missing values or duplicate product-reporter-year records were detected. However, **57 negative values** were identified and investigated separately.
 
-## Negative Values
+#### Negative Values
 ```{r}
 #| label: negative-values
 negative_values <- data_clean |>
@@ -135,9 +136,9 @@ unique(negative_values$reporter_name)
 unique(negative_values$geo_region)
 ```
 
-The dataset contains 57 negative values affecting 21 reporters across 6 region. All occur under the derived `Other AoA` product category. The workbook defines `Other AoA` as a residual category calculated by subtraction, so negative results may occur when its component estimates differ. These values were retained because they are derived source values rather than data-entry errors.
+The dataset contains 57 negative values affecting 21 reporters across 6 regions. All occur under the derived `Other AoA` product category. The workbook defines `Other AoA` as a residual category calculated by subtraction, so negative results may occur when its component estimates differ. These values were retained because they are derived source values rather than data-entry errors.
 
-## Removal of Aggregate Rows
+#### Removal of Aggregate Rows
 ```{r}
 #| label: aggregate-products
 aggregate_products <- c(
@@ -156,7 +157,7 @@ data_analysis <- data_clean |>
 Aggregate reporter and product rows were excluded from general summary calculations to avoid double-counting values already represented by individual reporters and product groups. They remain available in `data_clean` for analyses specifically focused on official aggregate totals.
 
 
-# Data Exploration
+### Data Exploration
 
 After cleaning and validation, exploratory checks were performed on the cleaned dataset to understand
 
@@ -167,7 +168,7 @@ After cleaning and validation, exploratory checks were performed on the cleaned 
 5. Region Coverage
 6. Reporter Coverage
 
-## Data Types
+#### Data Types
 ```{r}
 #| label: eda-data-types
 glimpse(data_analysis)
@@ -175,7 +176,7 @@ glimpse(data_analysis)
 
 The structure of the final analytical dataset was examined using `glimpse()`. It contains **48,037 observations and five variables**. `product_description`, `reporter_name`, and `geo_region` are character variables, `year` is an integer, and `export_value_usd_millions` is numeric. These data types are appropriate for grouping observations and analysing export values over time.
 
-## Zero Values
+#### Zero Values
 
 ```{r}
 #| label: zero-value-checks
@@ -193,7 +194,7 @@ zero_summary_by_year
 
 No missing values were detected in the imported range, so no imputation was applied. However, zero export values were retained and treated as valid observations because they likely represent no recorded exports for a product-reporter-year combination rather than missing data.
 
-## Summary Statistics
+#### Summary Statistics
 ```{r}
 #| label: eda-numerical-data-summary
 summary_by_year <- data_analysis |>
@@ -212,9 +213,9 @@ summary_by_year <- data_analysis |>
 summary_by_year
 ```
 
-This summary provides insights into the central tendency and variability of export value across different years. Since export value are likely skewed, median and quartiles are more informative than the mean alone. The maximum value is also included to identify the scale of dominant exporters or product groups.
+This summary provides insights into the central tendency and variability of export values across different years. Since export values are likely skewed, median and quartiles are more informative than the mean alone. The maximum value is also included to identify the scale of dominant exporters or product groups.
 
-## Categorical Coverage
+#### Categorical Coverage
 
 ```{r}
 #| label: categorical-coverage
@@ -228,7 +229,7 @@ categorical_summary <- data_analysis |>
 categorical_summary
 ```
 
-## Region Coverage
+#### Region Coverage
 ```{r}
 #| label: regional-coverage
 regional_coverage <- data_analysis |>
@@ -239,7 +240,7 @@ regional_coverage <- data_analysis |>
 regional_coverage
 ```
 
-## Reporter Coverage
+#### Reporter Coverage
 ```{r}
 #| label: product-coverage
 total_reporters <- n_distinct(data_analysis$reporter_name)
@@ -259,3 +260,169 @@ product_coverage
 ```
 
 After aggregate rows were removed, the analytical dataset contained 32 product groups, 155 reporters, and seven geographical regions. Each reporter was assigned consistently to one region. However, product coverage was not uniform: the dataset contained 4,367 of the 4,960 possible product-reporter combinations. Therefore, the absence of a product-reporter combination should not automatically be interpreted as zero exports. Regional and product comparisons should account for these differences in source coverage.
+
+## Export Quantity EDA
+
+The `Exports qties` worksheet is also examined. This analysis keeps the quantity data separate from the export value data because the quantity sheet has a different structure and does not include `GeoRegion`. It is useful for checking whether the same product and reporter coverage is available when the export measure is reported as quantity rather than USD value.
+
+```{r}
+#| label: quantity-source-notes
+quantity_source_notes <- read_excel(
+  source_file,
+  sheet = "Exports qties",
+  col_names = FALSE,
+  n_max = 2
+)
+
+quantity_source_notes
+```
+
+The `Exports qties` worksheet contains `ProductDescription`, `ReporterName`, and annual export quantity fields from 2014 to 2024. The source notes state that values are generally reported as volume in thousand tonnes, but some product groups are reported in USD millions. For that reason, this supplementary EDA treats the variable as a reported export quantity measure instead of assuming every row shares one physical unit.
+
+### Quantity Data Cleaning and Transformation
+
+```{r}
+#| label: clean-transform-quantity-data
+quantity_raw <- read_excel(
+  source_file,
+  sheet = "Exports qties",
+  skip = 3,
+  range = "A4:M4559" # Limit import to only relevant data range
+)
+
+quantity_clean <- quantity_raw |>
+  rename(
+    product_description = ProductDescription,
+    reporter_name = ReporterName
+  ) |>
+  pivot_longer(
+    cols = matches("^\\d{4}$"),
+    names_to = "year",
+    values_to = "export_quantity"
+  ) |>
+  mutate(
+    year = as.integer(year),
+    product_description = str_squish(product_description),
+    reporter_name = str_squish(reporter_name),
+    export_quantity = as.numeric(export_quantity)
+  )
+
+head(quantity_clean)
+```
+
+The quantity cleaning process mirrors the value workflow where possible: variable names were standardised, annual columns were converted from wide to long format, `year` was converted to an integer, `export_quantity` was converted to numeric, and extra whitespace was removed from product and reporter names.
+
+#### Quantity Validation Checks
+
+```{r}
+#| label: quantity-validation-checks
+quantity_validation_checks <- tibble(
+  check = c(
+    "Rows in raw data",
+    "Columns in raw data",
+    "Rows after long transformation",
+    "Missing export values",
+    "Negative export values",
+    "Duplicate product-reporter-year rows"
+  ),
+  result = c(
+    nrow(quantity_raw),
+    ncol(quantity_raw),
+    nrow(quantity_clean),
+    sum(is.na(quantity_clean$export_quantity)),
+    sum(quantity_clean$export_quantity < 0, na.rm = TRUE),
+    quantity_clean |>
+      count(product_description, reporter_name, year) |>
+      filter(n > 1) |>
+      nrow()
+  )
+)
+
+quantity_validation_checks
+```
+
+The quantity validation checks confirm that the raw worksheet contains **4,555 observations and 13 variables**. After transformation, the cleaned quantity dataset contains **50,105 observations**, representing 4,555 product-reporter combinations across 11 years from 2014 to 2024. No missing export values, negative values, or duplicated product-reporter-year rows were detected.
+
+### Quantity Data Exploration
+#### Quantity Missing and Zero Values
+
+```{r}
+#| label: quantity-missing-values
+quantity_missing_values <- quantity_clean |>
+  summarise(across(everything(), ~ sum(is.na(.))))
+
+quantity_missing_values
+```
+
+```{r}
+#| label: quantity-zero-value-checks
+quantity_zero_summary_by_year <- quantity_clean |>
+  group_by(year) |>
+  summarise(
+    observations = n(),
+    zero_values = sum(export_quantity == 0, na.rm = TRUE),
+    zero_percent = zero_values / observations * 100,
+    .groups = "drop"
+  )
+
+quantity_zero_summary_by_year
+```
+
+No missing values were detected in the imported quantity range, so no imputation was applied. Zero values were retained as valid observations because they likely represent no recorded exports for a product-reporter-year combination rather than missing data.
+
+#### Quantity Data Types
+
+```{r}
+#| label: quantity-data-types
+glimpse(quantity_clean)
+```
+
+The cleaned quantity dataset contains **50,105 observations and four variables**. `product_description` and `reporter_name` are character variables, while `year` is an integer and `export_quantity` is numeric.
+
+#### Quantity Summary Statistics
+
+```{r}
+#| label: quantity-numerical-data-summary
+quantity_summary_by_year <- quantity_clean |>
+  group_by(year) |>
+  summarise(
+    total_export_quantity = sum(export_quantity, na.rm = TRUE),
+    mean = mean(export_quantity, na.rm = TRUE),
+    median = median(export_quantity, na.rm = TRUE),
+    q1 = quantile(export_quantity, 0.25, na.rm = TRUE),
+    q3 = quantile(export_quantity, 0.75, na.rm = TRUE),
+    max = max(export_quantity, na.rm = TRUE),
+    sd = sd(export_quantity, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+quantity_summary_by_year
+```
+
+This summary provides an overview of the central tendency and variability of reported export quantities across years. Because export quantities are likely skewed, the median and quartiles are more informative than the mean alone. The maximum value is also included to identify the scale of dominant reporters or product groups.
+
+#### Quantity Categorical Coverage
+
+```{r}
+#| label: quantity-categorical-coverage
+quantity_categorical_summary <- quantity_clean |>
+  summarise(
+    unique_products = n_distinct(product_description),
+    unique_reporters = n_distinct(reporter_name)
+  )
+
+quantity_categorical_summary
+
+quantity_product_coverage <- quantity_clean |>
+  distinct(product_description) |>
+  arrange(product_description)
+
+quantity_reporter_coverage <- quantity_clean |>
+  distinct(reporter_name) |>
+  arrange(reporter_name)
+
+quantity_product_coverage
+head(quantity_reporter_coverage, 20)
+```
+
+The quantity dataset contains 33 product groups and 156 reporting economies. This is slightly broader than the cleaned value analysis because the supplementary quantity EDA preserves the original worksheet coverage and does not remove aggregate rows.
