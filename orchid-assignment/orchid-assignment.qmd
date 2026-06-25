@@ -27,7 +27,7 @@ library(tidyverse)
 library(readxl) # for excel files
 ```
 
-# Data Import
+# Data Preparation
 ```{r}
 #| label: data-source-metadata
 source_file <- "data/export_of_agriculture_products_data.xlsx"
@@ -35,7 +35,7 @@ source_file <- "data/export_of_agriculture_products_data.xlsx"
 excel_sheets(source_file)
 ```
 
-## Export Values EDA
+## Export Value Data Source
 ```{r}
 #| label: source-attribution
 source_notes <- read_excel(
@@ -52,7 +52,7 @@ The dataset was imported from `export_of_agriculture_products_data.xlsx`, specif
 
 All annual values in the `Export values` worksheet are measured in USD millions. Therefore, the data represents monetary export value rather than physical export quantity, allowing comparisons across products, reporters, regions, and years using a common monetary unit.
 
-### Data Cleaning and Transformation
+## Export Value Cleaning and Transformation
 
 The raw dataset is stored in wide format, where each year is represented as a separate column. For reproducible analysis and visualisation, the data was transformed into long format so that each row represents one product-reporter-region-year observation.
 
@@ -94,7 +94,7 @@ The cleaning process performed the following actions:
 4. ensured `export_value_usd_millions` is numeric
 5. Standardised product, reporter and region labels by removing unnecessary whitespace using `str_squish()`
 
-#### Validation Checks
+### Validation Checks
 ```{r}
 #| label: data-validation-checks
 validation_checks <- tibble(
@@ -123,7 +123,7 @@ validation_checks
 
 The validation checks confirm that the raw dataset contains **4,835 observations and 14 variables**. After transformation, the cleaned dataset contains **53,185 product-reporter-region-year observations** covering 2014-2024. No missing values or duplicate product-reporter-year records were detected. However, **57 negative values** were identified and investigated separately.
 
-#### Negative Values
+### Negative Value Investigation
 ```{r}
 #| label: negative-values
 negative_values <- data_clean |>
@@ -138,7 +138,7 @@ unique(negative_values$geo_region)
 
 The dataset contains 57 negative values affecting 21 reporters across 6 regions. All occur under the derived `Other AoA` product category. The workbook defines `Other AoA` as a residual category calculated by subtraction, so negative results may occur when its component estimates differ. These values were retained because they are derived source values rather than data-entry errors.
 
-#### Removal of Aggregate Rows
+### Construction of Analysis Dataset
 ```{r}
 #| label: aggregate-products
 aggregate_products <- c(
@@ -157,7 +157,7 @@ data_analysis <- data_clean |>
 Aggregate reporter and product rows were excluded from general summary calculations to avoid double-counting values already represented by individual reporters and product groups. They remain available in `data_clean` for analyses specifically focused on official aggregate totals.
 
 
-### Data Exploration
+# Exploratory Data Analysis
 
 After cleaning and validation, exploratory checks were performed on the cleaned dataset to understand
 
@@ -168,7 +168,7 @@ After cleaning and validation, exploratory checks were performed on the cleaned 
 5. Region Coverage
 6. Reporter Coverage
 
-#### Data Types
+## Dataset Structure and Variable Types
 ```{r}
 #| label: eda-data-types
 glimpse(data_analysis)
@@ -176,7 +176,7 @@ glimpse(data_analysis)
 
 The structure of the final analytical dataset was examined using `glimpse()`. It contains **48,037 observations and five variables**. `product_description`, `reporter_name`, and `geo_region` are character variables, `year` is an integer, and `export_value_usd_millions` is numeric. These data types are appropriate for grouping observations and analysing export values over time.
 
-#### Zero Values
+## Missing and Zero Value Checks
 
 ```{r}
 #| label: zero-value-checks
@@ -194,7 +194,7 @@ zero_summary_by_year
 
 No missing values were detected in the imported range, so no imputation was applied. However, zero export values were retained and treated as valid observations because they likely represent no recorded exports for a product-reporter-year combination rather than missing data.
 
-#### Summary Statistics
+## Summary Statistics of Export Values
 ```{r}
 #| label: eda-numerical-data-summary
 summary_by_year <- data_analysis |>
@@ -215,7 +215,7 @@ summary_by_year
 
 This summary provides insights into the central tendency and variability of export values across different years. Since export values are likely skewed, median and quartiles are more informative than the mean alone. The maximum value is also included to identify the scale of dominant exporters or product groups.
 
-#### Categorical Coverage
+## Categorical Coverage
 
 ```{r}
 #| label: categorical-coverage
@@ -229,7 +229,7 @@ categorical_summary <- data_analysis |>
 categorical_summary
 ```
 
-#### Region Coverage
+## Regional Reporter Coverage
 ```{r}
 #| label: regional-coverage
 regional_coverage <- data_analysis |>
@@ -240,7 +240,7 @@ regional_coverage <- data_analysis |>
 regional_coverage
 ```
 
-#### Reporter Coverage
+## Product Reporter Coverage
 ```{r}
 #| label: product-coverage
 total_reporters <- n_distinct(data_analysis$reporter_name)
@@ -261,7 +261,7 @@ product_coverage
 
 After aggregate rows were removed, the analytical dataset contained 32 product groups, 155 reporters, and seven geographical regions. Each reporter was assigned consistently to one region. However, product coverage was not uniform: the dataset contained 4,367 of the 4,960 possible product-reporter combinations. Therefore, the absence of a product-reporter combination should not automatically be interpreted as zero exports. Regional and product comparisons should account for these differences in source coverage.
 
-## Export Quantity EDA
+# Supplementary Export Quantity Check
 
 The `Exports qties` worksheet is also examined. This analysis keeps the quantity data separate from the export value data because the quantity sheet has a different structure and does not include `GeoRegion`. It is useful for checking whether the same product and reporter coverage is available when the export measure is reported as quantity rather than USD value.
 
