@@ -114,7 +114,7 @@ if (nrow(imbalanced_countries) == 0) {
 
 This audit reveals that the dataset is an unbalanced panel matrix. A total of 79 countries deviate from possessing a uniform product count of 32 (e.g., Afghanistan logs only 20 product rows, while Argentina logs 31).
 
-Discovering this unbalanced framework means that when we combine the Export Quantities sheet with the Export Values sheet to build our faceted layout, we cannot perform simple row-index merging. We must explicitly use a relational database join framework (left_join or full_join) keyed on both product and country variables to avoid massive row misalignments of our 2024 regional aggregates.
+Discovering this unbalanced framework means that when we combine the Export Quantities sheet with the Export Values sheet to build our faceted layout, we cannot perform simple row-index merging. We must explicitly use a relational database join framework (`left_join` or `full_join`) keyed on both product and country variables to avoid massive row misalignments of our 2024 regional aggregates.
 
 ### Checking Hypothesis
 
@@ -277,7 +277,7 @@ This plot serves as our diagnostic proof against using a standard, un-faceted li
 #| label: concentration-plot
 
 ggplot(concentration_audit, aes(x = seq_along(cumulative_share), y = cumulative_share)) +
-  geom_line(color = "#e74c3c", size = 1.2) +
+  geom_line(color = "#e74c3c", linewidth = 1.2) +
   geom_area(fill = "#e74c3c", alpha = 0.1) +
   geom_hline(yintercept = 0.725, linetype = "dashed", color = "gray50") +
   labs(
