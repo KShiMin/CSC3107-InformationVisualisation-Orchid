@@ -37,9 +37,8 @@ export_dir <- "data/processed"
 The code above defines the necessary libraries, source file path, output directory, and target year for the analysis.
 
 <!-- Include Export Values EDA qmd -->
-
+{{< include _export-values-eda.qmd >}}
 
 <!-- Include Export Values EDA qmd -->
-{{< include _export-values-eda.qmd >}}
 
 <!-- Include Visualisation qmd -->
