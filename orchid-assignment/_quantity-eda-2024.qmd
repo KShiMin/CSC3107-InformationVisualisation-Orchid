@@ -95,10 +95,10 @@ total_unique_products <- quantity_2024 |>
 
 country_row_counts <- quantity_2024 |> 
   group_by(country) |> 
-  summarise(row_count = n())
+  summarise(count = n())
 
 imbalanced_countries <- country_row_counts |> 
-  filter(row_count != total_unique_products)
+  filter(count != total_unique_products)
 
 total_unique_products
 nrow(country_row_counts)
@@ -112,7 +112,7 @@ if (nrow(imbalanced_countries) == 0) {
 
 ```
 
-This audit reveals that the dataset is an unbalanced panel matrix. A total of 79 countries deviate from possessing a uniform product row count of 32 (e.g., Afghanistan logs only 20 product rows, while Argentina logs 31).
+This audit reveals that the dataset is an unbalanced panel matrix. A total of 79 countries deviate from possessing a uniform product count of 32 (e.g., Afghanistan logs only 20 product rows, while Argentina logs 31).
 
 Discovering this unbalanced framework means that when we combine the Export Quantities sheet with the Export Values sheet to build our faceted layout, we cannot perform simple row-index merging. We must explicitly use a relational database join framework (left_join or full_join) keyed on both product and country variables to avoid massive row misalignments of our 2024 regional aggregates.
 
