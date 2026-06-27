@@ -295,5 +295,5 @@ The steep, nearly vertical slope at the origin captures the immense market share
 
 Beyond the 30th ranked exporter, the slope transitions into a sharp plateau, flattening out almost completely as it approaches 1.00. This plateau visually demonstrates the small individual contributions of the remaining ~125 countries.
 
-This plot provides the definitive, unshakeable justification for our downstream data compression strategy. Attempting to chart every country individually would crowd the canvas with 125 horizontal bars that offer no analytical signal. By isolating the top 30 countries along this curve and programmatically compressing into a  "Rest of the Region" category, our redesigned visualization will capture 100% of global trade volume while maximizing readability and visual impact.
+This plot provides the justification to only plot the selected few countries. Attempting to plot every country would crowd the canvas with 125 horizontal points that offer no analytical signal. By isolating the top 30 countries along this curve and programmatically compressing into a  "Rest of the Region" category, our redesigned visualization will capture 100% of global trade volume while maximizing readability and visual impact.
 
