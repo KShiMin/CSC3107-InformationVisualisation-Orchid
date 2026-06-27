@@ -68,7 +68,7 @@ To ensure that these non-exporters are not all due to data omission, we isolated
 
 According to Sarah (2026), while Bangladesh has made progress in increasing their wheat production, Bangladesh still remains heavily reliant on wheat imports to meet their consumption demands. This in turn means that they are unable to produce any wheat for exports, which supports the finding that Bangladesh has zero exports of wheat. 
 
-Source: https://www.sciencedirect.com/science/article/pii/S240584402502818X
+Source: [ScienceDirect Article](https://www.sciencedirect.com/science/article/pii/S240584402502818X)
 
 ### Checking for negative values
 
