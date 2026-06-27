@@ -40,6 +40,6 @@ The code above defines the necessary libraries, source file path, output directo
 
 
 <!-- Include Export Values EDA qmd -->
-
+{{< include _export-values-eda.qmd >}}
 
 <!-- Include Visualisation qmd -->
