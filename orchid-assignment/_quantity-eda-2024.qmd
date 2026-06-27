@@ -48,7 +48,7 @@ missing_summary
 
 An audit of the filtered 2024 quantity feature yielded these insights:
 
-1. Zero Missing Records (na_count = 0): The 2024 data displays 100% observational completeness across all 4,555 rows. This guarantees that any calculations to isolate the top 30 nations or to derive the macro "Rest of the World" baseline will not be artificially deflated by null cells.
+1. Zero Missing Records (na_count = 0): The 2024 data displays 100% observational completeness across all 4,399 rows. This guarantees that any calculations to isolate the top 30 nations or to derive the macro "Rest of the World" baseline will not be artificially deflated by null cells.
 
 2. Presence of Non-Exporters (zero_count = 778): Approximately 17% of the observations contain a hard zero (0.0). This means that certain countries perhaps due to geographic or their climate are unable to export a specific commodity group, such as wheat or rice.
 
@@ -112,7 +112,7 @@ if (nrow(imbalanced_countries) == 0) {
 
 ```
 
-This audit reveals that the dataset is an unbalanced panel matrix. A total of 79 countries deviate from possessing a uniform product row count of 33 (e.g., Afghanistan logs only 21 product rows, while Argentina logs 32).
+This audit reveals that the dataset is an unbalanced panel matrix. A total of 79 countries deviate from possessing a uniform product row count of 32 (e.g., Afghanistan logs only 20 product rows, while Argentina logs 31).
 
 Discovering this unbalanced framework means that when we combine the Export Quantities sheet with the Export Values sheet to build our faceted layout, we cannot perform simple row-index merging. We must explicitly use a relational database join framework (left_join or full_join) keyed on both product and country variables to avoid massive row misalignments of our 2024 regional aggregates.
 
