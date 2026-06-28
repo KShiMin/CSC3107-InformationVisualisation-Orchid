@@ -471,7 +471,7 @@ rest_of_world_summary <- tibble(
 rest_of_world_summary
 
 # --- Cross-check: use pre-aggregated country totals instead of summing individual products ---
-# If this share is closer to 80-90%, the gap above is due to individual
+# If this share is closer to 80%, the gap above is due to individual
 # product summation not fully matching the WTO pre-aggregated country totals
 
 top_30_via_aggregates <- country_aggregates_2024 |>
