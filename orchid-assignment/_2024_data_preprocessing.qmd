@@ -113,7 +113,7 @@ if (!dir.exists(export_dir)) {
   message("Created new directory: ", export_dir)
 }
 
-csv_filename <- paste0("2024_value_and_quantity_export", analysis_year, ".csv")
+csv_filename <- paste0(analysis_year, "_value_and_quantity_export.csv")
 export_path <- file.path(export_dir, csv_filename)
 write_csv(sorted_infographic_data, export_path)
 
