@@ -6,7 +6,7 @@ excel_sheets(source_file)
 ```
 
 The workbook contains overview tables, product definitions, export quantity data and export value data. This section covers the `Export values` worksheets only.
-The `Export qties` worksheet is examined separately in the export quantites section of this report.
+The `Export qties` worksheet is examined separately in the export quantities section of this report.
 
 The `Export values` worksheet includes monetary export values in USD millions and a `GeoRegion` field for regional comparisons. The `Exports qties` worksheet provides reported export quantities, but it does not contain `GeoRegion`, so region-level analysis comes from the value dataset.
 
@@ -67,7 +67,7 @@ The value data preprocessing performs five steps:
 3. Converts `year` into an integer so it can be filtered and sorted correctly.
 4. Converts export values into numeric form.
 5. Removes extra whitespace from product, reporter, and region labels using `str_squish()`.
-6. Shortens long `GeoRegion` labels for readibility in charts and legends.
+6. Shortens long `GeoRegion` labels for readability in charts and legends.
 
 ## Filter to 2024
 
@@ -134,29 +134,29 @@ Negative values are not automatically removed. In this workbook, negative export
 ```{r}
 #| label: value-analysis-dataset
 aggregate_products <- c(
-    "All W32 groups",
-    "AoA HS proxy",
-    "Other AoA"
+  "All W32 groups",
+  "AoA HS proxy",
+  "Other AoA"
 )
 
 # Save the World Aggregate rows as a reference before removing them.
 # Used as the denominator for market share and the Rest of World calculations
 
 world_aggregates_2024 <- value_2024 |>
-    filter(
-        reporter_name == "World",
-        product_description == "AoA HS proxy"
-    ) |>
-      pull(export_value_usd_millions)
+  filter(
+    reporter_name == "World",
+    product_description == "AoA HS proxy"
+  ) |>
+  pull(export_value_usd_millions)
 
 # Save the per-country aggregate rows for cross-check validation
 # "All W32 groups" per country should match the sum of that country's 32 individual product values
 
 country_aggregates_2024 <- value_2024 |>
-    filter(
-        reporter_name != "World",
-        product_description == "All W32 groups"
-    )
+  filter(
+    reporter_name != "World",
+    product_description == "All W32 groups"
+  )
 
 # For ranking and Rest of World — uses full AoA definition (matches infographic)
 country_aoa_2024 <- value_2024 |>
@@ -168,10 +168,10 @@ country_aoa_2024 <- value_2024 |>
 # Build the analysis dataset: individual countries x individual products only
 
 value_analysis_2024 <- value_2024 |>
-    filter(
-        reporter_name != "World",
-        !product_description %in% aggregate_products
-    )
+  filter(
+    reporter_name != "World",
+    !product_description %in% aggregate_products
+  )
 
 glimpse(value_analysis_2024)
 ```
@@ -295,8 +295,7 @@ ggplot(
 ) +
   geom_col(fill = "#2f7d6b") +
   coord_flip() +
-  scale_y_continuous(labels = scales::label_comma(),
-  limits = c(0, 300000)) +
+  scale_y_continuous(labels = scales::label_comma(), limits = c(0, 300000)) +
   labs(
     title = "2024 Export Value by Region",
     x = NULL,
@@ -432,7 +431,9 @@ reporter_concentration_2024 <- value_analysis_2024 |>
   mutate(
     rank = row_number(),
     cumulative_value = cumsum(total_export_value),
-    cumulative_share_percent = round(cumulative_value / world_aggregates_2024 * 100, 1
+    cumulative_share_percent = round(
+      cumulative_value / world_aggregates_2024 * 100,
+      1
     )
   )
 
