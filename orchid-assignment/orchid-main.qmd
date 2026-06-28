@@ -12,7 +12,7 @@ format:
 
 | Member | Student ID | Contribution |
 | ------ | ---------- | -------------|
-| Quan Yi | <add your student id> | <add your contribution> |
+| Quan Yi | 2401058 | Performed EDA for the "Exports qties" sheet |
 | Shi Min | 2401793 | - imported data and did basic exploratory data analysis to determine if the dataset needs to be cleaned before visualisation |
 | Aiman | <add your student id> | <add your contribution> |
 | Subhashini | <add your student id> | <add your contribution>|
@@ -39,6 +39,7 @@ The code above defines the necessary libraries, source file path, output directo
 <!-- Include Export Values EDA qmd -->
 {{< include _export-values-eda.qmd >}}
 
-<!-- Include Export Values EDA qmd -->
+<!-- Include Export Quantity EDA qmd -->
+{{< include _quantity-eda-2024.qmd >}}
 
 <!-- Include Visualisation qmd -->
