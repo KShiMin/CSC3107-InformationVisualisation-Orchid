@@ -14,7 +14,7 @@ quantity_raw
 
 Looking at the output of the raw data, we notice that it is a long-form transactional panel dataset. Every row represents a unique combination of a specific product (e.g., 01 Wheat) and an exporting nation (ReporterName), with annual quantities spread across wide columns.
 
-However, unlike the "Export Values" sheet, there is no `GeoRegion` column, to help us classify which region the country belongs to. This is something we have to note as the originial visualization color coded the different countires based on the region and that we plan to include a "Rest of the region". During the data preprocessing stage, we will have to perform a `join` operation.
+However, unlike the "Export Values" sheet, there is no `GeoRegion` column, to help us classify which region the country belongs to. This is something we have to note as the original visualization color coded the different countries based on the region and that we plan to include a "Rest of the region". During the data preprocessing stage, we will have to perform a `join` operation.
 
 ## Sifting through 2024 data
 
