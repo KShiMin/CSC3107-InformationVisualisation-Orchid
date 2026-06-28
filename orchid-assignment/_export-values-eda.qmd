@@ -484,7 +484,7 @@ round(top_30_via_aggregates$total / world_aggregates_2024 * 100, 1)
 
 The Rest of World calculation addresses a limitation of the original Visual Capitalist infographic, which showed only the largest exporting countries without indicating what share of global exports was left out. The official WTO world total (`AoA HS proxy` for `World`) serves as the denominator. The top 30 reporters' individual product values are summed and subtracted to produce the residual.
 
-Both summation methods: summing individual product values per country and using the pre-aggregated "All W32 groups" country totals return the same top 30 share of 62.6%, confirming the result is consistent regardless of approach. The commonly cited 80-90% figure from the original Visual Capitalist article could not be reproduce. Possible reasons for the discrepancy could be of differences in the trade coverage, reference year or how regional aggregates are counted.
+Both summation methods: summing individual product values per country and using the pre-aggregated "All W32 groups" country totals return the same top 30 share of 62.6%, confirming the result is consistent regardless of approach. The commonly cited 80% figure from the original Visual Capitalist article could not be reproduce. Possible reasons for the discrepancy could be of differences in the trade coverage, reference year or how regional aggregates are counted.
 
 Note that the `European Union` reporter is an aggregate of all EU member states and is not directly comparable to individual countries. Individual EU member states are not available as separate reporters in this WTO dataset.
 
