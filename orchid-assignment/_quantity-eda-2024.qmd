@@ -1,4 +1,4 @@
-## Quantity EDA
+# Quantity EDA
 
 ```{r}
 #| label: import-quantity-sheet
@@ -16,7 +16,7 @@ Looking at the output of the raw data, we notice that it is a long-form transact
 
 However, unlike the "Export Values" sheet, there is no `GeoRegion` column, to help us classify which region the country belongs to. This is something we have to note as the originial visualization color coded the different countires based on the region and that we plan to include a "Rest of the region". During the data preprocessing stage, we will have to perform a `join` operation.
 
-### Sifting through 2024 data
+## Sifting through 2024 data
 
 ```{r}
 #| label: filtering-and-cleaning-2024-data
@@ -30,7 +30,7 @@ quantity_2024
 
 `AoA HS proxy` stands for the Agreement on Agriculture (AoA) Harmonized System (HS) Total Proxy row. It is not an actual individual food item like wheat, corn, or chocolate. Instead, it is a macro-aggregate total row built by the WTO to sum up all agricultural trade tracked under their specific rules. Therefore, we remove this product before continuing
 
-### Checking for missing values
+## Checking for missing values
 
 ```{r}
 #| label: check-missing-data
@@ -52,7 +52,7 @@ An audit of the filtered 2024 quantity feature yielded these insights:
 
 2. Presence of Non-Exporters (zero_count = 778): Approximately 17% of the observations contain a hard zero (0.0). This means that certain countries perhaps due to geographic or their climate are unable to export a specific commodity group, such as wheat or rice.
 
-#### Further Exploration of zero export values
+### Further Exploration of zero export values
 
 ```{r}
 #| label: check-zero-export-rows
@@ -70,7 +70,7 @@ According to Sarah (2026), while Bangladesh has made progress in increasing thei
 
 Source: [ScienceDirect Article](https://www.sciencedirect.com/science/article/pii/S240584402502818X)
 
-### Checking for negative values
+## Checking for negative values
 
 ```{r}
 #| label: check-negative-values
@@ -84,7 +84,7 @@ cat("Number of negative export quantities found:", negative_count)
 
 The dataset yielded a hard minimum of zero, confirming that no negative values exist in the 2024 metric feature.
 
-### Structural Balance Audit
+## Structural Balance Audit
 
 ```{r}
 #| label: check-country-count
@@ -116,7 +116,7 @@ This audit reveals that the dataset is an unbalanced panel matrix. A total of 79
 
 Discovering this unbalanced framework means that when we combine the Export Quantities sheet with the Export Values sheet to build our faceted layout, we cannot perform simple row-index merging. We must explicitly use a relational database join framework (`left_join` or `full_join`) keyed on both product and country variables to avoid massive row misalignments of our 2024 regional aggregates.
 
-### Checking Hypothesis
+## Checking Hypothesis
 
 ```{r}
 #| label: checking-world-total
@@ -146,7 +146,7 @@ This output means that every single country in the world's trade system is alrea
 
 Therefore, our previous hypothesis that there is a "Rest of the World metric" was incorrect and we will look to only produce a "Rest of **X Region**" instead.
 
-### Concentration & Domination Analysis
+## Concentration & Domination Analysis
 
 ```{r}
 #| label: concentration-audit
@@ -177,7 +177,7 @@ Additionally, when performing a comparative audit between our raw dataset and th
 
 Therefore, it may be challenging to provide the same granularity that the original visualization provides. 
 
-### Summary Statistics
+## Summary Statistics
 
 ```{r}
 #| label: eda-summary-statistics-country
@@ -245,7 +245,7 @@ Looking at the product metrics, we notice that the median product volume sits at
 
 This structural gap (186,921 / 1,088) highlights a economic reality, where global trade is overwhelmingly anchored by raw, low-cost bulk industrial commodities (like Maize/Corn) used worldwide for livestock feed, bio-fuels, and processing. In contrast, highly processed animal fats like butter command premium financial prices per kilogram, meaning their physical transport requirements remain minute.
 
-### Simple plotting of summary 
+## Simple plotting of summary 
 
 ```{r}
 #| label: plot-summary
