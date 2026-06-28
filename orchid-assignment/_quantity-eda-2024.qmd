@@ -1,4 +1,4 @@
-## Quantity EDA
+# Quantity EDA
 
 ```{r}
 #| label: import-quantity-sheet
@@ -16,13 +16,17 @@ Looking at the output of the raw data, we notice that it is a long-form transact
 
 However, unlike the "Export Values" sheet, there is no `GeoRegion` column, to help us classify which region the country belongs to. This is something we have to note as the originial visualization color coded the different countires based on the region and that we plan to include a "Rest of the region". During the data preprocessing stage, we will have to perform a `join` operation.
 
-### Sifting through 2024 data
+## Sifting through 2024 data
 
 ```{r}
 #| label: filtering-and-cleaning-2024-data
 
 quantity_2024 <- quantity_raw |>
-  select(product = "ProductDescription", country = "ReporterName", quantity = "2024") |>
+  select(
+    product = "ProductDescription",
+    country = "ReporterName",
+    quantity = "2024"
+  ) |>
   filter(product != "AoA HS proxy")
 
 quantity_2024
@@ -30,12 +34,12 @@ quantity_2024
 
 `AoA HS proxy` stands for the Agreement on Agriculture (AoA) Harmonized System (HS) Total Proxy row. It is not an actual individual food item like wheat, corn, or chocolate. Instead, it is a macro-aggregate total row built by the WTO to sum up all agricultural trade tracked under their specific rules. Therefore, we remove this product before continuing
 
-### Checking for missing values
+## Checking for missing values
 
 ```{r}
 #| label: check-missing-data
 
-missing_summary <- quantity_2024 |> 
+missing_summary <- quantity_2024 |>
   summarise(
     total_rows = n(),
     na_count = sum(is.na(quantity)),
@@ -52,13 +56,13 @@ An audit of the filtered 2024 quantity feature yielded these insights:
 
 2. Presence of Non-Exporters (zero_count = 778): Approximately 17% of the observations contain a hard zero (0.0). This means that certain countries perhaps due to geographic or their climate are unable to export a specific commodity group, such as wheat or rice.
 
-#### Further Exploration of zero export values
+### Further Exploration of zero export values
 
 ```{r}
 #| label: check-zero-export-rows
 
-zero_exports_samples <- quantity_2024 |> 
-  filter(quantity == 0) |> 
+zero_exports_samples <- quantity_2024 |>
+  filter(quantity == 0) |>
   head(5)
 
 zero_exports_samples
@@ -70,13 +74,13 @@ According to Sarah (2026), while Bangladesh has made progress in increasing thei
 
 Source: [ScienceDirect Article](https://www.sciencedirect.com/science/article/pii/S240584402502818X)
 
-### Checking for negative values
+## Checking for negative values
 
 ```{r}
 #| label: check-negative-values
 
-negative_count <- quantity_2024 |> 
-  filter(quantity < 0) |> 
+negative_count <- quantity_2024 |>
+  filter(quantity < 0) |>
   nrow()
 
 cat("Number of negative export quantities found:", negative_count)
@@ -84,51 +88,57 @@ cat("Number of negative export quantities found:", negative_count)
 
 The dataset yielded a hard minimum of zero, confirming that no negative values exist in the 2024 metric feature.
 
-### Structural Balance Audit
+## Structural Balance Audit
 
 ```{r}
 #| label: check-country-count
 
-total_unique_products <- quantity_2024 |> 
-  distinct(product) |> 
+total_unique_products <- quantity_2024 |>
+  distinct(product) |>
   nrow()
 
-country_row_counts <- quantity_2024 |> 
-  group_by(country) |> 
+country_row_counts <- quantity_2024 |>
+  group_by(country) |>
   summarise(count = n())
 
-imbalanced_countries <- country_row_counts |> 
+imbalanced_countries <- country_row_counts |>
   filter(count != total_unique_products)
 
 total_unique_products
 nrow(country_row_counts)
 
 if (nrow(imbalanced_countries) == 0) {
-  cat("Every country contains exactly", total_unique_products, "rows mapping to every product.")
-} else{
+  cat(
+    "Every country contains exactly",
+    total_unique_products,
+    "rows mapping to every product."
+  )
+} else {
   cat("The following countries do not possess rows for all products:")
   imbalanced_countries
 }
-
 ```
 
 This audit reveals that the dataset is an unbalanced panel matrix. A total of 79 countries deviate from possessing a uniform product count of 32 (e.g., Afghanistan logs only 20 product rows, while Argentina logs 31).
 
 Discovering this unbalanced framework means that when we combine the Export Quantities sheet with the Export Values sheet to build our faceted layout, we cannot perform simple row-index merging. We must explicitly use a relational database join framework (`left_join` or `full_join`) keyed on both product and country variables to avoid massive row misalignments of our 2024 regional aggregates.
 
-### Checking Hypothesis
+## Checking Hypothesis
 
 ```{r}
 #| label: checking-world-total
 
-product_leakage_audit <- quantity_2024 |> 
-  group_by(product) |> 
+product_leakage_audit <- quantity_2024 |>
+  group_by(product) |>
   summarise(
     World_Stated_Qty = sum(quantity[tolower(country) == "world"], na.rm = TRUE),
-    Summed_Countries_Qty = sum(quantity[tolower(country) != "world"], na.rm = TRUE),
+    Summed_Countries_Qty = sum(
+      quantity[tolower(country) != "world"],
+      na.rm = TRUE
+    ),
     Residual_Delta = World_Stated_Qty - Summed_Countries_Qty,
     Is_Delta_Positive = Residual_Delta > 0
-  ) |> 
+  ) |>
   arrange(desc(Residual_Delta))
 
 head(product_leakage_audit)
@@ -138,31 +148,35 @@ total_products_checked <- nrow(product_leakage_audit)
 successful_products <- sum(product_leakage_audit$Is_Delta_Positive)
 
 cat("Total Product Categories Audited:", total_products_checked, "\n")
-cat("Categories where 'World - Countries > 0':", successful_products, "out of", total_products_checked, "\n")
-
+cat(
+  "Categories where 'World - Countries > 0':",
+  successful_products,
+  "out of",
+  total_products_checked,
+  "\n"
+)
 ```
 
 This output means that every single country in the world's trade system is already explicitly present as a row in this specific sheet. There are no hidden, unlisted nations missing from this table. The total sum of all rows matches the World row perfectly.
 
 Therefore, our previous hypothesis that there is a "Rest of the World metric" was incorrect and we will look to only produce a "Rest of **X Region**" instead.
 
-### Concentration & Domination Analysis
+## Concentration & Domination Analysis
 
 ```{r}
 #| label: concentration-audit
 
-concentration_audit <- quantity_2024 |> 
-  filter(tolower(country) != "world") |> 
-  group_by(country) |> 
-  summarise(total_qty = sum(quantity, na.rm = TRUE)) |> 
-  arrange(desc(total_qty)) |> 
+concentration_audit <- quantity_2024 |>
+  filter(tolower(country) != "world") |>
+  group_by(country) |>
+  summarise(total_qty = sum(quantity, na.rm = TRUE)) |>
+  arrange(desc(total_qty)) |>
   mutate(
     market_share = total_qty / sum(total_qty),
     cumulative_share = cumsum(market_share)
   )
 
 head(concentration_audit, 10)
-
 ```
 
 Here, we analyzed the ranked market shares and cumulative distributions for the 2024 export quantities and the results reveal a high level of centralization within the global food supply chain:
@@ -177,17 +191,17 @@ Additionally, when performing a comparative audit between our raw dataset and th
 
 Therefore, it may be challenging to provide the same granularity that the original visualization provides. 
 
-### Summary Statistics
+## Summary Statistics
 
 ```{r}
 #| label: eda-summary-statistics-country
 
-country_summaries <- quantity_2024 |> 
-  filter(tolower(country) != "world") |> 
-  group_by(country) |> 
+country_summaries <- quantity_2024 |>
+  filter(tolower(country) != "world") |>
+  group_by(country) |>
   summarise(Total_Country_Qty = sum(quantity, na.rm = TRUE))
 
-country_stats <- country_summaries |> 
+country_stats <- country_summaries |>
   summarise(
     Total_Entities = n(),
     Min_Qty = min(Total_Country_Qty),
@@ -213,12 +227,12 @@ Looking at the country metrics, we notice that
 ```{r}
 #| label: eda-summary-statistics-product
 
-product_summaries <- quantity_2024 |> 
-  filter(tolower(country) != "world") |> 
-  group_by(product) |> 
+product_summaries <- quantity_2024 |>
+  filter(tolower(country) != "world") |>
+  group_by(product) |>
   summarise(Total_Product_Qty = sum(quantity, na.rm = TRUE))
 
-product_stats <- product_summaries |> 
+product_stats <- product_summaries |>
   summarise(
     Total_Products = n(),
     Min_Prod_Qty = min(Total_Product_Qty),
@@ -229,11 +243,11 @@ product_stats <- product_summaries |>
   )
 
 # Find the product matching the minimum volume
-least_exported <- product_summaries |> 
+least_exported <- product_summaries |>
   filter(Total_Product_Qty == min(Total_Product_Qty))
 
 # Find the product matching the maximum volume
-most_exported <- product_summaries |> 
+most_exported <- product_summaries |>
   filter(Total_Product_Qty == max(Total_Product_Qty))
 
 product_stats
@@ -245,7 +259,7 @@ Looking at the product metrics, we notice that the median product volume sits at
 
 This structural gap (186,921 / 1,088) highlights a economic reality, where global trade is overwhelmingly anchored by raw, low-cost bulk industrial commodities (like Maize/Corn) used worldwide for livestock feed, bio-fuels, and processing. In contrast, highly processed animal fats like butter command premium financial prices per kilogram, meaning their physical transport requirements remain minute.
 
-### Simple plotting of summary 
+## Simple plotting of summary 
 
 ```{r}
 #| label: plot-summary
@@ -276,7 +290,10 @@ This plot serves as our diagnostic proof against using a standard, un-faceted li
 ```{r}
 #| label: concentration-plot
 
-ggplot(concentration_audit, aes(x = seq_along(cumulative_share), y = cumulative_share)) +
+ggplot(
+  concentration_audit,
+  aes(x = seq_along(cumulative_share), y = cumulative_share)
+) +
   geom_line(color = "#e74c3c", linewidth = 1.2) +
   geom_area(fill = "#e74c3c", alpha = 0.1) +
   geom_hline(yintercept = 0.725, linetype = "dashed", color = "gray50") +
@@ -286,7 +303,6 @@ ggplot(concentration_audit, aes(x = seq_along(cumulative_share), y = cumulative_
     y = "Cumulative Share of Global Tonnage"
   ) +
   theme_minimal()
-
 ```
 
 Our second diagnostic visualization displays the cumulative global market share of agricultural export quantities ranked from largest to smallest. This curve provides visual proof of a highly consolidated global market structure:

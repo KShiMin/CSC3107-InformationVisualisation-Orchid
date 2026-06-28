@@ -42,4 +42,5 @@ The code above defines the necessary libraries, source file path, output directo
 <!-- Include Export Quantity EDA qmd -->
 {{< include _quantity-eda-2024.qmd >}}
 
-<!-- Include Visualisation qmd -->
+<!-- Include Data Preprocessing qmd -->
+{{< include _2024_data_preprocessing.qmd >}}
