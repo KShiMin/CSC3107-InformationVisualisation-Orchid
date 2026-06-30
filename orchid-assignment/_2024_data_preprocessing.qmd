@@ -1,0 +1,54 @@
+# Data Preprocessing
+
+```{r}
+#| label: data-preprocessing
+
+value_w32 <- value_analysis_2024 |>
+  group_by(country = reporter_name, geo_region) |>
+  summarise(
+    export_value = sum(export_value_usd_millions, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+quantity_w32 <- quantity_2024 |>
+  filter ( country != "World ") |>
+  group_by(country) |>
+  summarise(export_quantity = sum(quantity, na.rm = TRUE), .groups = "drop")
+
+combined_country_data <- value_w32 |> 
+  left_join(quantity_w32, by = "country") |> 
+  select(country, geo_region, export_value, export_quantity)
+
+combined_country_data
+
+sorted_values <- combined_country_data |>
+  arrange(desc(export_value))
+
+sorted_values
+```
+
+Upon inspecting the raw data, we identified a duplication error within the WTO dataset, where the pre-calculated AoA HS proxy row contained identical values across both the quantity and values sheet. 
+
+Therefore, to guarantee data integrity, we filter out these duplicated data. Instead, we dynamically group and sum up the 32 agricultural products to calculate the true total value and physical tonnage for every reporting country.
+
+We chose to preserve all the individual reporting countries with their unique metrics. This approach remove prevents data loss, and leaves the dataset fully complete and dynamically structured for downstream filtering or faceting during the visualization phase.
+
+# Exporting data
+
+```{r}
+#| label: export-processed-data
+
+if (!dir.exists(export_dir)) {
+  dir.create(export_dir, recursive = TRUE)
+  message("Created new directory: ", export_dir)
+}
+
+csv_filename <- paste0(analysis_year, "_value_and_quantity_export.csv")
+export_path <- file.path(export_dir, csv_filename)
+write_csv(combined_country_data, export_path)
+
+cat("Success! Processed data successfully exported to:", export_path, "\n")
+```
+
+For reproducibility, the preprocessed infographic data has been exported and stored into the `data/processed` directory. 
+
