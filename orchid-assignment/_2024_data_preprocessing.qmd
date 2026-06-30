@@ -3,65 +3,7 @@
 ```{r}
 #| label: data-preprocessing
 
-north_america_infographic_countries <- c(
-  "United States",
-  "Canada",
-  "Mexico"
-)
-
-south_america_infographic_countries <- c(
-  "Brazil",
-  "Argentina",
-  "Chile",
-  "Peru"
-)
-
-asia_infographic_countries <- c(
-  "China",
-  "Indonesia",
-  "India",
-  "Thailand",
-  "Malaysia",
-  "Vietnam",
-  "Singapore"
-)
-
-europe_infographic_countries <- c(
-  "European Union",
-  "United Kingdom",
-  "Russian Federation",
-  "Ukraine",
-  "Switzerland"
-) # Missing: France, Netherlands, Italy, Germany, Spain, Poland, Belgium, Ireland
-
-oceania_infographic_countries <- c(
-  "Australia",
-  "New Zealand"
-)
-
-africa_infographic_countries <- c(
-  "South Africa"
-)
-
-middle_east_infographic_countries <- c(
-  "Turkiye"
-)
-
-all_target_countries <- c(
-  north_america_infographic_countries,
-  south_america_infographic_countries,
-  asia_infographic_countries,
-  europe_infographic_countries,
-  oceania_infographic_countries,
-  africa_infographic_countries,
-  middle_east_infographic_countries
-)
-
-value_w32 <- value_2024 |>
-  filter(
-    reporter_name != "World",
-    product_description != "AoA HS proxy"
-  ) |>
+value_w32 <- value_analysis_2024 |>
   group_by(country = reporter_name, geo_region) |>
   summarise(
     export_value = sum(export_value_usd_millions, na.rm = TRUE),
@@ -69,39 +11,27 @@ value_w32 <- value_2024 |>
   )
 
 quantity_w32 <- quantity_2024 |>
+  filter ( country != "World ") |>
   group_by(country) |>
   summarise(export_quantity = sum(quantity, na.rm = TRUE), .groups = "drop")
 
-unified_infographic_data <- value_w32 |>
-  left_join(quantity_w32, by = "country") |>
-  mutate(
-    display_entity = ifelse(
-      country %in% all_target_countries,
-      country,
-      paste("Rest of", geo_region)
-    )
-  ) |>
-  group_by(display_entity, geo_region) |>
-  summarise(
-    Total_Value_2024 = sum(export_value, na.rm = TRUE),
-    Total_Quantity_2024 = sum(export_quantity, na.rm = TRUE),
-    .groups = "drop"
-  ) |>
-  select(display_entity, geo_region, Total_Value_2024, Total_Quantity_2024)
+combined_country_data <- value_w32 |> 
+  left_join(quantity_w32, by = "country") |> 
+  select(country, geo_region, export_value, export_quantity)
 
-sorted_infographic_data <- unified_infographic_data |>
-  arrange(desc(Total_Value_2024))
+combined_country_data
 
-sorted_infographic_data
+sorted_values <- combined_country_data |>
+  arrange(desc(export_value))
+
+sorted_values
 ```
 
 Upon inspecting the raw data, we identified a duplication error within the WTO dataset, where the pre-calculated AoA HS proxy row contained identical values across both the quantity and values sheet. 
 
 Therefore, to guarantee data integrity, we filter out these duplicated data. Instead, we dynamically group and sum up the 32 agricultural products to calculate the true total value and physical tonnage for every reporting country.
 
-Here, we specifically targeted the 30 countries that the original article chose where the exception is "European Union" which seems to consist of countries like "France" and "Netherlands" as those countries do not appear within the raw data.
-
-Lastly, rather than dropping non-target nations, we reassign unlisted nations into localized geographic aggregates (e.g., "Rest of Asia", "Rest of Africa") based on their native `geo_region`. This ensures 100% of global agricultural trade volume is accounted for.
+We chose to preserve all the individual reporting countries with their unique metrics. This approach remove prevents data loss, and leaves the dataset fully complete and dynamically structured for downstream filtering or faceting during the visualization phase.
 
 # Exporting data
 
@@ -115,7 +45,7 @@ if (!dir.exists(export_dir)) {
 
 csv_filename <- paste0(analysis_year, "_value_and_quantity_export.csv")
 export_path <- file.path(export_dir, csv_filename)
-write_csv(sorted_infographic_data, export_path)
+write_csv(combined_country_data, export_path)
 
 cat("Success! Processed data successfully exported to:", export_path, "\n")
 ```
