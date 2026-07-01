@@ -1,0 +1,58 @@
+# Lollipop Visualisation
+
+## Preprocessed Data
+```{r}
+#| label: fetch-preprocessed-data
+#| message: false
+preprocessed_data <- read_csv(export_path)
+```
+
+Fetching the preprocessed data from the `data/processed` directory, which contains the combined export values and quantities for each reporting country.
+## Data Preparation for Lollipop Chart
+```{r}
+#| label: prepare-lollipop-data
+preprocessed_ordered <- mutate(
+  preprocessed_data,
+  country = fct_reorder(country, export_value)
+)
+
+preprocessed_top30 <- preprocessed_ordered |>
+  slice_max(export_value, n = 30)
+```
+
+
+## Lollipop Chart (Export Value - Base)
+```{r}
+#| label: lollipop-chart
+#| message: false
+
+gg_base <- ggplot(
+    preprocessed_top30, 
+    aes(
+        x = export_value, 
+        y = country,
+        color = geo_region,
+)) +
+  geom_segment(
+    aes(xend = 0)
+    ) +
+  geom_point(
+    size = 2
+    ) +
+  scale_color_brewer(
+    palette = "Set2",
+    name = "Geographic Region"
+  ) +
+  scale_x_continuous(
+    labels = scales::label_number(
+    scale_cut = scales::cut_short_scale()
+  )
+  ) +
+  labs(
+    x = "Export Value (USD Millions)",
+    y = "Country",
+    title = "Top 30 Countries with the Highest Export Value of Agricultural Products in 2024"
+  )
+
+gg_base
+```
