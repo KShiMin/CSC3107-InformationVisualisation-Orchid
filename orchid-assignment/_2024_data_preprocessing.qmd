@@ -3,13 +3,6 @@
 ```{r}
 #| label: data-preprocessing
 
-usd_products <- c(
-  "18x Live Animals", 
-  "21 Fruits", 
-  "22 Vegetables", 
-  "25 Processed fruits and vegetables"
-)
-
 value_w32 <- value_analysis_2024 |>
   group_by(country = reporter_name, geo_region) |>
   summarise(
@@ -17,17 +10,15 @@ value_w32 <- value_analysis_2024 |>
     .groups = "drop"
   )
 
-  value_w32
+value_w32
 
 quantity_w32 <- quantity_2024 |>
-  filter ( 
-    country != "World ",
-    !(product %in% usd_products)
-  ) |>
+  filter (country != "World ") |>
   group_by(country) |>
-  summarise(export_quantity = sum(quantity, na.rm = TRUE), .groups = "drop")
-
-quantity_w32
+  summarise(
+    export_quantity = sum(quantity, na.rm = TRUE),
+    .groups = "drop"
+  )
 
 combined_country_data <- value_w32 |> 
   left_join(quantity_w32, by = "country") |> 
@@ -47,35 +38,6 @@ Therefore, to guarantee data integrity, we filter out these duplicated data. Ins
 
 We chose to preserve all the individual reporting countries with their unique metrics. This approach remove prevents data loss, and leaves the dataset fully complete and dynamically structured for downstream filtering or faceting during the visualization phase.
 
-
-```{r}
-#| label: value-verifier
-
-quantity_w32_verify <- quantity_2024 |>
-  filter ( 
-    country != "World ",
-  ) |>
-  group_by(country) |>
-  summarise(export_quantity_check = sum(quantity, na.rm = TRUE), .groups = "drop")
-
-quantity_w32_verify
-
-comparison_check <- quantity_w32_verify |>
-  left_join(quantity_w32, by = "country") |>
-  mutate(
-    difference = export_quantity_check - export_quantity,
-    is_different = !near(export_quantity_check, export_quantity)
-  )
-
-comparison_check_difference <- comparison_check |>
-  filter(is_different == TRUE)
-
-comparison_check_no_difference <- comparison_check |>
-  filter(is_different == FALSE)
-
-comparison_check_difference
-comparison_check_no_difference
-```
 # Exporting data
 
 ```{r}
