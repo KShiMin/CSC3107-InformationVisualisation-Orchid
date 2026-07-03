@@ -263,7 +263,7 @@ Here, we analyzed the ranked market shares and cumulative distributions for the 
 
 1. Brazil stands as the global leader in physical outbound volume, commanding 21.4% of the world's market. The United States follows closely behind at 17.0%, with Ukraine occupying the third tier at 7.29%. Together, these top three trading entities single-handedly control 45.6% of all physical food tonnage shipped across the planet. An interesting thing to note is that the European Union had the highest exports in terms of value but is only ranked 5th in terms of export quantity. This will be an interesting contrast when the quantity is plotted with the export values.
 
-2. The concentration curve climbs aggressively. By the fifth row (European Union), the cumulative market share hits 59.4%. This means a mere five trading entities (Brazil, US, Ukraine, Argentina and EU) supply more than half of the entire planet's outbound agricultural volume.
+2. The cumulative market share builds rapidly across the top countries. By the fifth row (European Union), the cumulative market share hits 59.4%. This means a mere five trading entities (Brazil, US, Ukraine, Argentina and EU) supply more than half of the entire planet's outbound agricultural volume.
 
 3. When extending the view to the tenth row (India), the cumulative share reaches 81.0%. This proves that less than a dozen macroeconomic hubs anchor more than three-quarters of the world's physical food corridors.
 
