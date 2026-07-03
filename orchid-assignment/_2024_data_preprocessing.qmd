@@ -10,10 +10,15 @@ value_w32 <- value_analysis_2024 |>
     .groups = "drop"
   )
 
+value_w32
+
 quantity_w32 <- quantity_2024 |>
-  filter ( country != "World ") |>
+  filter (country != "World ") |>
   group_by(country) |>
-  summarise(export_quantity = sum(quantity, na.rm = TRUE), .groups = "drop")
+  summarise(
+    export_quantity = sum(quantity, na.rm = TRUE),
+    .groups = "drop"
+  )
 
 combined_country_data <- value_w32 |> 
   left_join(quantity_w32, by = "country") |> 
