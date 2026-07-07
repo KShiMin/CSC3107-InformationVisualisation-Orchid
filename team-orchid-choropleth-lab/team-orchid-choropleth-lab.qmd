@@ -47,12 +47,12 @@ library(shadowtext)
 #| label: import-data
 
 gdp <-
-    "API_NY.GDP.PCAP.PP.KD_DS2_en_excel_v2_417139.xls" |>
-    read_xls(skip = 3)
+  "API_NY.GDP.PCAP.PP.KD_DS2_en_excel_v2_417139.xls" |>
+  read_xls(skip = 3)
 
 life_exp <-
-    "API_SP.DYN.LE00.IN_DS2_en_excel_v2_404463.xls" |>
-    read_xls(skip = 3)
+  "API_SP.DYN.LE00.IN_DS2_en_excel_v2_404463.xls" |>
+  read_xls(skip = 3)
 
 gdp
 life_exp
@@ -63,13 +63,13 @@ life_exp
 #| label: selecting-and-merging-data
 
 gdp <- gdp |>
-    select(name = "Country Name", code = "Country Code", gdp_per_cap = "2024")
+  select(name = "Country Name", code = "Country Code", gdp_per_cap = "2024")
 
 life_exp <- life_exp |>
-    select(name = "Country Name", code = "Country Code", life_exp = "2024")
+  select(name = "Country Name", code = "Country Code", life_exp = "2024")
 
 country_stats <- gdp |>
-    left_join(life_exp, join_by(name, code))
+  left_join(life_exp, join_by(name, code))
 
 country_stats
 ```
@@ -77,17 +77,17 @@ country_stats
 ```{r}
 #| label: import-metadata
 
-metadata <- 
-    "API_NY.GDP.PCAP.PP.KD_DS2_en_excel_v2_417139.xls" |>
-    read_xls(sheet = "Metadata - Countries") |>
-    select(code = "Country Code", region = "Region")
+metadata <-
+  "API_NY.GDP.PCAP.PP.KD_DS2_en_excel_v2_417139.xls" |>
+  read_xls(sheet = "Metadata - Countries") |>
+  select(code = "Country Code", region = "Region")
 ```
 
 ```{r}
 #| label: join-metadata
 
 country_stats <- country_stats |>
-    left_join(metadata, join_by(code))
+  left_join(metadata, join_by(code))
 
 country_stats
 ```
@@ -96,15 +96,14 @@ country_stats
 #| label: handle-missing-data
 
 country_stats <- country_stats |>
-    drop_na(region) |>
-    select(name, code, gdp_per_cap, life_exp)
+  drop_na(region) |>
+  select(name, code, gdp_per_cap, life_exp)
 
 country_stats
 ```
 
 ```{r}
 #| label: verifier-task-3.3
-
 
 ```
 
@@ -115,12 +114,11 @@ country_stats
 #| cache: true
 
 country_boundaries <-
-    "WB_GAD_ADM0_complete.geojson" |>
-    read_sf() |>
-    select(code = ISO_A3, status = WB_STATUS)
+  "WB_GAD_ADM0_complete.geojson" |>
+  read_sf() |>
+  select(code = ISO_A3, status = WB_STATUS)
 
 country_boundaries
-
 ```
 
 ## 3.5 Validate and Repair Geometry
@@ -129,17 +127,15 @@ country_boundaries
 #| label: counting-geometry
 
 sum(!st_is_valid(country_boundaries))
-
 ```
 
 There are 5 invalid geometries within country_boundaries
 
 ```{r}
-#| label: reparing-geometry
+#| label: preparing-geometry
 
 country_boundaries <- st_make_valid(country_boundaries)
 sum(!st_is_valid(country_boundaries))
-
 ```
 
 `st_make_valid()` managed to repair the invalid geometries and this is confirmed by counting the number of invalid geometries with `st_is_valid()` again, which returns 0.
@@ -152,7 +148,6 @@ sum(!st_is_valid(country_boundaries))
 #| label: count-points
 
 npts(country_boundaries)
-
 ```
 
 ### 3.6b
@@ -160,7 +155,7 @@ npts(country_boundaries)
 #| label: count-polygons-singapore
 
 singapore <- country_boundaries |>
-    filter(code == "SGP")
+  filter(code == "SGP")
 
 singapore
 
@@ -175,7 +170,11 @@ There are a total of 20 polygons in Singapore
 ```{r}
 #| label: simplify-boundaries
 
-country_boundaries <- ms_simplify(country_boundaries, keep_shapes = TRUE, keep = 0.0015)
+country_boundaries <- ms_simplify(
+  country_boundaries,
+  keep_shapes = TRUE,
+  keep = 0.0015
+)
 
 npts(country_boundaries)
 country_boundaries
@@ -192,13 +191,13 @@ To retain approximately 10,000 boundary points, we reduce the argument `keep` fr
 #| label: simplified-polygons-singapore
 
 singapore <- country_boundaries |>
-    filter(code == "SGP")
+  filter(code == "SGP")
 
 no_of_polygons <- st_cast(singapore, to = 'POLYGON')
 no_of_polygons
 ```
 
-After the simplification, Singapore is left with only one polygon
+After the simplification, Singapore is left with only one polygon.
 
 ## 3.7 Cure Antimeridian
 
@@ -215,7 +214,7 @@ ggplot(country_boundaries) + geom_sf()
 
 country_boundaries <- st_wrap_dateline(country_boundaries)
 country_boundaries <- country_boundaries |>
-    st_cast(country_boundaries, to = 'MULTIPOLYGON')
+  st_cast(country_boundaries, to = 'MULTIPOLYGON')
 
 ggplot(country_boundaries) + geom_sf()
 ```
@@ -224,7 +223,6 @@ ggplot(country_boundaries) + geom_sf()
 #| label: verifier-task-3.7
 
 sum(!st_is_valid(country_boundaries))
-
 ```
 
 ## 3.8 Merge features
@@ -234,14 +232,14 @@ sum(!st_is_valid(country_boundaries))
 #| label: find-shared-code
 
 count_code <- count(country_boundaries, code) |>
-    filter(n > 1)
+  filter(n > 1)
 
 count_code
 ```
 
 ### 3.8b
 
-The code FRA is shared by France and Clipperton Island, an uninhabited coral atoll in the eastern Pacific Ocean, roughly 1,300 miles (2,090 km) southwest of Mexico. It carries France's country code because Clipperton is a French dependency administered directly by the Minister of Overseas France, rather than a separate territory with its own ISO code. Background information: https://www.britannica.com/place/Clipperton-Island
+The code FRA is shared by France and Clipperton Island, an uninhabited coral atoll in the eastern Pacific Ocean, roughly 1,300 miles (2,090 km) southwest of Mexico. It carries France's country code because Clipperton is a French dependency administered directly by the Minister of Overseas France, rather than a separate territory with its own ISO code. Background information: [https://www.britannica.com/place/Clipperton-Island](https://www.britannica.com/place/Clipperton-Island)
 
 ### 3.8c
 
@@ -249,24 +247,26 @@ The code FRA is shared by France and Clipperton Island, an uninhabited coral ato
 #| label: merge-features
 
 duplicate_countries <- count_code |>
-    select(code) |>
-    filter(code != "NA") |>
-    st_drop_geometry()
+  select(code) |>
+  filter(code != "NA") |>
+  st_drop_geometry()
 
 dup_codes <- duplicate_countries$code
 
-duplicates_only <- country_boundaries |> 
+duplicates_only <- country_boundaries |>
   filter(code %in% dup_codes)
 
-non_duplicates <- country_boundaries |> 
+non_duplicates <- country_boundaries |>
   filter(!code %in% dup_codes)
 
 merged_features <- duplicates_only |>
   group_by(code) |>
   summarize(
-    status = ifelse(any(status == "Member State"), 
-                    "Contains a Member State", 
-                    "Does Not Contain a Member State")
+    status = ifelse(
+      any(status == "Member State"),
+      "Contains a Member State",
+      "Does Not Contain a Member State"
+    )
   ) |>
   st_cast("MULTIPOLYGON")
 
@@ -279,9 +279,7 @@ country_boundaries
 ```{r}
 #| label: verifier-task-3.8
 
-
 country_boundaries |> st_is("MULTIPOLYGON") |> all()
-
 ```
 
 ## 3.9 Join Statistics
@@ -290,7 +288,7 @@ country_boundaries |> st_is("MULTIPOLYGON") |> all()
 #| label: join-statistics
 
 countries <- country_boundaries |>
-    left_join(country_stats, join_by(code))
+  left_join(country_stats, join_by(code))
 
 countries
 ```
@@ -303,7 +301,6 @@ countries
 #| label: projection-name
 
 st_crs(country_boundaries, parameters = TRUE)[c("Name", "srid")]
-
 ```
 
 The name is "WGS 84", which stands for World Geodetic System 84. This is the default projection which maps the longitude to the x-axis and latitude to the y-axis. However, a trait of this projection is that it is a "equirectangular" which do not plot the areas in the correct proportion.
@@ -313,33 +310,31 @@ The name is "WGS 84", which stands for World Geodetic System 84. This is the def
 ```{r}
 #| label: plot-equal-earth
 
-ggplot(country_boundaries) + 
-    geom_sf() +
-    scale_x_continuous(breaks = seq(-180, 180, by = 45)) +
-    scale_y_continuous(
-        breaks = c(-89.9, -45, 0, 45, 89.9)
-    ) +
-    coord_sf(crs = "EPSG:8857")
-
+ggplot(country_boundaries) +
+  geom_sf() +
+  scale_x_continuous(breaks = seq(-180, 180, by = 45)) +
+  scale_y_continuous(
+    breaks = c(-89.9, -45, 0, 45, 89.9)
+  ) +
+  coord_sf(crs = "EPSG:8857")
 ```
 
 ### 3.10c
 ```{r}
 #| label: plot-other-projection
 
-ggplot(country_boundaries) + 
-    geom_sf() +
-    scale_x_continuous(breaks = seq(-180, 180, by = 45)) +
-    scale_y_continuous(
-        breaks = c(-89.9, -45, 0, 45, 89.9)
-    ) +
-    coord_sf(crs = "ESRI:54009")
-
+ggplot(country_boundaries) +
+  geom_sf() +
+  scale_x_continuous(breaks = seq(-180, 180, by = 45)) +
+  scale_y_continuous(
+    breaks = c(-89.9, -45, 0, 45, 89.9)
+  ) +
+  coord_sf(crs = "ESRI:54009")
 ```
 
 The Equirectangular projection while straightforward, it significantly distorts areas and shapes. It drastically stretches areas as you move away from the equator toward the poles. As an example, Greenland appears to be the same size as Australia but is only 28% of Australia's land. However the graticule interpretability is high as The grid lines form straight, evenly spaced horizontal and vertical lines, making it the easiest projection for reading raw latitude and longitude coordinates.
 
-The Mollweide projection is an equal-area projection that depicts the pole as single points and the antimeridians merge into each other without any sharp corners at the poles. The area distortion is zero as it preserves relative land areas across the entire globe, correctly depciting e.g. the area of Greenland to Australia. This projection undergoes some shape distortion as continents near the boundary appear slanted or stretched. Lastly, the graticule interpretability isn't as high as the latitude are straight horizontal lines but the longitude curve significantly outwards towards the edge.
+The Mollweide projection is an equal-area projection that depicts the pole as single points and the antimeridians merge into each other without any sharp corners at the poles. The area distortion is zero as it preserves relative land areas across the entire globe, correctly depicting e.g. the area of Greenland to Australia. This projection undergoes some shape distortion as continents near the boundary appear slanted or stretched. Lastly, the graticule interpretability isn't as high as the latitude are straight horizontal lines but the longitude curve significantly outwards towards the edge.
 
 The Equal Earth projection like the MollWeide projection preserves the relative area well, leading it to have zero distortion in terms of Area. The shape distortion is relatively low as the map has a flat top and bottom, rather than a cylindrical shape like the Mollweide projection. The graticule interpretability is high as the latitude are straight and equally spaced, and the curvature of the meridians are predictable and balanced.
 
@@ -351,13 +346,13 @@ Overall, the Equal Earth projection is the most suitable for a global choropleth
 #| label: basic-choropleth-map
 
 choropleth_map <- ggplot(countries) +
-    geom_sf(aes(fill = gdp_per_cap)) +
-    coord_sf(crs = "EPSG:8857")
+  geom_sf(aes(fill = gdp_per_cap)) +
+  coord_sf(crs = "EPSG:8857")
 
 choropleth_map
 ```
 
-While there are gray patches to indicate missing values, it is unclear whether it is because of missing gdp_per_cap values or undetermined status areas. The default continuous scale is also unsuitable as due to the outlier values, the midpoint is around ~60,000. This causes alot of countries to be in the dark blue part of the scale and most of the plot looks like the same dark blue shade. Additionally, a darker color is usually used to represent a higher value, which is not represented by default.
+While there are gray patches to indicate missing values, it is unclear whether it is because of missing gdp_per_cap values or undetermined status areas. The default continuous scale is also unsuitable as due to the outlier values, the midpoint is around ~60,000. This causes a lot of countries to be in the dark blue part of the scale and most of the plot looks like the same dark blue shade. Additionally, a darker color is usually used to represent a higher value, which is not represented by default.
 
 ## 3.12 Fixing Flaws
 
@@ -367,12 +362,12 @@ While there are gray patches to indicate missing values, it is unclear whether i
 #| label: fix-scale-and-colour
 
 choropleth_map <- choropleth_map +
-    scale_fill_fermenter(
-        palette = "Reds",
-        direction = -1,
-        breaks = c(2000, 5000, 10000, 20000, 50000, 100000),
-        labels = label_number(scale_cut = cut_short_scale())
-    )
+  scale_fill_fermenter(
+    palette = "Reds",
+    direction = -1,
+    breaks = c(2000, 5000, 10000, 20000, 50000, 100000),
+    labels = label_number(scale_cut = cut_short_scale())
+  )
 
 choropleth_map
 ```
@@ -383,28 +378,30 @@ choropleth_map
 #| label: fill-missing-countries
 
 ggplot(countries) +
-    geom_sf(aes(fill = gdp_per_cap)) +
-    scale_fill_fermenter(
-        palette = "Reds",
-        direction = 1,
-        breaks = c(2000, 5000, 10000, 20000, 50000, 100000),
-        labels = label_number(scale_cut = cut_short_scale())
-    ) +
-    geom_sf(
-        data = filter(countries, is.na(gdp_per_cap)), 
-        aes(color = "Missing"),
-        fill = "lightgray"
-    ) +
-    geom_sf(
-        data = filter(countries, status == "Non-determined legal status area"),
-        aes(color = "Undetermined"),
-        fill = "darkgray"
-    ) +
-    scale_color_manual(
-        values = c("Missing" = "black", "Undetermined" = "black")
-    ) +
-    guides(color = guide_legend(override.aes = list(fill = c("lightgray", "darkgray")))) +
-    coord_sf(crs = "EPSG:8857")
+  geom_sf(aes(fill = gdp_per_cap)) +
+  scale_fill_fermenter(
+    palette = "Reds",
+    direction = 1,
+    breaks = c(2000, 5000, 10000, 20000, 50000, 100000),
+    labels = label_number(scale_cut = cut_short_scale())
+  ) +
+  geom_sf(
+    data = filter(countries, is.na(gdp_per_cap)),
+    aes(color = "Missing"),
+    fill = "lightgray"
+  ) +
+  geom_sf(
+    data = filter(countries, status == "Non-determined legal status area"),
+    aes(color = "Undetermined"),
+    fill = "darkgray"
+  ) +
+  scale_color_manual(
+    values = c("Missing" = "black", "Undetermined" = "black")
+  ) +
+  guides(
+    color = guide_legend(override.aes = list(fill = c("lightgray", "darkgray")))
+  ) +
+  coord_sf(crs = "EPSG:8857")
 ```
 
 ## 3.13 Two-Panel Choropleth Map
@@ -412,144 +409,142 @@ ggplot(countries) +
 #| label: two-panel-choropleth-prep
 
 earth <- st_polygon(
-    x = list(
-    cbind(c(rep(-180, 181), rep(180, 181), -180), c(-90:90, 90:-90, -90)))) |>
-    st_sfc() |> st_set_crs(4326) |>
-    st_as_sf()
+  x = list(
+    cbind(c(rep(-180, 181), rep(180, 181), -180), c(-90:90, 90:-90, -90))
+  )
+) |>
+  st_sfc() |>
+  st_set_crs(4326) |>
+  st_as_sf()
 
 top_40_largest <- countries |>
-    mutate(area = as.numeric(st_area(geometry))) |> 
-    slice_max(order_by = area, n = 40)
-
+  mutate(area = as.numeric(st_area(geometry))) |>
+  slice_max(order_by = area, n = 40)
 ```
 
 ```{r}
 #| label: life-exp-plot
 
 map_life_exp <- ggplot(countries) +
-    geom_sf(data = earth, fill = "aliceblue") +
-    geom_sf(
-        aes(fill = life_exp),
-        color = "black",
-        linewidth = 0.1
-    ) +
-    scale_fill_fermenter(
-        name = "Life expectancy at birth \n(years)",
-        palette = "Greens",
-        direction = 1,
-        breaks = c(60, 65, 70, 75, 80), 
-        guide = guide_colorsteps(
-            position = "top",
-            barwidth = unit(15, "lines"),
-            barheight = unit(0.8, "lines"),
-            title.hjust = 0.5
-        )
-    ) +
-    geom_sf(
-        data = filter(countries, is.na(gdp_per_cap)), 
-        fill = "lightgray",
-        linewidth = 0.1
-    ) +
-    geom_sf(
-        data = filter(countries, status == "Non-determined legal status area"),
-        fill = "darkgray",
-        linewidth = 0.1
-    ) +
-    scale_color_manual(
-        values = c("Missing" = "black", "Undetermined" = "black"),
-    ) +
-    geom_shadowtext(
-        data = top_40_largest,
-        aes(label = code, geometry = geometry),
-        stat = "sf_coordinates",
-        bg.color = "white",
-        color = "black",
-        check_overlap = TRUE
-    ) +
-    theme_void() + 
-        theme(
-            legend.margin = margin(5, 0, 0, 0),
-            legend.frame = element_rect(color = "black"),
-            legend.position = "top"
-        ) +     
-    coord_sf(
-        crs = "EPSG:8857",
-        ylim = c(-56, 84),
-        xlim = c(-179.99, 179.99),
-        default_crs = 4326, 
-        expand = FALSE 
+  geom_sf(data = earth, fill = "aliceblue") +
+  geom_sf(
+    aes(fill = life_exp),
+    color = "black",
+    linewidth = 0.1
+  ) +
+  scale_fill_fermenter(
+    name = "Life expectancy at birth \n(years)",
+    palette = "Greens",
+    direction = 1,
+    breaks = c(60, 65, 70, 75, 80),
+    guide = guide_colorsteps(
+      position = "top",
+      barwidth = unit(15, "lines"),
+      barheight = unit(0.8, "lines"),
+      title.hjust = 0.5
     )
-
+  ) +
+  geom_sf(
+    data = filter(countries, is.na(gdp_per_cap)),
+    fill = "lightgray",
+    linewidth = 0.1
+  ) +
+  geom_sf(
+    data = filter(countries, status == "Non-determined legal status area"),
+    fill = "darkgray",
+    linewidth = 0.1
+  ) +
+  scale_color_manual(
+    values = c("Missing" = "black", "Undetermined" = "black"),
+  ) +
+  geom_shadowtext(
+    data = top_40_largest,
+    aes(label = code, geometry = geometry),
+    stat = "sf_coordinates",
+    bg.color = "white",
+    color = "black",
+    check_overlap = TRUE
+  ) +
+  theme_void() +
+  theme(
+    legend.margin = margin(5, 0, 0, 0),
+    legend.frame = element_rect(color = "black"),
+    legend.position = "top"
+  ) +
+  coord_sf(
+    crs = "EPSG:8857",
+    ylim = c(-56, 84),
+    xlim = c(-179.99, 179.99),
+    default_crs = 4326,
+  )
 ```
 
 ```{r}
 #| label: gdp-plot
 
 map_gdp <- ggplot(countries) +
-    geom_sf(data = earth, fill = "aliceblue") +
-    geom_sf(
-        aes(fill = gdp_per_cap),
-        color = "black",
-        linewidth = 0.1
-    ) +
-    scale_fill_fermenter(
-        name = "GDP per capita \n($ Purchasing Power Parity 2021)",
-        palette = "Reds",
-        direction = 1,
-        breaks = c(2000, 5000, 10000, 20000, 50000, 100000),
-        labels = label_number(scale_cut = cut_short_scale()),
-        guide = guide_colorsteps(
-            position = "top",
-            barwidth = unit(15, "lines"),
-            barheight = unit(0.8, "lines"),
-            title.hjust = 0.5
-        )
-    ) +
-    geom_sf(
-        data = filter(countries, is.na(gdp_per_cap)), 
-        aes(color = "Missing"),
-        fill = "lightgray",
-        linewidth = 0.1
-    ) +
-    geom_sf(
-        data = filter(countries, status == "Non-determined legal status area"),
-        aes(color = "Undetermined"),
-        fill = "darkgray",
-        linewidth = 0.1
-    ) +
-    scale_color_manual(
-        name = "",
-        values = c("Missing" = "black", "Undetermined" = "black"),
-        guide = guide_legend(
-            position = "bottom",
-            override.aes = list(
-                fill = c("Missing" = "lightgray", "Undetermined" = "darkgray"),
-                color = "black",
-                linewidth = 0.1
-            )
-        )
-    ) +
-    geom_shadowtext(
-        data = top_40_largest,
-        aes(label = code, geometry = geometry),
-        stat = "sf_coordinates",
-        bg.color = "white",
-        color = "black",
-        check_overlap = TRUE
-    ) +
-    theme_void() + 
-    theme(
-        legend.margin = margin(5, 0, 0, 0),
-        legend.frame = element_rect(color = "black"),
-    ) +     
-    coord_sf(
-        crs = "EPSG:8857",
-        ylim = c(-56, 84),
-        xlim = c(-179.99, 179.99),
-        default_crs = 4326, 
-        expand = FALSE 
+  geom_sf(data = earth, fill = "aliceblue") +
+  geom_sf(
+    aes(fill = gdp_per_cap),
+    color = "black",
+    linewidth = 0.1
+  ) +
+  scale_fill_fermenter(
+    name = "GDP per capita \n($ Purchasing Power Parity 2021)",
+    palette = "Reds",
+    direction = 1,
+    breaks = c(2000, 5000, 10000, 20000, 50000, 100000),
+    labels = label_number(scale_cut = cut_short_scale()),
+    guide = guide_colorsteps(
+      position = "top",
+      barwidth = unit(15, "lines"),
+      barheight = unit(0.8, "lines"),
+      title.hjust = 0.5
     )
-
+  ) +
+  geom_sf(
+    data = filter(countries, is.na(gdp_per_cap)),
+    aes(color = "Missing"),
+    fill = "lightgray",
+    linewidth = 0.1
+  ) +
+  geom_sf(
+    data = filter(countries, status == "Non-determined legal status area"),
+    aes(color = "Undetermined"),
+    fill = "darkgray",
+    linewidth = 0.1
+  ) +
+  scale_color_manual(
+    name = "",
+    values = c("Missing" = "black", "Undetermined" = "black"),
+    guide = guide_legend(
+      position = "bottom",
+      override.aes = list(
+        fill = c("Missing" = "lightgray", "Undetermined" = "darkgray"),
+        color = "black",
+        linewidth = 0.1
+      )
+    )
+  ) +
+  geom_shadowtext(
+    data = top_40_largest,
+    aes(label = code, geometry = geometry),
+    stat = "sf_coordinates",
+    bg.color = "white",
+    color = "black",
+    check_overlap = TRUE
+  ) +
+  theme_void() +
+  theme(
+    legend.margin = margin(5, 0, 0, 0),
+    legend.frame = element_rect(color = "black"),
+  ) +
+  coord_sf(
+    crs = "EPSG:8857",
+    ylim = c(-56, 84),
+    xlim = c(-179.99, 179.99),
+    default_crs = 4326,
+  )
 ```
 
 ```{r}
@@ -557,16 +552,16 @@ map_gdp <- ggplot(countries) +
 #| fig-width: 10
 #| fig-height: 12
 
-map_life_exp / map_gdp +
-    plot_annotation(
-        title = "Comparing wealth and longevity across nations (2024)",
-        caption = "\"Undetermined\" refers to an area's legal source \nSource: World Bank",
-        theme = theme(
-            plot.title = element_text(hjust = 0.5, face = "bold"),
-            plot.caption = element_text(hjust = 0.5)
-        )
-    ) 
-
+map_life_exp /
+  map_gdp +
+  plot_annotation(
+    title = "Comparing wealth and longevity across nations (2024)",
+    caption = "\"Undetermined\" refers to an area's legal source \nSource: World Bank",
+    theme = theme(
+      plot.title = element_text(hjust = 0.5, face = "bold"),
+      plot.caption = element_text(hjust = 0.5),
+    )
+  )
 ```
 
 
