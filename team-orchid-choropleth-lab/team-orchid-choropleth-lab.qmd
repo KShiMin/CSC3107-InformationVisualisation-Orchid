@@ -62,7 +62,7 @@ life_exp
 
 `gdp` imports the GDP workbook plus skipping the 3 header rows of metadata.
 
-`life_exp` does the but instead imports the life expectancy workbooks.
+`life_exp` does the same but instead imports the life expectancy workbooks.
 
 ```{r}
 #| label: selecting-and-merging-data
@@ -79,9 +79,9 @@ country_stats <- gdp |>
 country_stats
 ```
 
-`select()` keeps only `Country Name`, `Country Code`, and the `2024` column from each sheet plus renaming them to `name`, `code` and `gdp_per_cap`/`life_exp` respectively.
+`select(...)` keeps only `Country Name`, `Country Code`, and the `2024` column from each sheet plus renaming them to `name`, `code` and `gdp_per_cap`/`life_exp` respectively.
 
-`left_join` merges the GDP and life expectancy tables taking into account missing values on the matching name/code pair.
+`left_join(...)` merges the GDP and life expectancy tables taking into account missing values on the matching name/code pair.
 
 ```{r}
 #| label: import-metadata
@@ -94,7 +94,7 @@ metadata <-
 
 `metadata` tibble stores `Metadata-Countries` sheet by calling `read_xls()`.
 
-`select()` keeps only `code` and `region`.
+`select(...)` keeps only `code` and `region`.
 
 ```{r}
 #| label: join-metadata
@@ -105,7 +105,7 @@ country_stats <- country_stats |>
 country_stats
 ```
 
-`left_join()` attaches the region column to `country_stats`.
+`left_join(...)` attaches the region column to `country_stats`.
 
 ```{r}
 #| label: handle-missing-data
@@ -119,7 +119,7 @@ country_stats
 
 `drop_na()` discards rows with empty region.
 
-`select()` drops the `region` column leaving `name`, `code`, `gdp_per_cap` and `life_exp`.
+`select(...)` drops the `region` column leaving `name`, `code`, `gdp_per_cap` and `life_exp`.
 
 
 ### 3.3 verifier task
@@ -131,6 +131,10 @@ nrow(country_stats)
 ```
 
 Verifier Comment: The country_states do show the 4 column names and nrow(countries) do return 217.
+
+`names()` lists the column names of `country_stats` to acknowledge that it holds exactly `name`, `code`, `gdp_per_cap` and `life_exp`.
+
+`nrow()` returns the number of rows.
 
 ## 3.4 Import Boundaries
 
@@ -148,7 +152,7 @@ country_boundaries
 
 `read_sf()` reads GeoJSON boundary file into an `sf` object.
 
-`select()` renames and keeps only the ISO country code and legal status columns.
+`select(...)` renames and keeps only the ISO country code and legal status columns.
 
 ### 3.4 verifier task
 ```{r}
@@ -161,6 +165,12 @@ st_is_longlat(country_boundaries)
 
 Verifier Comment: Countries_boundaries is an `sf` object, and all geometries are of type `MULTIPOLYGON`, and the coordinate reference system is longitude/latitude.
 
+`inherits(..., sf)` inspects whether `country_boundaries` belongs to `sf` class.
+
+`st_geometry_type()` returns every feature's geometry type. Wrapping it in `unique()` establishes every feature is exclusively multipolygon.
+
+`st_is_longlat()` inspects whether the longitude/latitude is used in the coordinate reference system which returns `TRUE`.
+
 ## 3.5 Validate and Repair Geometry
 
 ```{r}
@@ -171,7 +181,7 @@ sum(!st_is_valid(country_boundaries))
 
 There are 5 invalid geometries within country_boundaries.
 
-`st_is_valid()` returns a logical vector flagging incomplete geometries. Wrapping it with `sum()` counts how many are incomplete.
+`!st_is_valid()` returns a logical vector flagging incomplete geometries. Wrapping it with `sum()` counts how many are incomplete.
 
 ```{r}
 #| label: preparing-geometry
@@ -180,7 +190,7 @@ country_boundaries <- st_make_valid(country_boundaries)
 sum(!st_is_valid(country_boundaries))
 ```
 
-`st_make_valid()` managed to repair the invalid geometries and this is confirmed by counting the number of invalid geometries with `st_is_valid()` again, which returns 0.
+`st_make_valid()` managed to repair the invalid geometries and this is confirmed by counting the number of invalid geometries with `!st_is_valid()` again, which returns 0.
 
 ### 3.5 verifier task
 ```{r}
@@ -192,6 +202,10 @@ unique(st_geometry_type(country_boundaries))
 ```
 
 Verifier Comment: Geometries did repair perfectly. There is 0 invalid geometries remain and the row count is unchanged.
+
+`!st_is_valid()` re-checks every geometry and summing the negated result with `sum()`.
+
+`nrow()` verifies that the repair process will not change the row count.
 
 ## 3.6 Simplify Polygons
 
@@ -222,7 +236,7 @@ There are a total of 20 polygons in Singapore.
 
 `filter()` isolates the specific country's feature.
 
-`st_cast()` splits multipolygon into individual component polygons to be counted.
+`st_cast(...)` splits multipolygon into individual component polygons to be counted.
 
 ### 3.6c
 
@@ -259,7 +273,7 @@ no_of_polygons
 
 After the simplification, Singapore is left with only one polygon.
 
-`filter()` + `st_cast()` confirms the intended country has just 1 polygon. 
+`filter()` + `st_cast(...)` confirms the intended country has just 1 polygon. 
 
 ### 3.6 verifier task
 ```{r}
@@ -272,6 +286,14 @@ mapview::npts(country_boundaries)
 ```
 
 Verifier Comment: Polygons successfully simplified to ~9,500 points with no empty or invalid geometries introduced.
+
+`nrow()` reaffirms all features survived `ms_simplify()`.
+
+`st_is_empty()` flags any feature whose geometry got simplified to nothing. Wrapping it in `any()` confirms no feature was voided out.
+
+`!st_is_valid()` reaffirms no invalid geometries were introduced during simplification.
+
+`mapview::npts()` re-counts boundary points.
 
 ## 3.7 Cure Antimeridian
 
@@ -297,7 +319,7 @@ ggplot(country_boundaries) + geom_sf()
 
 `country_boundaries` tibble uses `st_wrap_dateline()` to split polygons which cross the meridian of longtitude.
 
-`st_cast()` restores a consistent geometry type, re-plotting confirming that the streak is gone.
+`st_cast(...)` restores a consistent geometry type, re-plotting confirming that the streak is gone.
 
 ### 3.7 verifier task
 ```{r}
@@ -312,6 +334,12 @@ sum(!st_is_valid(country_boundaries))
 
 Verifier Comment: Antimeridian cured safely. All features cast back to MULTIPOLYGON with no invalid shapes.
 
+`nrow()` verifies the antimeridian fix `st_wrap_dateline()` + `st_cast()` left the feature count unchanged.
+
+`unique(st_geometry_type())` confirms every feature is exclusively multipolygon.
+
+`!st_is_valid()` wrapping in `sum()` re-counts that no invalid geometries were introduced by the fix.
+
 ## 3.8 Merge features
 
 ### 3.8a
@@ -324,7 +352,7 @@ count_code <- count(country_boundaries, code) |>
 count_code
 ```
 
-`count()` with pipe operator `filter()` finds country codes shared by more than one feature.
+`count(...)` with pipe operator `filter()` finds country codes shared by more than one feature.
 
 ### 3.8b
 
@@ -368,9 +396,9 @@ country_boundaries
 
 `duplicates_only` and `non_duplicates` tibbles splits the data into duplicated and non-duplicated via function call `filter(!code %in% dup_codes)`.
 
-`merge_features` tibble uses `duplicates_only` tibble to merge each duplicate groups into a single feature per code via `group_by()` + `summarize()` and setting `status` to `Contains a Member State` or `Does Not Contains a Member State` plus an `st_cast()` function converting the combined geometries back to a consistent type.
+`merge_features` tibble uses `duplicates_only` tibble to merge each duplicate groups into a single feature per code via `group_by()` + `summarize(...)` and setting `status` to `Contains a Member State` or `Does Not Contains a Member State` plus an `st_cast()` function converting the combined geometries back to a consistent type.
 
-`country_boundaries` then deployed `bind_rows()` function recombining the merged and untouched rows.
+`country_boundaries` then deployed `bind_rows(...)` function recombining the merged and untouched rows.
 
 ### 3.8 verifier task
 ```{r}
@@ -387,6 +415,16 @@ unique(st_geometry_type(country_boundaries))
 ```
 
 Verifier Comment: Features merged correctly into 264 rows. No duplicate codes exist and all 24 undetermined areas are preserved.
+
+`nrow()` confirms that there are 264 features after merging.
+
+`country_boundaries$code[!is.na(...)]` extracts only the non-missing codes.
+
+`duplicated()` flags any repetition and wrapping it in `any()` which verifies no non-missing code appears more than once.
+
+`sum(...)` counts the undetermined features.
+
+`unique(st_geometry_type(...))` confirms every feature is exclusively multipolygon. 
 
 ## 3.9 Join Statistics
 
@@ -415,6 +453,14 @@ all(c("name", "gdp_per_cap", "life_exp") %in% names(countries))
 
 Verifier Comment: Yes , only the Channel Islands mismatch was found and the final sf object contains all the required columns. 
 
+`sf::st_drop_geometry(...)` strips the geometry column from `country_boundaries` tibble. `anti_join(...)` returns rows in `country_stats` whose code has no match and stored in `mismatch()`
+
+`inherits(...)` confirms `countries` is still of `sf` object after the join.
+
+`nrows()` counts the number of rows.
+
+`all(...) %in% ...` confirms the original boundary columns were appended with the three statistics columns.
+
 ## 3.10 Compare Projections
 
 ### 3.10a
@@ -427,7 +473,7 @@ st_crs(country_boundaries, parameters = TRUE)[c("Name", "srid")]
 
 The name is "WGS 84", which stands for World Geodetic System 84. This is the default projection which maps the longitude to the x-axis and latitude to the y-axis. However, a trait of this projection is that it is a "equirectangular" which do not plot the areas in the correct proportion.
 
-`str_cs()` reports the name and code of default coordinate reference system (WGS 84).
+`str_cs(...)` reports the name and code of default coordinate reference system (WGS 84).
 
 ### 3.10b
 
@@ -443,7 +489,7 @@ ggplot(country_boundaries) +
   coord_sf(crs = "EPSG:8857")
 ```
 
-`gg_plot()` + `geom_sf()` + `coord_sf()` replots the map with `scale_x_continuos()`/`scale_y_continuos()` configure graticule breaking at 45 degrees major latitude lines.
+`gg_plot()` + `geom_sf()` + `coord_sf()` replots the map with `scale_x_continuos(...)`/`scale_y_continuos(...)` configure graticule breaking at 45 degrees major latitude lines.
 
 A second `coord_sf()` replots the same map for comparison. 
 
@@ -482,7 +528,7 @@ choropleth_map
 
 While there are gray patches to indicate missing values, it is unclear whether it is because of missing gdp_per_cap values or undetermined status areas. The default continuous scale is also unsuitable as due to the outlier values, the midpoint is around ~60,000. This causes a lot of countries to be in the dark blue part of the scale and most of the plot looks like the same dark blue shade. Additionally, a darker color is usually used to represent a higher value, which is not represented by default.
 
-`ggplot()` + `geom_sf()` + `coord()` produces a choropleth map which maps GDP per capita to fill color under Equal Earth projection.
+`ggplot()` + `geom_sf(...)` + `coord_sf()` produces a choropleth map which maps GDP per capita to fill color under Equal Earth projection.
 
 ## 3.12 Fixing Flaws
 
@@ -502,7 +548,7 @@ choropleth_map <- choropleth_map +
 choropleth_map
 ```
 
-`scale_fill_fermenter()` substitutes continuos fill scale with ColorBrewer scale using a persistent break ladder and compact axis labels. Note `direction = 1` reverses the default pallete order so darker reds map to lower GDP values. 
+`scale_fill_fermenter(...)` substitutes continuos fill scale with ColorBrewer scale using a persistent break ladder and compact axis labels. Note `direction = 1` reverses the default pallete order so darker reds map to lower GDP values. 
 
 ### 3.12b
 
@@ -536,11 +582,11 @@ ggplot(countries) +
   coord_sf(crs = "EPSG:8857")
 ```
 
-`ggplot()` + `geom_sf()` replots the map from start and this round with the direction of `scale_fill_fermenter()` equals 1 so darker reds now correctly map to higher GDP values.
+`ggplot()` + `geom_sf(...)` replots the map from start and this round with the direction of `scale_fill_fermenter(...)` equals 1 so darker reds now correctly map to higher GDP values.
 
-Two additional `geom_sf()` layers plot the missing-data countries and undermined status areas as separate layers via `filter()` with them mapped to a constant `color` string ("Missing"/"Undetermined").
+Two additional `geom_sf(...)` layers plot the missing-data countries and undermined status areas as separate layers via `filter(...)` with them mapped to a constant `color` string ("Missing"/"Undetermined").
 
-`scale_color_manual()` assigns both constants the same black color and `guides()` overrides the legend fill so they display light gray and dark grey swatches respectively.
+`scale_color_manual(...)` assigns both constants the same black color and `guides(...)` overrides the legend fill so they display light gray and dark grey swatches respectively.
 
 ## 3.13 Two-Panel Choropleth Map
 ```{r}
@@ -560,9 +606,9 @@ top_40_largest <- countries |>
   slice_max(order_by = area, n = 40)
 ```
 
-`st_polygon()` + `st_sfc()` + `st_set_crs()` + `st_as_sf()` constructs a rectangular polygon pertaining "earth" and used as a background layer.
+`st_polygon(...)` + `st_sfc()` + `st_set_crs()` + `st_as_sf()` constructs a rectangular polygon pertaining "earth" and used as a background layer.
 
-`mutate()` + `slice_max()` calculates each country's area and keeps the 40 largest for map labels.
+`mutate(...)` + `slice_max(...)` calculates each country's area and keeps the 40 largest for map labels.
 
 
 ```{r}
@@ -622,15 +668,15 @@ map_life_exp <- ggplot(countries) +
   scale_y_continuous(expand = c(0, 0))
 ```
 
-`map_life_exp` layers the background `earth` polygon while the main `geom_sf()` choropleth layer with thin black borders and undertermined status grey layers and `geom_shadow()` to place outlined country-code labels at each of the 40 largest countries' centroids.
+`map_life_exp` layers the background `earth` polygon while the main `geom_sf(...)` choropleth layer with thin black borders and undertermined status grey layers and `geom_shadowtext(...)` to place outlined country-code labels at each of the 40 largest countries' centroids.
 
-`scale_fill_fermenter()` places a horizontal, top-centered binned legend which doubles as the map title.
+`scale_fill_fermenter(...)` places a horizontal, top-centered binned legend which doubles as the map title.
 
-`scale_color_manual()` on the GDP map places the shared "Missing"/"Undetermined" legend keys at the bottom of the figure.
+`scale_color_manual(...)` on the GDP map places the shared "Missing"/"Undetermined" legend keys at the bottom of the figure.
 
 `theme_void()` strips the background grid lines and axis text to minimize non-data ink.
 
-`coord_sf()` clips both the maps to populated latitude range while keeping the Equal Earth projection.
+`coord_sf(...)` clips both the maps to populated latitude range while keeping the Equal Earth projection.
 
 ```{r}
 #| label: gdp-plot
@@ -701,15 +747,15 @@ map_gdp <- ggplot(countries) +
 ```
 
 
-`map_gdp` layers the background `earth` polygon while the main `geom_sf()` choropleth layer with thin black borders and undertermined status grey layers and `geom_shadow()` to place outlined country-code labels at each of the 40 largest countries' centroids.
+`map_gdp` layers the background `earth` polygon while the main `geom_sf(...)` choropleth layer with thin black borders and undertermined status grey layers and `geom_shadowtext(...)` to place outlined country-code labels at each of the 40 largest countries' centroids.
 
-`scale_fill_fermenter()` places a horizontal, top-centered binned legend which doubles as the map title.
+`scale_fill_fermenter(...)` places a horizontal, top-centered binned legend which doubles as the map title.
 
-`scale_color_manual()` on the GDP map places the shared "Missing"/"Undetermined" legend keys at the bottom of the figure.
+`scale_color_manual(...)` on the GDP map places the shared "Missing"/"Undetermined" legend keys at the bottom of the figure.
 
 `theme_void()` strips the background grid lines and axis text to minimize non-data ink.
 
-`coord_sf()` clips both the maps to populated latitude range while keeping the Equal Earth projection.
+`coord_sf(...)` clips both the maps to populated latitude range while keeping the Equal Earth projection.
 
 ```{r}
 #| label: patchwork-plot
@@ -728,7 +774,7 @@ map_life_exp /
   )
 ```
 
-`mat_life_exp`/`map_gdp` stacks the two maps vertically and `plot_annotation()` adds a centered boldface title plus a centered caption crediting to the World Bank.
+`mat_life_exp`/`map_gdp` stacks the two maps vertically and `plot_annotation(...)` adds a centered boldface title plus a centered caption crediting to the World Bank.
 
 ### 3.13 verifier task
 1. **Layout:** Two choropleth maps are stacked vertically, with life expectancy on the top panel and GDP per capita on the bottom panel.
