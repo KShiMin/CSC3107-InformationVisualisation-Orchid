@@ -1,0 +1,43 @@
+---
+title: "Week 10 Lab: Choropleth Maps of Country-Level Statistics"
+author: "Team Orchid"
+date: "2026-07-07"
+format:
+  html:
+    toc: true
+---
+
+## Assigned Roles
+
+The table below lists the assigned roles for each team member in this lab:
+
+| Member | Role | Specific Contribution  |
+| ------ | ---- | -----------------------|
+| Quan Yi | Coder | Developed the main QMD implementation by coding the data processing steps, creating the required visualisations, and ensuring the code chunks rendered correctly. Also checked that the final QMD could be executed from start to finish without rendering errors. |
+| Shi Min | Navigator  | Read and interpreted the assignment requirements during the lab, kept the group aligned with the required tasks, and ensured that each section of the QMD addressed the relevant questions. Also helped maintain the flow, readability, and organisation of the QMD document. |
+| Aiman | Reporter | Prepared the written Markdown explanations for the code and visualisations, including descriptions of what each code section does and how the resulting plots should be interpreted. Helped ensure that the report explanations were clear and connected to the assignment objectives. |
+| Subhashini | Verifier  | Validated the accuracy of the generated plots, calculations, and interpretations by cross-checking outputs against the dataset and task requirements. Identified possible inconsistencies and ensured that the final answers were supported by the visual evidence.  |
+| Jabar  | AI Liaison | Managed the team’s AI-assisted workflow by prompting AI tools together with the coder, documenting relevant AI interactions, and reviewing AI-generated suggestions before they were accepted, modified, or rejected. Ensured that AI use supported the assignment without replacing team judgement. |
+| Min Xuan | Constructive Critic | Reviewed the combined work after merging individual contributions, suggested improvements to wording, structure, and visual clarity, and checked that the final submission package was complete. Also helped ensure that the final ZIP contained the required files and maintained submission integrity. |
+
+## 3.1 Identify Suitable Fill Variables for Choropleth Maps
+| Variable | Variable Type | Suitable as fill color? Why or why not?  | Would the result be a choropleth map? Why or why not?  |
+| ------ | ---- | -----------------------| -----------------------|
+| GDP per capita |   |   |   |
+| Life expectancy |   |   |   |
+| Region |   |   |   |
+| Population |   |   |   |
+
+## Setup
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)
+library(mapview)
+library(patchwork)
+library(readxl)
+library(rmapshaper)
+library(scales)
+library(sf)
+library(shadowtext)
+```
