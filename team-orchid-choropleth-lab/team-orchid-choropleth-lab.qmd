@@ -673,3 +673,60 @@ However, this comparative layout also exposes anomalies. The United States serve
 An advantage of the choropleth map is how it retains the geographical context. The Preston Curve strips away geography entirely and countries become isolated dots. The choropleth maps show where these trends live and a reader can see regional clusters, revealing patterns that a scatter plot completely hides. Additionally, the world map can be easier to interpret for the general public compared to scatter plots.
 
 Disadvantages of the Choropleth map is how smaller countries such as Singapore is too small to really be observed. On a Preston Curve, every nation gets exactly one equal dot, regardless of geographic size. Additionally, it may not be as simple for the user to interpret the correlation as they have to keep comparing up and down between the two maps but a user is able to interpret the correlation in one glance on the Preston curve. 
+
+## AI Liaison Report
+
+**Tool used:** Perplexity (Gemini 3.1 Pro)
+
+### One Useful AI Response
+
+**In the prompt :**
+
+```r
+How do I use st_cast()?
+
+This was how I used to it to try to cast a MULTIPOLYGON to only "POLYGON"
+"no_of_polygons <- st_cast(singapore, to, 'POLYGON')"
+
+But I ran into this error,
+Error:
+! object 'to' not found
+Backtrace:
+    ▆
+ 1. ├─sf::st_cast(singapore, to, "POLYGON")
+ 2. └─sf:::st_cast.sf(singapore, to, "POLYGON")
+ 3.   ├─sf::st_cast(st_geometry(x), to, group_or_split = do_split)
+ 4.   └─sf:::st_cast.sfc(st_geometry(x), to, group_or_split = do_split)       
+ 5.     └─sf:::which_sfc_col(to)
+
+Quitting from week-10-lab.qmd:139-150 [count-points-singapore]
+Execution halted
+WARN: Error encountered when rendering files
+```
+
+The AI was able to assist me in getting the understanding why the error happened, how to fix it and informed me in a way that is relevant to the code I had despite not giving the full entire context of what the labsheet is about or the specifics of the question.
+
+### Suboptimal AI Response
+
+**Prompt that seem to be incomplete/outdated:**
+
+From the prompt:
+
+```r
+map_gdp <- map_gdp + 
+    geom_sf(data = countries, fill = "lightblue1") + 
+    theme(
+        legend.position = "top"
+    )
+
+Why does this not work, and is it possible to make it work without re-writing the entire plot?
+```
+
+The AI actually tried to indicate that the team was using the wrong dataset as the number 1 reason which was totally wrong. Although it is a fair concern to bring up, the reason given is suboptimal. The team to had to send the following prompt to ask for other reason which was able to help us better.
+
+
+### Reflection
+
+The team tried to use another model (Gemini 3.1) from the usual (Claude Sonnet) which we typically had used to see if the performance of it would be better. We found out how it was not as good at keeping context however, the structure of informative reasoning is arguably slightly better than that of Claude's. 
+
+Furthermore, from today's lab, the team felt the necessity to ensure that programmer should have understanding of context and goal to ensure that AI's output can be verified before being used. Working together to complete the lab resulted in better result to achieve intended results rather than solely relying on AI.
