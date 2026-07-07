@@ -121,10 +121,16 @@ country_stats
 
 `select()` drops the `region` column leaving `name`, `code`, `gdp_per_cap` and `life_exp`. 
 
+
+### 3.3 verifier task
 ```{r}
 #| label: verifier-task-3.3
+names(country_stats)
+nrow(country_stats)
 
 ```
+
+Verifier Comment: The country_states do show the 4 column names and nrow(countries) do return 217.
 
 ## 3.4 Import Boundaries
 
@@ -143,6 +149,17 @@ country_boundaries
 `read_sf()` reads GeoJSON boundary file into an `sf` object.
 
 `select()` renames and keeps only the ISO country code and legal status columns.
+
+### 3.4 verifier task
+```{r}
+#| label: verifier-task-3.4
+inherits(country_boundaries, "sf")
+unique(st_geometry_type(country_boundaries))
+st_is_longlat(country_boundaries)
+
+```
+
+Verifier Comment: Countries_boundaries is an `sf` object, and all geometries are of type `MULTIPOLYGON`, and the coordinate reference system is longitude/latitude.
 
 ## 3.5 Validate and Repair Geometry
 
@@ -164,6 +181,17 @@ sum(!st_is_valid(country_boundaries))
 ```
 
 `st_make_valid()` managed to repair the invalid geometries and this is confirmed by counting the number of invalid geometries with `st_is_valid()` again, which returns 0.
+
+### 3.5 verifier task
+```{r}
+#| label: verifier-task-3.5
+sum(!st_is_valid(country_boundaries))
+nrow(country_boundaries)
+unique(st_geometry_type(country_boundaries))
+
+```
+
+Verifier Comment: Geometries did repair perfectly. There is 0 invalid geometries remain and the row count is unchanged.
 
 ## 3.6 Simplify Polygons
 
@@ -233,6 +261,18 @@ After the simplification, Singapore is left with only one polygon.
 
 `filter()` + `st_cast()` confirms the intended country has just 1 polygon. 
 
+### 3.6 verifier task
+```{r}
+#| label: verifier-task-3.6
+nrow(country_boundaries)
+any(st_is_empty(country_boundaries))
+sum(!st_is_valid(country_boundaries))
+mapview::npts(country_boundaries)
+
+```
+
+Verifier Comment: Polygons successfully simplified to ~9,500 points with no empty or invalid geometries introduced.
+
 ## 3.7 Cure Antimeridian
 
 ```{r}
@@ -259,13 +299,18 @@ ggplot(country_boundaries) + geom_sf()
 
 `st_cast()` restores a consistent geometry type, re-plotting confirming that the streak is gone.
 
+### 3.7 verifier task
 ```{r}
 #| label: verifier-task-3.7
+nrow(country_boundaries) 
 
-sum(!st_is_valid(country_boundaries))
+unique(st_geometry_type(country_boundaries)) 
+
+sum(!st_is_valid(country_boundaries)) 
+
 ```
 
-`sum()` inspects that there are no incomplete geometries inserted by the fix.
+Verifier Comment: Antimeridian cured safely. All features cast back to MULTIPOLYGON with no invalid shapes.
 
 ## 3.8 Merge features
 
@@ -327,13 +372,21 @@ country_boundaries
 
 `country_boundaries` then deployed `bind_rows()` function recombining the merged and untouched rows.
 
+### 3.8 verifier task
 ```{r}
 #| label: verifier-task-3.8
+nrow(country_boundaries) 
 
-country_boundaries |> st_is("MULTIPOLYGON") |> all()
+codes <- country_boundaries$code[!is.na(country_boundaries$code)]
+any(duplicated(codes)) 
+
+sum(country_boundaries$status == "Non-determined legal status area", na.rm = TRUE) 
+
+unique(st_geometry_type(country_boundaries)) 
+
 ```
 
-`st_is()` + `all()` inspects every remaining feature is a multipolygon.
+Verifier Comment: Features merged correctly into 264 rows. No duplicate codes exist and all 24 undetermined areas are preserved.
 
 ## 3.9 Join Statistics
 
@@ -347,6 +400,20 @@ countries
 ```
 
 `countries` tibble uses `left_join()` + `join_by()` attaches `country_stats` to `country_boundaries` keeping every polygon even those with no matching statistics.
+
+### 3.9 verifier task
+```{r}
+#| label: verifier-task-3.9
+mismatches <- anti_join(country_stats, sf::st_drop_geometry(country_boundaries), by = "code")
+print(mismatches)
+
+inherits(countries, "sf") 
+nrow(countries)           
+all(c("name", "gdp_per_cap", "life_exp") %in% names(countries)) 
+
+```
+
+Verifier Comment: Yes , only the Channel Islands mismatch was found and the final sf object contains all the required columns. 
 
 ## 3.10 Compare Projections
 
@@ -502,7 +569,7 @@ top_40_largest <- countries |>
 #| label: life-exp-plot
 
 map_life_exp <- ggplot(countries) +
-  geom_sf(data = earth, fill = "aliceblue") +
+  geom_sf(data = earth, fill = "aliceblue", color = "black", linewidth = 0.5) +
   geom_sf(
     aes(fill = life_exp),
     color = "black",
@@ -550,9 +617,9 @@ map_life_exp <- ggplot(countries) +
   coord_sf(
     crs = "EPSG:8857",
     ylim = c(-56, 84),
-    xlim = c(-179.99, 179.99),
-    default_crs = 4326,
-  )
+    default_crs = 4326
+  ) +
+  scale_y_continuous(expand = c(0, 0))
 ```
 
 `map_life_exp` layers the background `earth` polygon while the main `geom_sf()` choropleth layer with thin black borders and undertermined status grey layers and `geom_shadow()` to place outlined country-code labels at each of the 40 largest countries' centroids.
@@ -569,7 +636,7 @@ map_life_exp <- ggplot(countries) +
 #| label: gdp-plot
 
 map_gdp <- ggplot(countries) +
-  geom_sf(data = earth, fill = "aliceblue") +
+  geom_sf(data = earth, fill = "aliceblue", color = "black", linewidth = 0.5) +
   geom_sf(
     aes(fill = gdp_per_cap),
     color = "black",
@@ -628,10 +695,11 @@ map_gdp <- ggplot(countries) +
   coord_sf(
     crs = "EPSG:8857",
     ylim = c(-56, 84),
-    xlim = c(-179.99, 179.99),
-    default_crs = 4326,
-  )
+    default_crs = 4326
+  ) +
+  scale_y_continuous(expand = c(0, 0))
 ```
+
 
 `map_gdp` layers the background `earth` polygon while the main `geom_sf()` choropleth layer with thin black borders and undertermined status grey layers and `geom_shadow()` to place outlined country-code labels at each of the 40 largest countries' centroids.
 
@@ -661,6 +729,22 @@ map_life_exp /
 ```
 
 `mat_life_exp`/`map_gdp` stacks the two maps vertically and `plot_annotation()` adds a centered boldface title plus a centered caption crediting to the World Bank.
+
+### 3.13 verifier task
+1. **Layout:** Two choropleth maps are stacked vertically, with life expectancy on the top panel and GDP per capita on the bottom panel.
+2. **Map projection:** Both maps use the same equal-area projection (EPSG:8857).
+3. **Clipping:** Both maps are clipped at 56°S and 84°N to focus on populated regions.
+4. **Color palettes:** Sequential ColorBrewer palettes are used (Greens for life expectancy and Reds for GDP per capita).
+5. **Gray fills for missing values and undetermined areas:** Missing values are filled with light gray, while legally undetermined areas are filled with dark gray and shown in a shared legend.
+6. **Country borders:** Thin black borders clearly separate neighboring countries.
+7. **Legend scales:** Legends use appropriate breaks, labels, and units for each variable.
+8. **Legend placement:** Each color legend is centered above its corresponding map and oriented horizontally. The gray-category legend appears once at the bottom.
+9. **Country labels:** ISO country codes are displayed for the 40 largest countries using `shadowtext` with a white halo for readability.
+10. **Title:** A bold, centered title indicates the variables being compared and the year (2024).
+11. **Caption:** The caption defines "Undetermined" and credits the World Bank as the data source.
+12. **Background and frame:** Oceans are filled with a light blue color, the page background is white, and the globe is framed on the left and right edges only.
+12. **Theme:** A minimal theme (`theme_void()`) is used to reduce non-data ink.
+13. **Figure dimensions:** The figure size keeps country labels and legends legible without appearing oversized.
 
 ## 3.14 Conclusion
 
