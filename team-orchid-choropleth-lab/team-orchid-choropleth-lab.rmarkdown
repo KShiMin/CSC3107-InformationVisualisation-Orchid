@@ -23,10 +23,10 @@ The table below lists the assigned roles for each team member in this lab:
 ## 3.1 Identify Suitable Fill Variables for Choropleth Maps
 | Variable | Variable Type | Suitable as fill color? Why or why not?  | Would the result be a choropleth map? Why or why not?  |
 | ------ | ---- | -----------------------| -----------------------|
-| GDP per capita |   |   |   |
-| Life expectancy |   |   |   |
-| Region |   |   |   |
-| Population |   |   |   |
+| GDP per capita | Quantitative  | Yes - it's a rate, doesn't distort with merged polygons  | Yes as it's a rate and not raw total Eg. Computing the weighted average of GDP per capita rather than just adding all GDP per-capita values together |
+| Life expectancy | Quantitative  | Yes - same reasoning as GDP  | Yes and also the same reasoning with GDP |
+| Region | Categorical  | No not really - No ordering and just labels  | No as it is more of a categorical map  |
+| Population | Quantitative  | No - misleads by area size when summing up  | No as it is suited best for bubble size  |
 
 ## 3.2 Setup
 ```{r}
