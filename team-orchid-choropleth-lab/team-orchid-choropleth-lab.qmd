@@ -28,7 +28,7 @@ The table below lists the assigned roles for each team member in this lab:
 | Region |   |   |   |
 | Population |   |   |   |
 
-## Setup
+## 3.2 Setup
 ```{r}
 #| label: setup
 #| message: false
@@ -41,3 +41,133 @@ library(scales)
 library(sf)
 library(shadowtext)
 ```
+
+Lat & Long
+- Positive value is towards the North or East, while negative value is towards the South or West.
+- 
+
+## 3.3 Import the Country Statistics
+```{r}
+#| label: data-import
+gdp_raw <- read_xls(
+  "API_NY.GDP.PCAP.PP.KD_DS2_en_excel_v2_417139.xls",
+  sheet = "Data",
+  skip = 3
+)
+
+gdp_raw
+
+life_raw <- read_xls(
+  "API_SP.DYN.LE00.IN_DS2_en_excel_v2_404463.xls",
+  sheet = "Data",
+  skip = 3
+)
+
+life_raw
+
+metadata <- read_xls(
+  "API_NY.GDP.PCAP.PP.KD_DS2_en_excel_v2_417139.xls",
+  sheet = "Metadata - Countries"
+) |>
+  select(code = "Country Code", region = "Region")
+
+metadata
+```
+
+```{r}
+#| label: 3.1-verifier-task-col
+gdp_col_verify <- select(gdp_raw, "Country Name", "Country Code", "2024")
+gdp_col_verify
+
+life_col_verify <- select(life_raw, "Country Name", "Country Code", "2024")
+life_col_verify
+```
+
+```{r}
+#| label: select-columns
+gdp_2024 <- rename(
+  gdp_col_verify,
+  name = "Country Name",
+  code = "Country Code",
+  gdp_per_cap = "2024"
+)
+gdp_2024
+
+life_2024 <- rename(
+  life_col_verify,
+  name = "Country Name",
+  code = "Country Code",
+  life_exp = "2024"
+)
+life_2024
+```
+
+```{r}
+#| label: merge-data
+countries <- inner_join(gdp_2024, life_2024, join_by(name, code)) |>
+  left_join(metadata, join_by(code))
+
+countries
+```
+
+```{r}
+#| label: drop-missing-region
+countries <- countries |> drop_na(region)
+countries
+```
+
+```{r}
+#| label: drop-region-column
+country_stats <- countries |> select(-region)
+country_stats
+```
+
+## 3.4 Import the Boundaries as `sf` Objects
+```{r}
+#| label: import-boundaries
+#| cache: true
+country_boundaries <- read_sf("WB_GAD_ADM0_complete.geojson")
+
+country_boundaries <- select(
+  country_boundaries,
+  code = "ISO_A3",
+  status = "WB_STATUS",
+  geometry
+)
+
+country_boundaries
+```
+
+## 3.5 Validate and Repair the Geometries
+```{r}
+#| label: validate-repair
+country_boundaries_count <- country_boundaries |>
+  mutate(is_valid = st_is_valid(geometry)) |>
+  st_drop_geometry() |>
+  count(is_valid)
+
+country_boundaries_count
+```
+
+```{r}
+#| label: repair-geometries
+country_boundaries <- st_make_valid(country_boundaries)
+country_boundaries
+
+country_boundaries_count <- country_boundaries |>
+  mutate(is_valid = st_is_valid(geometry)) |>
+  st_drop_geometry() |>
+  count(is_valid)
+
+country_boundaries_count
+```
+
+
+Antimeridian - Line that is at the back (-180 degree)
+
+
+
+Equirectangular projection plots
+
+- one degree is one plot
+- limitations: distortion of area, shape, distance, and direction --> made it such that upper latitudes are stretched out and lower latitudes are compressed
