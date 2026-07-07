@@ -132,7 +132,7 @@ sum(!st_is_valid(country_boundaries))
 There are 5 invalid geometries within country_boundaries
 
 ```{r}
-#| label: reparing-geometry
+#| label: preparing-geometry
 
 country_boundaries <- st_make_valid(country_boundaries)
 sum(!st_is_valid(country_boundaries))
@@ -197,7 +197,7 @@ no_of_polygons <- st_cast(singapore, to = 'POLYGON')
 no_of_polygons
 ```
 
-After the simplification, Singapore is left with only one polygon
+After the simplification, Singapore is left with only one polygon.
 
 ## 3.7 Cure Antimeridian
 
@@ -239,7 +239,7 @@ count_code
 
 ### 3.8b
 
-The code FRA is shared by France and Clipperton Island, an uninhabited coral atoll in the eastern Pacific Ocean, roughly 1,300 miles (2,090 km) southwest of Mexico. It carries France's country code because Clipperton is a French dependency administered directly by the Minister of Overseas France, rather than a separate territory with its own ISO code. Background information: https://www.britannica.com/place/Clipperton-Island
+The code FRA is shared by France and Clipperton Island, an uninhabited coral atoll in the eastern Pacific Ocean, roughly 1,300 miles (2,090 km) southwest of Mexico. It carries France's country code because Clipperton is a French dependency administered directly by the Minister of Overseas France, rather than a separate territory with its own ISO code. Background information: [https://www.britannica.com/place/Clipperton-Island](https://www.britannica.com/place/Clipperton-Island)
 
 ### 3.8c
 
@@ -334,7 +334,7 @@ ggplot(country_boundaries) +
 
 The Equirectangular projection while straightforward, it significantly distorts areas and shapes. It drastically stretches areas as you move away from the equator toward the poles. As an example, Greenland appears to be the same size as Australia but is only 28% of Australia's land. However the graticule interpretability is high as The grid lines form straight, evenly spaced horizontal and vertical lines, making it the easiest projection for reading raw latitude and longitude coordinates.
 
-The Mollweide projection is an equal-area projection that depicts the pole as single points and the antimeridians merge into each other without any sharp corners at the poles. The area distortion is zero as it preserves relative land areas across the entire globe, correctly depciting e.g. the area of Greenland to Australia. This projection undergoes some shape distortion as continents near the boundary appear slanted or stretched. Lastly, the graticule interpretability isn't as high as the latitude are straight horizontal lines but the longitude curve significantly outwards towards the edge.
+The Mollweide projection is an equal-area projection that depicts the pole as single points and the antimeridians merge into each other without any sharp corners at the poles. The area distortion is zero as it preserves relative land areas across the entire globe, correctly depicting e.g. the area of Greenland to Australia. This projection undergoes some shape distortion as continents near the boundary appear slanted or stretched. Lastly, the graticule interpretability isn't as high as the latitude are straight horizontal lines but the longitude curve significantly outwards towards the edge.
 
 The Equal Earth projection like the MollWeide projection preserves the relative area well, leading it to have zero distortion in terms of Area. The shape distortion is relatively low as the map has a flat top and bottom, rather than a cylindrical shape like the Mollweide projection. The graticule interpretability is high as the latitude are straight and equally spaced, and the curvature of the meridians are predictable and balanced.
 
@@ -352,7 +352,7 @@ choropleth_map <- ggplot(countries) +
 choropleth_map
 ```
 
-While there are gray patches to indicate missing values, it is unclear whether it is because of missing gdp_per_cap values or undetermined status areas. The default continuous scale is also unsuitable as due to the outlier values, the midpoint is around ~60,000. This causes alot of countries to be in the dark blue part of the scale and most of the plot looks like the same dark blue shade. Additionally, a darker color is usually used to represent a higher value, which is not represented by default.
+While there are gray patches to indicate missing values, it is unclear whether it is because of missing gdp_per_cap values or undetermined status areas. The default continuous scale is also unsuitable as due to the outlier values, the midpoint is around ~60,000. This causes a lot of countries to be in the dark blue part of the scale and most of the plot looks like the same dark blue shade. Additionally, a darker color is usually used to represent a higher value, which is not represented by default.
 
 ## 3.12 Fixing Flaws
 
@@ -551,7 +551,6 @@ map_gdp <- ggplot(countries) +
 #| label: patchwork-plot
 #| fig-width: 10
 #| fig-height: 12
-#| padding: 10
 
 map_life_exp /
   map_gdp +
