@@ -129,7 +129,7 @@ names(country_stats)
 nrow(country_stats)
 ```
 
-Verifier Comment: The country_states do show the 4 column names and nrow(countries) do return 217.
+Verifier Comment: The country_stats do show the 4 column names and nrow(country_stats) do return 217.
 
 `names()` lists the column names of `country_stats` to acknowledge that it holds exactly `name`, `code`, `gdp_per_cap` and `life_exp`.
 
@@ -489,7 +489,7 @@ ggplot(country_boundaries) +
   coord_sf(crs = "EPSG:8857")
 ```
 
-`gg_plot()` + `geom_sf()` + `coord_sf()` replots the map with `scale_x_continuos(...)`/`scale_y_continuos(...)` configure graticule breaking at 45 degrees major latitude lines.
+`gg_plot()` + `geom_sf()` + `coord_sf()` replots the map with `scale_x_continuous(...)`/`scale_y_continuous(...)` configure graticule breaking at 45 degrees major latitude lines.
 
 A second `coord_sf()` replots the same map for comparison. 
 
@@ -548,7 +548,7 @@ choropleth_map <- choropleth_map +
 choropleth_map
 ```
 
-`scale_fill_fermenter(...)` substitutes continuos fill scale with ColorBrewer scale using a persistent break ladder and compact axis labels. Note `direction = 1` reverses the default palette order so darker reds map to lower GDP values. 
+`scale_fill_fermenter(...)` substitutes continuous fill scale with ColorBrewer scale using a persistent break ladder and compact axis labels. Note `direction = 1` reverses the default palette order so darker reds map to lower GDP values. 
 
 ### 3.12b Map missing countries
 
@@ -584,7 +584,7 @@ ggplot(countries) +
 
 `ggplot()` + `geom_sf(...)` replots the map from start and this round with the direction of `scale_fill_fermenter(...)` equals 1 so darker reds now correctly map to higher GDP values.
 
-Two additional `geom_sf(...)` layers plot the missing-data countries and undermined status areas as separate layers via `filter(...)` with them mapped to a constant `color` string ("Missing"/"Undetermined").
+Two additional `geom_sf(...)` layers plot the missing-data countries and undetermined status areas as separate layers via `filter(...)` with them mapped to a constant `color` string ("Missing"/"Undetermined").
 
 `scale_color_manual(...)` assigns both constants the same black color and `guides(...)` overrides the legend fill so they display light gray and dark grey swatches respectively.
 
@@ -769,7 +769,7 @@ map_life_exp /
   map_gdp +
   plot_annotation(
     title = "Comparing wealth and longevity across nations (2024)",
-    caption = "\"Undetermined\" refers to an area's legal source \nSource: World Bank",
+    caption = "\"Undetermined\" refers to an area's legal status \nSource: World Bank",
     theme = theme(
       plot.title = element_text(hjust = 0.5, face = "bold"),
       plot.caption = element_text(hjust = 0.5),
@@ -792,20 +792,20 @@ map_life_exp /
 10. **Title:** A bold, centered title indicates the variables being compared and the year (2024).
 11. **Caption:** The caption defines "Undetermined" and credits the World Bank as the data source.
 12. **Background and frame:** Oceans are filled with a light blue color, the page background is white, and the globe is framed on the left and right edges only.
-12. **Theme:** A minimal theme (`theme_void()`) is used to reduce non-data ink.
-13. **Figure dimensions:** The figure size keeps country labels and legends legible without appearing oversized.
+13. **Theme:** A minimal theme (`theme_void()`) is used to reduce non-data ink.
+14. **Figure dimensions:** The figure size keeps country labels and legends legible without appearing oversized.
 
 ## 3.14 Conclusion
 
-Stacking the Life Expectancy and GDP per Capita maps allows for a direct visual comparison of the spatial correlation between wealth and longevity. In most regions, the metrics track closely together. countries such as Australia, for example, exhibit the highest-tier color bands in both categories.
+Stacking the Life Expectancy and GDP per Capita maps allows for a direct visual comparison of the spatial correlation between wealth and longevity. In most regions, the metrics track closely together. Countries such as Australia, for example, exhibit the highest-tier color bands in both categories.
 
-This is also supported how a reader can instantly spot that Central and Western Africa form the core of the lowest bins for both metrics (GDP under $2,000 to $5,000 and life expectancy under 60 to 65 years).
+This is also supported by how a reader can instantly spot that Central and Western Africa form the core of the lowest bins for both metrics (GDP under $2,000 to $5,000 and life expectancy under 60 to 65 years).
 
 However, this comparative layout also exposes anomalies. The United States serves as an example of this divergence. Despite ranking in the highest bracket for economic wealth, its life expectancy visibly lags behind its economic peers, falling into a lower-tier bracket.
 
 An advantage of the choropleth map is how it retains the geographical context. The Preston Curve strips away geography entirely and countries become isolated dots. The choropleth maps show where these trends live and a reader can see regional clusters, revealing patterns that a scatter plot completely hides. Additionally, the world map can be easier to interpret for the general public compared to scatter plots.
 
-Disadvantages of the Choropleth map is how smaller countries such as Singapore is too small to really be observed. On a Preston Curve, every nation gets exactly one equal dot, regardless of geographic size. Additionally, it may not be as simple for the user to interpret the correlation as they have to keep comparing up and down between the two maps but a user is able to interpret the correlation in one glance on the Preston curve. 
+One disadvantage of the Choropleth map is how smaller countries such as Singapore is too small to really be observed. On a Preston Curve, every nation gets exactly one equal dot, regardless of geographic size. Additionally, it may not be as simple for the user to interpret the correlation as they have to keep comparing up and down between the two maps but a user is able to interpret the correlation in one glance on the Preston curve. 
 
 ## AI Liaison Report
 
