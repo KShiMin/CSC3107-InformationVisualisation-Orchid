@@ -122,7 +122,7 @@ country_stats
 `select(...)` drops the `region` column leaving `name`, `code`, `gdp_per_cap` and `life_exp`.
 
 
-### 3.3 verifier task
+### 3.3 Verifier Task
 ```{r}
 #| label: verifier-task-3.3
 names(country_stats)
@@ -153,7 +153,7 @@ country_boundaries
 
 `select(...)` renames and keeps only the ISO country code and legal status columns.
 
-### 3.4 verifier task
+### 3.4 Verifier Task
 ```{r}
 #| label: verifier-task-3.4
 inherits(country_boundaries, "sf")
@@ -190,7 +190,7 @@ sum(!st_is_valid(country_boundaries))
 
 `st_make_valid()` managed to repair the invalid geometries and this is confirmed by counting the number of invalid geometries with `!st_is_valid()` again, which returns 0.
 
-### 3.5 verifier task
+### 3.5 Verifier Task
 ```{r}
 #| label: verifier-task-3.5
 sum(!st_is_valid(country_boundaries))
@@ -206,7 +206,7 @@ Verifier Comment: Geometries did repair perfectly. There is 0 invalid geometries
 
 ## 3.6 Simplify Polygons
 
-### 3.6a
+### 3.6a Determining number of boundary points
 
 ```{r}
 #| label: count-points
@@ -216,7 +216,7 @@ npts(country_boundaries)
 
 `npts()` is used to count across all geometries the total number of boundary points.
 
-### 3.6b
+### 3.6b Determine number of polygons (Singapore)
 ```{r}
 #| label: count-polygons-singapore
 
@@ -235,7 +235,7 @@ There are a total of 20 polygons in Singapore.
 
 `st_cast(...)` splits multipolygon into individual component polygons to be counted.
 
-### 3.6c
+### 3.6c Simplify boundary
 
 ```{r}
 #| label: simplify-boundaries
@@ -256,7 +256,7 @@ To retain approximately 10,000 boundary points, we reduce the argument `keep` fr
 
 `ms_simplify()` minimizes the boundary point count to approximately 10,000 meanwhile `keep_shapes()` guarantees at least one polygon with every feature.
 
-### 3.6d
+### 3.6d Determine number of polygons #2 (Singapore)
 
 ```{r}
 #| label: simplified-polygons-singapore
@@ -272,7 +272,7 @@ After the simplification, Singapore is left with only one polygon.
 
 `filter()` + `st_cast(...)` confirms the intended country has just 1 polygon. 
 
-### 3.6 verifier task
+### 3.6 Verifier Task
 ```{r}
 #| label: verifier-task-3.6
 nrow(country_boundaries)
@@ -301,7 +301,7 @@ ggplot(country_boundaries) + geom_sf()
 
 `ggplot()` + `geom_sf()` plots the raw world map.
 
-### 3.7b
+### 3.7b Fixed antimeridian
 
 ```{r}
 #| label: cure-antimeridian
@@ -317,7 +317,7 @@ ggplot(country_boundaries) + geom_sf()
 
 `st_cast(...)` restores a consistent geometry type, re-plotting confirming that the streak is gone.
 
-### 3.7 verifier task
+### 3.7 Verifier Task
 ```{r}
 #| label: verifier-task-3.7
 nrow(country_boundaries)
@@ -337,7 +337,7 @@ Verifier Comment: Antimeridian cured safely. All features cast back to MULTIPOLY
 
 ## 3.8 Merge features
 
-### 3.8a
+### 3.8a Find shared non-missing code
 ```{r}
 #| label: find-shared-code
 
@@ -349,11 +349,11 @@ count_code
 
 `count(...)` with pipe operator `filter()` finds country codes shared by more than one feature.
 
-### 3.8b
+### 3.8b Verify Information
 
 The code FRA is shared by France and Clipperton Island, an uninhabited coral atoll in the eastern Pacific Ocean, roughly 1,300 miles (2,090 km) southwest of Mexico. It carries France's country code because Clipperton is a French dependency administered directly by the Minister of Overseas France, rather than a separate territory with its own ISO code. Background information: [https://www.britannica.com/place/Clipperton-Island](https://www.britannica.com/place/Clipperton-Island)
 
-### 3.8c
+### 3.8c Merge features
 
 ```{r}
 #| label: merge-features
@@ -395,7 +395,7 @@ country_boundaries
 
 `country_boundaries` then deployed `bind_rows(...)` function recombining the merged and untouched rows.
 
-### 3.8 verifier task
+### 3.8 Verifier Task
 ```{r}
 #| label: verifier-task-3.8
 nrow(country_boundaries)
@@ -436,7 +436,7 @@ countries
 
 `countries` tibble uses `left_join()` + `join_by()` attaches `country_stats` to `country_boundaries` keeping every polygon even those with no matching statistics.
 
-### 3.9 verifier task
+### 3.9 Verifier Task
 ```{r}
 #| label: verifier-task-3.9
 mismatches <- anti_join(
@@ -463,7 +463,7 @@ Verifier Comment: Yes , only the Channel Islands mismatch was found and the fina
 
 ## 3.10 Compare Projections
 
-### 3.10a
+### 3.10a Equirectangular Projection
 
 ```{r}
 #| label: projection-name
@@ -475,7 +475,7 @@ The name is "WGS 84", which stands for World Geodetic System 84. This is the def
 
 `str_cs(...)` reports the name and code of default coordinate reference system (WGS 84).
 
-### 3.10b
+### 3.10b Equal Earth Projection
 
 ```{r}
 #| label: plot-equal-earth
@@ -493,7 +493,7 @@ ggplot(country_boundaries) +
 
 A second `coord_sf()` replots the same map for comparison. 
 
-### 3.10c
+### 3.10c Mollweide Projection
 ```{r}
 #| label: plot-other-projection
 
@@ -532,7 +532,7 @@ While there are gray patches to indicate missing values, it is unclear whether i
 
 ## 3.12 Fixing Flaws
 
-### 3.12a
+### 3.12a Fix scale and color palette
 
 ```{r}
 #| label: fix-scale-and-colour
@@ -550,7 +550,7 @@ choropleth_map
 
 `scale_fill_fermenter(...)` substitutes continuos fill scale with ColorBrewer scale using a persistent break ladder and compact axis labels. Note `direction = 1` reverses the default palette order so darker reds map to lower GDP values. 
 
-### 3.12b
+### 3.12b Map missing countries
 
 ```{r}
 #| label: fill-missing-countries
@@ -779,7 +779,7 @@ map_life_exp /
 
 `map_life_exp`/`map_gdp` stacks the two maps vertically and `plot_annotation(...)` adds a centered boldface title plus a centered caption crediting to the World Bank.
 
-### 3.13 verifier task
+### 3.13 Verifier Task
 1. **Layout:** Two choropleth maps are stacked vertically, with life expectancy on the top panel and GDP per capita on the bottom panel.
 2. **Map projection:** Both maps use the same equal-area projection (EPSG:8857).
 3. **Clipping:** Both maps are clipped at 56°S and 84°N to focus on populated regions.
