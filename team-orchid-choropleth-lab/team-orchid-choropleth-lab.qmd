@@ -634,17 +634,16 @@ map_life_exp <- ggplot(countries) +
     )
   ) +
   geom_sf(
-    data = filter(countries, is.na(gdp_per_cap)),
+    data = filter(countries, is.na(life_exp)),
     fill = "lightgray",
+    color = "black",
     linewidth = 0.1
   ) +
   geom_sf(
     data = filter(countries, status == "Non-determined legal status area"),
     fill = "darkgray",
+    color = "black",
     linewidth = 0.1
-  ) +
-  scale_color_manual(
-    values = c("Missing" = "black", "Undetermined" = "black"),
   ) +
   geom_shadowtext(
     data = top_40_largest,
@@ -677,6 +676,8 @@ map_life_exp <- ggplot(countries) +
 `theme_void()` strips the background grid lines and axis text to minimize non-data ink.
 
 `coord_sf(...)` clips both the maps to populated latitude range while keeping the Equal Earth projection.
+
+`scale_y_continuous(expand = c(0, 0))` helps to keep the crop exactly at 84°N and 56°S
 
 ```{r}
 #| label: gdp-plot
@@ -756,6 +757,8 @@ map_gdp <- ggplot(countries) +
 `theme_void()` strips the background grid lines and axis text to minimize non-data ink.
 
 `coord_sf(...)` clips both the maps to populated latitude range while keeping the Equal Earth projection.
+
+`scale_y_continuous(expand = c(0, 0))` helps to keep the crop exactly at 84°N and 56°S
 
 ```{r}
 #| label: patchwork-plot
