@@ -23,10 +23,10 @@ The table below lists the assigned roles for each team member in this lab:
 ## 3.1 Identify Suitable Fill Variables for Choropleth Maps
 | Variable | Variable Type | Suitable as fill color? Why or why not?  | Would the result be a choropleth map? Why or why not?  |
 | ------ | ---- | -----------------------| -----------------------|
-| GDP per capita | Quantitative  | Yes - it's a rate, doesn't distort with merged polygons  | Yes as it's a rate and not raw total Eg. Computing the weighted average of GDP per capita rather than just adding all GDP per-capita values together |
-| Life expectancy | Quantitative  | Yes - same reasoning as GDP  | Yes and also the same reasoning with GDP |
-| Region | Categorical  | No not really - No ordering and just labels  | No as it is more of a categorical map  |
-| Population | Quantitative  | No - misleads by area size when summing up  | No as it is suited best for bubble size  |
+| GDP per capita | Quantitative - Intensive  | Yes - it's a rate, doesn't distort with merged polygons  | Yes as it's a rate and not raw total Eg. Computing the weighted average of GDP per capita rather than just adding all GDP per-capita values together |
+| Life expectancy | Quantitative - Intensive  | Yes - same reasoning as GDP  | Yes and also the same reasoning with GDP |
+| Region | Categorical - Nominal | No not really - No ordering and just labels  | No as it is more of a categorical map  |
+| Population | Quantitative - Extensive | No - misleads by area size when summing up  | No as it is suited best for bubble size  |
 
 ## 3.2 Setup
 ```{r}
@@ -127,7 +127,6 @@ country_stats
 #| label: verifier-task-3.3
 names(country_stats)
 nrow(country_stats)
-
 ```
 
 Verifier Comment: The country_states do show the 4 column names and nrow(countries) do return 217.
@@ -160,7 +159,6 @@ country_boundaries
 inherits(country_boundaries, "sf")
 unique(st_geometry_type(country_boundaries))
 st_is_longlat(country_boundaries)
-
 ```
 
 Verifier Comment: Countries_boundaries is an `sf` object, and all geometries are of type `MULTIPOLYGON`, and the coordinate reference system is longitude/latitude.
@@ -198,7 +196,6 @@ sum(!st_is_valid(country_boundaries))
 sum(!st_is_valid(country_boundaries))
 nrow(country_boundaries)
 unique(st_geometry_type(country_boundaries))
-
 ```
 
 Verifier Comment: Geometries did repair perfectly. There is 0 invalid geometries remain and the row count is unchanged.
@@ -282,7 +279,6 @@ nrow(country_boundaries)
 any(st_is_empty(country_boundaries))
 sum(!st_is_valid(country_boundaries))
 mapview::npts(country_boundaries)
-
 ```
 
 Verifier Comment: Polygons successfully simplified to ~9,500 points with no empty or invalid geometries introduced.
@@ -317,19 +313,18 @@ country_boundaries <- country_boundaries |>
 ggplot(country_boundaries) + geom_sf()
 ```
 
-`country_boundaries` tibble uses `st_wrap_dateline()` to split polygons which cross the meridian of longtitude.
+`country_boundaries` tibble uses `st_wrap_dateline()` to split polygons which cross the meridian of longitude.
 
 `st_cast(...)` restores a consistent geometry type, re-plotting confirming that the streak is gone.
 
 ### 3.7 verifier task
 ```{r}
 #| label: verifier-task-3.7
-nrow(country_boundaries) 
+nrow(country_boundaries)
 
-unique(st_geometry_type(country_boundaries)) 
+unique(st_geometry_type(country_boundaries))
 
-sum(!st_is_valid(country_boundaries)) 
-
+sum(!st_is_valid(country_boundaries))
 ```
 
 Verifier Comment: Antimeridian cured safely. All features cast back to MULTIPOLYGON with no invalid shapes.
@@ -403,15 +398,17 @@ country_boundaries
 ### 3.8 verifier task
 ```{r}
 #| label: verifier-task-3.8
-nrow(country_boundaries) 
+nrow(country_boundaries)
 
 codes <- country_boundaries$code[!is.na(country_boundaries$code)]
-any(duplicated(codes)) 
+any(duplicated(codes))
 
-sum(country_boundaries$status == "Non-determined legal status area", na.rm = TRUE) 
+sum(
+  country_boundaries$status == "Non-determined legal status area",
+  na.rm = TRUE
+)
 
-unique(st_geometry_type(country_boundaries)) 
-
+unique(st_geometry_type(country_boundaries))
 ```
 
 Verifier Comment: Features merged correctly into 264 rows. No duplicate codes exist and all 24 undetermined areas are preserved.
@@ -442,13 +439,16 @@ countries
 ### 3.9 verifier task
 ```{r}
 #| label: verifier-task-3.9
-mismatches <- anti_join(country_stats, sf::st_drop_geometry(country_boundaries), by = "code")
+mismatches <- anti_join(
+  country_stats,
+  sf::st_drop_geometry(country_boundaries),
+  by = "code"
+)
 print(mismatches)
 
-inherits(countries, "sf") 
-nrow(countries)           
-all(c("name", "gdp_per_cap", "life_exp") %in% names(countries)) 
-
+inherits(countries, "sf")
+nrow(countries)
+all(c("name", "gdp_per_cap", "life_exp") %in% names(countries))
 ```
 
 Verifier Comment: Yes , only the Channel Islands mismatch was found and the final sf object contains all the required columns. 
@@ -548,7 +548,7 @@ choropleth_map <- choropleth_map +
 choropleth_map
 ```
 
-`scale_fill_fermenter(...)` substitutes continuos fill scale with ColorBrewer scale using a persistent break ladder and compact axis labels. Note `direction = 1` reverses the default pallete order so darker reds map to lower GDP values. 
+`scale_fill_fermenter(...)` substitutes continuos fill scale with ColorBrewer scale using a persistent break ladder and compact axis labels. Note `direction = 1` reverses the default palette order so darker reds map to lower GDP values. 
 
 ### 3.12b
 
@@ -774,7 +774,7 @@ map_life_exp /
   )
 ```
 
-`mat_life_exp`/`map_gdp` stacks the two maps vertically and `plot_annotation(...)` adds a centered boldface title plus a centered caption crediting to the World Bank.
+`map_life_exp`/`map_gdp` stacks the two maps vertically and `plot_annotation(...)` adds a centered boldface title plus a centered caption crediting to the World Bank.
 
 ### 3.13 verifier task
 1. **Layout:** Two choropleth maps are stacked vertically, with life expectancy on the top panel and GDP per capita on the bottom panel.
