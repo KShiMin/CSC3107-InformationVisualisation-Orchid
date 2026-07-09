@@ -1,0 +1,107 @@
+## Scatter-plot
+
+```{r}
+#| label: value-quantity-scatter-2024
+#| fig-width: 12
+#| fig-height: 9
+#| fig-dpi: 300
+#| warning: false
+
+ggplot(
+  combined_country_data,
+  aes(x = export_quantity, y = export_value, color = geo_region)
+) +
+  geom_point(
+    aes(size = export_value, alpha = str_detect(country, "Rest of")),
+    show.legend = c(size = FALSE, alpha = FALSE, color = FALSE)
+  ) +
+  geom_text_repel(
+    aes(label = country),
+    size = 2.8,
+    max.overlaps = 15,
+    show.legend = FALSE
+  ) +
+  facet_wrap(~ geo_region, scales = "free") +
+  scale_x_log10(labels = scales::label_comma()) +
+  scale_y_log10(labels = scales::label_comma()) +
+  scale_alpha_manual(values = c(`TRUE` = 0.9, `FALSE` = 0.6)) +
+  labs(
+    title = "Export Quantity vs. Export Value by Region, 2024",
+    x = "Export quantity (log scale)",
+    y = "Export value (USD millions, log scale)"
+  ) +
+  theme_minimal() +
+  theme(strip.text = element_text(face = "bold"))
+```
+
+```{r}
+#| label: top30-rest-of-world-prep
+
+# Individually-named countries only (exclude the 7 pre-aggregated "Rest of X" rows)
+named_countries <- combined_country_data |>
+  filter(!str_detect(country, "^Rest of"))
+
+top30_countries <- named_countries |>
+  slice_max(export_value, n = 30)
+
+# Everything NOT in the top 30 -- both smaller named countries and the
+# existing "Rest of X region" rows -- collapsed into a single point.
+# This guarantees the chart still represents 100% of world trade.
+rest_of_world <- combined_country_data |>
+  filter(!(country %in% top30_countries$country)) |>
+  summarise(
+    country = "Rest of World",
+    geo_region = "Rest of World",
+    export_value = sum(export_value, na.rm = TRUE),
+    export_quantity = sum(export_quantity, na.rm = TRUE)
+  )
+
+top30_plus_row <- bind_rows(top30_countries, rest_of_world)
+
+# For the faceted version: top 30 named countries vs. the 7 existing
+# "Rest of X region" rows shown side by side, with no re-aggregation needed.
+rest_of_region <- combined_country_data |>
+  filter(str_detect(country, "^Rest of"))
+
+top30_vs_region_panels <- bind_rows(
+  top30_countries |> mutate(panel = "Top 30 Countries"),
+  rest_of_region  |> mutate(panel = "Rest of Region (remaining world trade)")
+)
+
+```
+
+## Single Global Scatter (Top 30 + One "Rest of World" Point)
+
+
+```{r}
+#| label: top30-single-panel
+#| fig-width: 10
+#| fig-height: 7
+#| fig-dpi: 300
+#| warning: false
+
+ggplot(
+  top30_plus_row,
+  aes(x = export_quantity, y = export_value, color = geo_region)
+) +
+  geom_point(
+    aes(size = export_value, alpha = country == "Rest of World"),
+    show.legend = c(size = FALSE, alpha = FALSE)
+  ) +
+  geom_text_repel(
+    aes(label = country),
+    size = 3,
+    max.overlaps = 20,
+    show.legend = FALSE
+  ) +
+  scale_x_log10(labels = scales::label_comma()) +
+  scale_y_log10(labels = scales::label_comma()) +
+  scale_alpha_manual(values = c(`TRUE` = 1, `FALSE` = 0.75)) +
+  labs(
+    title = "Top 30 Agricultural Exporters vs. Rest of World, 2024",
+    x = "Export quantity (log scale)",
+    y = "Export value (USD millions, log scale)",
+    color = "Region"
+  ) +
+  theme_minimal()
+```
