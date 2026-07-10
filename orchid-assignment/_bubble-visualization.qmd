@@ -1,0 +1,578 @@
+# Bubble Visualisation
+
+## Preprocessed Data
+```{r}
+#| label: fetch-preprocessed-data
+#| message: false
+preprocessed_data <- read_csv(export_path)
+```
+
+## Data Preparation for Bubble Charts
+
+```{r}
+#| label: prepare-bubble-data
+#| message: false
+
+bubble_country_data <- preprocessed_data |>
+  filter(
+    str_squish(country) != "World",
+    !is.na(export_value),
+    !is.na(export_quantity),
+    export_value > 0,
+    export_quantity > 0,
+    !is.na(geo_region)
+  ) |>
+  mutate(
+    # Source units: value in USD millions, quantity in thousand tonnes.
+    export_value_usd_billions = export_value / 1000,
+    export_quantity_million_tonnes = export_quantity / 1000,
+    # Unit price: (USD millions * 1000) / thousand tonnes = USD per tonne.
+    usd_per_tonne = (export_value * 1000) / export_quantity
+  )
+
+bubble_region_palette <- region_color_palette(bubble_country_data$geo_region)
+
+bubble_region_rest_palette <- c(bubble_region_palette, "Rest of World" = "grey55")
+
+bubble_theme <- theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.position = "right",
+    plot.title.position = "plot",
+    plot.caption = element_text(hjust = 0),
+    plot.margin = margin(10, 20, 16, 10)
+  )
+
+glimpse(bubble_country_data)
+```
+
+All of the bubble charts start from this cleaned country table, which keeps only
+rows with a positive value and volume. The charts that group the data (by region,
+or into a "rest" bubble) build on this table. Shared styling objects keep the
+figures looking consistent.
+
+## Regional Overview (Value vs Volume)
+
+```{r}
+#| label: bubble-chart-regional-overview
+#| message: false
+#| warning: false
+#| fig-height: 8
+#| fig-width: 12
+
+bubble_region_summary <- bubble_country_data |>
+  group_by(geo_region) |>
+  summarise(
+    reporting_countries = n(),
+    export_value = sum(export_value, na.rm = TRUE),
+    export_quantity = sum(export_quantity, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  mutate(
+    export_value_usd_billions = export_value / 1000,
+    export_quantity_million_tonnes = export_quantity / 1000,
+    usd_per_tonne = (export_value * 1000) / export_quantity
+  )
+
+gg_bubble_region <- ggplot(
+  bubble_region_summary,
+  aes(
+    x = export_quantity_million_tonnes,
+    y = export_value_usd_billions,
+    size = usd_per_tonne,
+    color = geo_region
+  )
+) +
+  geom_point(alpha = 0.85) +
+  ggrepel::geom_text_repel(
+    aes(label = geo_region),
+    size = 4,
+    color = "grey20",
+    show.legend = FALSE,
+    box.padding = 0.7,
+    min.segment.length = 0
+  ) +
+  scale_size_area(
+    max_size = 24,
+    name = "Unit price (US$ / tonne)",
+    labels = scales::label_dollar(prefix = "US$")
+  ) +
+  scale_color_manual(
+    values = bubble_region_palette,
+    name = "Geographic Region",
+    guide = guide_legend(override.aes = list(size = 5))
+  ) +
+  scale_x_continuous(
+    labels = scales::label_number(suffix = " Mt"),
+    expand = expansion(mult = c(0.08, 0.12))
+  ) +
+  scale_y_continuous(
+    labels = scales::label_dollar(prefix = "US$", suffix = "B"),
+    expand = expansion(mult = c(0.08, 0.12))
+  ) +
+  labs(
+    x = "Total Agricultural Export Volume (million tonnes)",
+    y = "Total Agricultural Export Value (US$ billions)",
+    title = "Agricultural Export Value vs Volume by Region in 2024",
+    subtitle = str_wrap(
+      "One bubble per region. Bubble size shows average value earned per tonne shipped.",
+      width = 95
+    ),
+    caption = str_wrap(
+      "Aggregated across all reporting economies; the seven regions together account for 100% of recorded trade. European Union is treated as a single reporting economy within Europe.",
+      width = 110
+    )
+  ) +
+  bubble_theme
+
+gg_bubble_region
+```
+
+## Top 3 Economies and Rest per Region
+
+```{r}
+#| label: prepare-bubble-top3-rest
+#| message: false
+
+# Rank economies within each region by export value (consistent with the
+# lollipop ranking) so we can separate the top 3 from the rest.
+bubble_ranked <- bubble_country_data |>
+  group_by(geo_region) |>
+  mutate(value_rank = row_number(desc(export_value))) |>
+  ungroup()
+
+# Top 3 economies per region, kept as individual bubbles.
+bubble_top3 <- bubble_ranked |>
+  filter(value_rank <= 3) |>
+  transmute(
+    geo_region,
+    entity = country,
+    entity_type = "Top-3 economy",
+    export_value,
+    export_quantity
+  )
+
+# Everyone ranked 4th or lower in a region, collapsed into one bubble.
+bubble_rest <- bubble_ranked |>
+  filter(value_rank > 3) |>
+  group_by(geo_region) |>
+  summarise(
+    rest_countries = n(),
+    export_value = sum(export_value, na.rm = TRUE),
+    export_quantity = sum(export_quantity, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  transmute(
+    geo_region,
+    entity = str_c("Rest of ", geo_region, " (", rest_countries, ")"),
+    entity_type = "Rest of region",
+    export_value,
+    export_quantity
+  )
+
+bubble_plot_data <- bind_rows(bubble_top3, bubble_rest) |>
+  mutate(
+    export_value_usd_billions = export_value / 1000,
+    export_quantity_million_tonnes = export_quantity / 1000,
+    usd_per_tonne = (export_value * 1000) / export_quantity,
+    entity_type = factor(
+      entity_type,
+      levels = c("Top-3 economy", "Rest of region")
+    )
+  )
+```
+
+```{r}
+#| label: bubble-chart-top3-rest
+#| message: false
+#| warning: false
+#| fig-height: 9
+#| fig-width: 14
+
+gg_bubble_top3_rest <- ggplot(
+  bubble_plot_data,
+  aes(
+    x = export_quantity_million_tonnes,
+    y = export_value_usd_billions,
+    size = usd_per_tonne,
+    color = geo_region,
+    shape = entity_type
+  )
+) +
+  geom_point(alpha = 0.85, stroke = 1) +
+  ggrepel::geom_text_repel(
+    aes(label = entity),
+    size = 3.2,
+    color = "grey20",
+    show.legend = FALSE,
+    max.overlaps = Inf,
+    box.padding = 0.5,
+    point.padding = 0.3,
+    min.segment.length = 0,
+    segment.color = "grey70"
+  ) +
+  # Solid circles for individual top-3 economies; hollow circles for the
+  # aggregated "Rest of region" bubbles.
+  scale_shape_manual(
+    values = c("Top-3 economy" = 16, "Rest of region" = 1),
+    name = "Bubble type"
+  ) +
+  scale_size_area(
+    max_size = 20,
+    name = "Unit price (US$ / tonne)",
+    labels = scales::label_dollar(prefix = "US$")
+  ) +
+  scale_color_manual(
+    values = bubble_region_palette,
+    name = "Geographic Region",
+    guide = guide_legend(override.aes = list(size = 5, shape = 16))
+  ) +
+  scale_x_log10(
+    labels = scales::label_number(suffix = " Mt"),
+    expand = expansion(mult = c(0.08, 0.12))
+  ) +
+  scale_y_log10(
+    labels = scales::label_dollar(prefix = "US$", suffix = "B"),
+    expand = expansion(mult = c(0.08, 0.12))
+  ) +
+  labs(
+    x = "Agricultural Export Volume (million tonnes, log scale)",
+    y = "Agricultural Export Value (US$ billions, log scale)",
+    title = "Agricultural Export Value vs Volume in 2024: Top 3 Economies per Region",
+    subtitle = str_wrap(
+      "Solid bubbles are each region's three largest exporters by value; hollow bubbles combine the remaining economies in that region. Bubble size shows average unit price.",
+      width = 100
+    ),
+    caption = str_wrap(
+      "Together the bubbles account for 100% of recorded trade. Both axes are log-scaled because export size spans several orders of magnitude. Aggregate rows such as World are excluded; European Union is treated as a single reporting economy within Europe in the WTO dataset.",
+      width = 115
+    )
+  ) +
+  bubble_theme
+
+gg_bubble_top3_rest
+```
+
+## Inside Each Region (Small Multiples)
+
+```{r}
+#| label: bubble-chart-faceted-region
+#| message: false
+#| warning: false
+#| fig-height: 12
+#| fig-width: 14
+
+bubble_faceted <- bubble_country_data |>
+  group_by(geo_region) |>
+  mutate(
+    region_value_rank = row_number(desc(export_value)),
+    facet_label = if_else(region_value_rank <= 4, country, NA_character_)
+  ) |>
+  ungroup()
+
+gg_bubble_faceted <- ggplot(
+  bubble_faceted,
+  aes(
+    x = export_quantity_million_tonnes,
+    y = export_value_usd_billions,
+    color = geo_region
+  )
+) +
+  # Fixed point size: this view is about where economies sit within their
+  # region, not unit price, so we avoid the extreme bubble that a few
+  # micro-exporters (tiny tonnage, non-trivial value) would otherwise create.
+  geom_point(size = 2.3, alpha = 0.7) +
+  ggrepel::geom_text_repel(
+    aes(label = facet_label),
+    size = 2.9,
+    color = "grey20",
+    show.legend = FALSE,
+    max.overlaps = Inf,
+    box.padding = 0.5,
+    min.segment.length = 0,
+    segment.color = "grey75",
+    na.rm = TRUE
+  ) +
+  facet_wrap(vars(geo_region), scales = "free", ncol = 3) +
+  scale_color_manual(values = bubble_region_palette, guide = "none") +
+  # Power-of-ten ticks keep the labels short so they do not overlap in the
+  # narrow panels; the units are stated in the axis titles.
+  scale_x_log10(
+    breaks = scales::breaks_log(n = 4),
+    labels = scales::label_log()
+  ) +
+  scale_y_log10(
+    breaks = scales::breaks_log(n = 4),
+    labels = scales::label_log()
+  ) +
+  labs(
+    x = "Agricultural Export Volume (million tonnes, log scale)",
+    y = "Agricultural Export Value (US$ billions, log scale)",
+    title = "Inside Each Region: Value vs Volume of Every Reporting Economy in 2024",
+    subtitle = str_wrap(
+      "Each panel has its own axis range so within-region structure is visible; the top four economies per region are labelled. Axis ticks are powers of ten.",
+      width = 100
+    ),
+    caption = str_wrap(
+      "Because each panel is scaled independently, bubble positions should be compared within a region, not across panels. European Union is treated as a single reporting economy within Europe.",
+      width = 115
+    )
+  ) +
+  bubble_theme +
+  theme(
+    strip.text = element_text(face = "bold"),
+    panel.spacing = unit(1.2, "lines"),
+    axis.text = element_text(size = 9)
+  )
+
+gg_bubble_faceted
+```
+
+## Story 4: Top 15 by Value vs Top 15 by Volume
+
+```{r}
+#| label: prepare-bubble-value-volume-facets
+#| message: false
+
+# Take the top 15 economies by a chosen metric as individual bubbles, and
+# collapse every remaining economy into one "Rest of World" bubble.
+bubble_top15_with_rest <- function(data, rank_metric, facet_label) {
+  ranked <- data |>
+    mutate(metric_rank = row_number(desc({{ rank_metric }})))
+
+  top15 <- ranked |>
+    filter(metric_rank <= 15) |>
+    transmute(
+      facet = facet_label,
+      entity = country,
+      entity_group = geo_region,
+      entity_type = "Individual economy",
+      export_value,
+      export_quantity
+    )
+
+  rest <- ranked |>
+    filter(metric_rank > 15) |>
+    summarise(
+      rest_countries = n(),
+      export_value = sum(export_value, na.rm = TRUE),
+      export_quantity = sum(export_quantity, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    transmute(
+      facet = facet_label,
+      entity = str_c("Rest of World (", rest_countries, ")"),
+      entity_group = "Rest of World",
+      entity_type = "Rest of World",
+      export_value,
+      export_quantity
+    )
+
+  bind_rows(top15, rest)
+}
+
+bubble_value_volume_facets <- bind_rows(
+  bubble_top15_with_rest(
+    bubble_country_data, export_value, "Top 15 by export value"
+  ),
+  bubble_top15_with_rest(
+    bubble_country_data, export_quantity, "Top 15 by export volume"
+  )
+) |>
+  mutate(
+    export_value_usd_billions = export_value / 1000,
+    export_quantity_million_tonnes = export_quantity / 1000,
+    usd_per_tonne = (export_value * 1000) / export_quantity,
+    entity_type = factor(
+      entity_type,
+      levels = c("Individual economy", "Rest of World")
+    ),
+    facet = factor(
+      facet,
+      levels = c("Top 15 by export value", "Top 15 by export volume")
+    )
+  )
+```
+
+```{r}
+#| label: bubble-chart-value-volume-facets
+#| message: false
+#| warning: false
+#| fig-height: 9
+#| fig-width: 15
+
+gg_bubble_value_volume <- ggplot(
+  bubble_value_volume_facets,
+  aes(
+    x = export_quantity_million_tonnes,
+    y = export_value_usd_billions,
+    size = usd_per_tonne,
+    color = entity_group,
+    shape = entity_type
+  )
+) +
+  geom_point(alpha = 0.85, stroke = 1) +
+  ggrepel::geom_text_repel(
+    aes(label = entity),
+    size = 3,
+    color = "grey20",
+    show.legend = FALSE,
+    max.overlaps = Inf,
+    min.segment.length = 0,
+    segment.color = "grey70"
+  ) +
+  facet_wrap(vars(facet)) +
+  # Solid circles for individual economies; hollow circles for the pooled
+  # Rest of World bubble in each panel.
+  scale_shape_manual(
+    values = c("Individual economy" = 16, "Rest of World" = 1),
+    name = "Bubble type"
+  ) +
+  scale_size_area(
+    max_size = 18,
+    name = "Unit price (US$ / tonne)",
+    labels = scales::label_dollar(prefix = "US$")
+  ) +
+  scale_color_manual(
+    values = bubble_region_rest_palette,
+    name = "Geographic Region",
+    guide = guide_legend(override.aes = list(size = 5, shape = 16))
+  ) +
+  scale_x_log10(labels = scales::label_number(suffix = " Mt")) +
+  scale_y_log10(labels = scales::label_dollar(prefix = "US$", suffix = "B")) +
+  labs(
+    x = "Agricultural Export Volume (million tonnes, log scale)",
+    y = "Agricultural Export Value (US$ billions, log scale)",
+    title = "Top 15 Agricultural Exporters by Value vs by Volume in 2024",
+    subtitle = str_wrap(
+      "The left panel ranks the 15 largest economies by export value; the right panel ranks by export volume. Each panel pools all remaining economies into one grey Rest of World bubble. Both panels share the same axes.",
+      width = 110
+    ),
+    caption = str_wrap(
+      "The two panels contain different sets of economies because value and volume rank countries differently. Bubble size shows average unit price. European Union is treated as a single reporting economy within Europe.",
+      width = 115
+    )
+  ) +
+  bubble_theme +
+  theme(strip.text = element_text(face = "bold"))
+
+gg_bubble_value_volume
+```
+
+This paired view shows how the list of top exporters changes depending on the
+metric. A country can be in the top 15 by value but not by volume, which points
+to high-value, lower-tonnage exports, or the other way around for bulk
+commodities. The two Rest of World bubbles are worth comparing as well. Because
+value and volume put different countries into the top 15, the pooled remainder is
+not the same in the two panels, both in which countries it contains and in its
+size.
+
+## Story 5: Global Leaders and the Rest of the World
+
+```{r}
+#| label: bubble-chart-global-rest
+#| message: false
+#| warning: false
+#| fig-height: 9
+#| fig-width: 13
+
+bubble_global_ranked <- bubble_country_data |>
+  mutate(global_rank = row_number(desc(export_value)))
+
+bubble_global_top <- bubble_global_ranked |>
+  filter(global_rank <= 15) |>
+  transmute(
+    entity = country,
+    entity_group = geo_region,
+    entity_type = "Individual economy",
+    export_value,
+    export_quantity
+  )
+
+bubble_global_rest <- bubble_global_ranked |>
+  filter(global_rank > 15) |>
+  summarise(
+    rest_countries = n(),
+    export_value = sum(export_value, na.rm = TRUE),
+    export_quantity = sum(export_quantity, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  transmute(
+    entity = str_c("Rest of World (", rest_countries, ")"),
+    entity_group = "Rest of World",
+    entity_type = "Rest of World",
+    export_value,
+    export_quantity
+  )
+
+bubble_global <- bind_rows(bubble_global_top, bubble_global_rest) |>
+  mutate(
+    export_value_usd_billions = export_value / 1000,
+    export_quantity_million_tonnes = export_quantity / 1000,
+    usd_per_tonne = (export_value * 1000) / export_quantity,
+    entity_type = factor(
+      entity_type,
+      levels = c("Individual economy", "Rest of World")
+    )
+  )
+
+gg_bubble_global <- ggplot(
+  bubble_global,
+  aes(
+    x = export_quantity_million_tonnes,
+    y = export_value_usd_billions,
+    size = usd_per_tonne,
+    color = entity_group,
+    shape = entity_type
+  )
+) +
+  geom_point(alpha = 0.85, stroke = 1) +
+  ggrepel::geom_text_repel(
+    aes(label = entity),
+    size = 3.2,
+    color = "grey20",
+    show.legend = FALSE,
+    max.overlaps = Inf,
+    min.segment.length = 0,
+    segment.color = "grey70"
+  ) +
+  scale_shape_manual(
+    values = c("Individual economy" = 16, "Rest of World" = 1),
+    name = "Bubble type"
+  ) +
+  scale_size_area(
+    max_size = 20,
+    name = "Unit price (US$ / tonne)",
+    labels = scales::label_dollar(prefix = "US$")
+  ) +
+  scale_color_manual(
+    values = bubble_region_rest_palette,
+    name = "Geographic Region",
+    guide = guide_legend(override.aes = list(size = 5, shape = 16))
+  ) +
+  scale_x_log10(labels = scales::label_number(suffix = " Mt")) +
+  scale_y_log10(labels = scales::label_dollar(prefix = "US$", suffix = "B")) +
+  labs(
+    x = "Agricultural Export Volume (million tonnes, log scale)",
+    y = "Agricultural Export Value (US$ billions, log scale)",
+    title = "The 15 Largest Agricultural Exporters and the Rest of the World in 2024",
+    subtitle = str_wrap(
+      "The 15 highest-value economies are shown individually; every remaining economy is combined into one grey bubble. Bubble size shows average unit price.",
+      width = 100
+    ),
+    caption = str_wrap(
+      "The Rest of World bubble aggregates all economies outside the top 15 by value. European Union is treated as a single reporting economy within Europe in the WTO dataset.",
+      width = 115
+    )
+  ) +
+  bubble_theme
+
+gg_bubble_global
+```
+
+This last view looks at how concentrated trade is, similar to the infographic
+that the assignment is based on. A small group of economies takes up most of
+global agricultural trade. At the same time, the single "Rest of World" bubble,
+which pools well over a hundred economies, still holds a large share of both
+value and volume. Putting that pooled bubble next to the named leaders makes it
+easy to see how concentrated trade is and where that concentration stops.
