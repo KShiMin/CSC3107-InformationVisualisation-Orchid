@@ -1,0 +1,118 @@
+# Stacked Bar: Regional Composition (Value and Quantity, Faceted)
+
+```{r}
+#| label: stacked-bar-region-composition-prep
+
+# Named economies per region. Everything below the cut collapses into one
+# "Rest of <region>" segment so each bar still represents 100% of that region.
+n_top <- 3
+
+# Rank WITHIN each region by export value so the SAME three economies stay named in both
+# the value and the quantity panel. The guard drops any pre-aggregated
+# "Rest of X" rows so the residual is never double-counted.
+ranked <- combined_country_data |>
+  filter(!str_detect(country, "^Rest of")) |>
+  group_by(geo_region) |>
+  mutate(value_rank = row_number(desc(export_value))) |>
+  ungroup() |>
+  mutate(is_rest = value_rank > n_top)
+
+# Top-3 economies kept individually.
+named_segments <- ranked |>
+  filter(!is_rest) |>
+  transmute(geo_region, segment = country, is_rest,
+            export_value, export_quantity)
+
+# Everyone ranked 4th or lower per region, pooled into a counted residual.
+rest_segments <- ranked |>
+  filter(is_rest) |>
+  group_by(geo_region) |>
+  summarise(rest_countries = n(),
+            export_value = sum(export_value, na.rm = TRUE),
+            export_quantity = sum(export_quantity, na.rm = TRUE),
+            .groups = "drop") |>
+  mutate(segment = str_c("Rest of ", geo_region, " (", rest_countries, ")"),
+         is_rest = TRUE) |>
+  transmute(geo_region, segment, is_rest, export_value, export_quantity)
+
+# One long table with a single `measure` column so a single facet can split it.
+stacked_data <- bind_rows(named_segments, rest_segments) |>
+  pivot_longer(
+    cols = c(export_value, export_quantity),
+    names_to = "measure",
+    values_to = "amount"
+  ) |>
+  filter(!is.na(amount), amount > 0) |>
+  mutate(measure = recode(measure,
+    export_value    = "Export value (USD millions)",
+    export_quantity = "Export quantity (tonnes)"))
+
+# Stable region ordering (by total export value) shared across both panels.
+region_order <- stacked_data |>
+  filter(measure == "Export value (USD millions)") |>
+  group_by(geo_region) |>
+  summarise(total = sum(amount), .groups = "drop") |>
+  arrange(total) |>
+  pull(geo_region)
+
+stacked_plot_df <- stacked_data |>
+  mutate(geo_region = factor(geo_region, levels = region_order),
+         stack_key  = if_else(is_rest, 0, amount)) |>
+  arrange(measure, geo_region, desc(is_rest), desc(amount))
+```
+
+```{r}
+#| label: stacked-bar-region-composition
+#| fig-width: 12
+#| fig-height: 6
+#| fig-dpi: 300
+#| warning: false
+
+ggplot(
+  stacked_plot_df,
+  aes(x = amount, y = geo_region,
+      fill = is_rest,
+      group = interaction(is_rest, -stack_key))
+) +
+  geom_col(width = 0.75, color = "white", linewidth = 0.2) +
+  geom_text(
+    aes(label = if_else(!is_rest, segment, "")),
+    position = position_stack(vjust = 0.5),
+    size = 2.3, color = "white"
+  ) +
+  facet_wrap(~ measure, scales = "free_x") +
+  scale_x_continuous(labels = scales::label_comma(),
+                     expand = expansion(mult = c(0, 0.04))) +
+  scale_fill_manual(
+    values = c(`FALSE` = "#2f7d6b", `TRUE` = "#c9ccd1"),
+    labels = c(`FALSE` = "Top 3 by value (named)", `TRUE` = "Rest of region"),
+    name = NULL
+  ) +
+  labs(
+    title = "Agricultural Exports by Region: Value vs. Quantity, 2024",
+    subtitle = "Small multiples of one stacked bar; the same three value-leaders are named in both panels, and each bar covers 100% of its region",
+    x = NULL, y = NULL
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(strip.text = element_text(face = "bold"),
+        legend.position = "top",
+        panel.grid.major.y = element_blank())
+```
+
+This chart is presented as **small multiples of a single stacked bar** rather
+than two separate charts: one `ggplot()` faceted by `measure` produces a value
+panel and a quantity panel from the same table.
+
+
+Because the top three are fixed by value, a value-leader with modest tonnage
+appears as a large segment in the value panel but a small one in the quantity
+panel, with the difference absorbed into that region's residual — making the
+value-versus-volume contrast directly readable. The chart retains the inherent
+limitation of stacked bars: only the segment anchored at the zero baseline can be
+compared by position, while the rest must be judged by length from a shifting
+baseline, which is less precise than position on a common scale
+(Cleveland & McGill, 1985). Value covers all 32 W32 product groups whereas
+quantity covers only the tonne-measured groups, so the panels are read as a
+structural comparison rather than a unit-for-unit conversion, and the chart shows
+a single year (2024) without temporal comparison.
+```
