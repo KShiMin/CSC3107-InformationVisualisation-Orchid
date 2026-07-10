@@ -62,6 +62,20 @@ stacked_plot_df <- stacked_data |>
 ```
 
 ```{r}
+stacked_plot_df <- stacked_plot_df |>
+  # Ensure we calculate cumulative sums in the exact order the bars are stacked
+  group_by(measure, geo_region) |>
+  arrange(desc(is_rest), desc(amount)) |>
+  mutate(
+    # Calculate the right-edge of each stacked segment
+    cum_amount = cumsum(amount),
+    # Calculate the exact middle point of each segment
+    x_mid = cum_amount - (amount / 2)
+  ) |>
+  ungroup()
+```
+
+```{r}
 #| label: stacked-bar-region-composition
 #| fig-width: 12
 #| fig-height: 6
