@@ -1,0 +1,358 @@
+# Bar Chart Visualisation
+
+# Fetch the Preprocessed data
+```{r}
+#| label: fetch-preprocessed-data-bar
+#| message: false
+
+library(tidyverse)
+library(readr)
+library(forcats)
+library(scales)
+library(stringr)
+
+preprocessed_data <- read_csv(export_path)
+```
+
+# Filter Rows
+```{r}
+#| label: filter-bar-country-data
+#| message: false
+
+bar_country_data <- preprocessed_data |>
+  filter(
+    str_squish(country) != "World",
+    !is.na(export_value),
+    !is.na(export_quantity),
+    !is.na(geo_region)
+  )
+```
+
+# Select top exporters
+```{r}
+#| label: prepare-top30-bar-data
+#| message: false
+
+bar_top30 <- bar_country_data |>
+  slice_max(
+    order_by = export_value,
+    n = 30,
+    with_ties = FALSE
+  )
+```
+
+# Chart Labels
+```{r}
+#| label: format-bar-labels
+#| message: false
+
+bar_top30 <- bar_top30 |>
+  mutate(
+    export_value_usd_billions = export_value / 1000,
+    export_quantity_million_tonnes = export_quantity / 1000,
+    export_value_label = label_dollar(
+      prefix = "US$",
+      suffix = "B",
+      accuracy = 0.1
+    )(export_value_usd_billions),
+    export_quantity_label = label_number(
+      accuracy = 0.1,
+      suffix = " Mt"
+    )(export_quantity_million_tonnes),
+    chart_label = str_c(
+      export_value_label,
+      " | ",
+      export_quantity_label
+    ),
+    country = fct_reorder(country, export_value)
+  )
+```
+
+# Okabe Ito Palette
+```{r}
+#| label: define-bar-region-palette
+#| message: false
+
+okabe_ito_palette <- c(
+  "#E69F00", # orange
+  "#56B4E9", # sky blue
+  "#009E73", # bluish green
+  "#F0E442", # yellow
+  "#0072B2", # blue
+  "#D55E00", # vermillion
+  "#CC79A7", # reddish purple
+  "#999999" # grey
+)
+
+region_levels <- sort(unique(bar_country_data$geo_region))
+
+if (length(region_levels) > length(okabe_ito_palette)) {
+  stop("There are more geographic regions than available Okabe-Ito colours.")
+}
+
+region_palette <- set_names(
+  okabe_ito_palette[seq_along(region_levels)],
+  region_levels
+)
+```
+
+# Set Styling Constants
+```{r}
+#| label: set-bar-chart-styling
+#| message: false
+
+bar_base_text_size <- 14
+bar_y_axis_text_size <- 11
+bar_legend_text_size <- 11
+bar_legend_title_size <- 12
+bar_label_size <- 3.4
+bar_right_padding <- 0.28
+```
+
+# Build the bar chart
+```{r}
+#| label: build-bar-chart-value-region
+#| message: false
+#| warning: false
+#| fig-height: 10
+#| fig-width: 15
+
+gg_bar_value_region <- ggplot(
+  bar_top30,
+  aes(
+    x = export_value_usd_billions,
+    y = country,
+    fill = geo_region
+  )
+) +
+  geom_col(width = 0.72) +
+  geom_text(
+    aes(label = chart_label),
+    hjust = -0.08,
+    size = bar_label_size,
+    color = "grey25"
+  ) +
+  scale_fill_manual(
+    values = region_palette,
+    name = "Geographic Region"
+  ) +
+  scale_x_continuous(
+    labels = label_dollar(
+      prefix = "US$",
+      suffix = "B"
+    ),
+    expand = expansion(mult = c(0, bar_right_padding))
+  ) +
+  labs(
+    x = "Agricultural Export Value (USD Billions)",
+    y = "Country / Reporting Economy",
+    title = "Top 30 Agricultural Exporters by Export Value in 2024",
+    subtitle = "Bars are ranked by export value and coloured by geographic region; direct labels show export value and recorded export volume.",
+    caption = str_wrap(
+      "Export volume is shown in million tonnes (Mt) for product groups measured by physical quantity. Aggregate rows such as World are excluded. European Union is treated as a reporting economy in the WTO dataset.",
+      width = 110
+    )
+  ) +
+  theme_minimal(base_size = bar_base_text_size) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom",
+    plot.title.position = "plot",
+    plot.caption = element_text(hjust = 0),
+    axis.text.y = element_text(size = bar_y_axis_text_size),
+    legend.text = element_text(size = bar_legend_text_size),
+    legend.title = element_text(size = bar_legend_title_size),
+    plot.margin = margin(10, 40, 16, 10)
+  )
+
+gg_bar_value_region
+```
+
+# Top Exporters by Region
+```{r}
+#| label: prepare-top-exporters-by-region
+#| message: false
+
+regional_top_exporters <- bar_country_data |>
+  group_by(geo_region) |>
+  slice_max(
+    order_by = export_value,
+    n = 5,
+    with_ties = FALSE
+  ) |>
+  ungroup() |>
+  mutate(
+    export_value_usd_billions = export_value / 1000,
+    export_value_label = scales::label_dollar(
+      prefix = "US$",
+      suffix = "B",
+      accuracy = 0.1
+    )(export_value_usd_billions),
+    country_region_label = str_c(country, "___", geo_region),
+    country_region_label = fct_reorder(country_region_label, export_value)
+  )
+```
+
+```{r}
+#| label: bar-chart-top-exporters-by-region
+#| message: false
+#| warning: false
+#| fig-height: 10
+#| fig-width: 15
+
+gg_bar_regional_leaders <- ggplot(
+  regional_top_exporters,
+  aes(
+    x = export_value_usd_billions,
+    y = country_region_label,
+    fill = geo_region
+  )
+) +
+  geom_col(width = 0.72) +
+  geom_text(
+    aes(label = export_value_label),
+    hjust = -0.08,
+    size = 3.3,
+    color = "grey25",
+    show.legend = FALSE
+  ) +
+  facet_wrap(
+    vars(geo_region),
+    scales = "free_y"
+  ) +
+  scale_y_discrete(
+    labels = \(label) str_remove(label, "___.*$")
+  ) +
+  scale_fill_manual(
+    values = region_palette,
+    name = "Geographic Region"
+  ) +
+  scale_x_continuous(
+    labels = scales::label_dollar(
+      prefix = "US$",
+      suffix = "B"
+    ),
+    expand = expansion(mult = c(0, 0.28))
+  ) +
+  labs(
+    x = "Agricultural Export Value (USD Billions)",
+    y = "Country / Reporting Economy",
+    title = "Top Agricultural Exporters Within Each Geographic Region",
+    subtitle = "Each panel shows the five highest-value reporting economies in that region.",
+    caption = str_wrap(
+      "Faceting by region reduces the dominance of the largest global exporters and makes within-region comparison easier.",
+      width = 110
+    )
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "none",
+    plot.title.position = "plot",
+    strip.text = element_text(face = "bold"),
+    plot.caption = element_text(hjust = 0),
+    axis.text.y = element_text(size = 10),
+    plot.margin = margin(10, 30, 16, 10)
+  )
+
+gg_bar_regional_leaders
+```
+
+# Which countries are more important by value than by volume?
+```{r}
+#| label: prepare-divergence-data
+#| message: false
+
+divergence_data <- bar_country_data |>
+  mutate(
+    value_rank = min_rank(desc(export_value)),
+    quantity_rank = min_rank(desc(export_quantity))
+  ) |>
+  semi_join(
+    bar_top30 |> select(country),
+    by = "country"
+  ) |>
+  mutate(
+    rank_gap = quantity_rank - value_rank,
+    rank_gap_direction = case_when(
+      rank_gap > 0 ~ "Ranks higher by value",
+      rank_gap < 0 ~ "Ranks higher by volume",
+      TRUE ~ "Same rank"
+    ),
+    rank_gap_label = case_when(
+      rank_gap > 0 ~ str_c("+", rank_gap),
+      TRUE ~ as.character(rank_gap)
+    ),
+    country = fct_reorder(country, rank_gap)
+  )
+```
+
+```{r}
+#| label: bar-chart-divergence-view
+#| message: false
+#| warning: false
+#| fig-height: 10
+#| fig-width: 15
+
+gg_bar_divergence <- ggplot(
+  divergence_data,
+  aes(
+    x = rank_gap,
+    y = country,
+    fill = rank_gap_direction
+  )
+) +
+  geom_col(width = 0.72) +
+  geom_vline(
+    xintercept = 0,
+    linewidth = 0.5,
+    color = "grey50"
+  ) +
+  geom_text(
+    aes(
+      label = rank_gap_label,
+      hjust = if_else(rank_gap >= 0, -0.15, 1.15)
+    ),
+    size = 3.3,
+    color = "grey25",
+    show.legend = FALSE
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Ranks higher by value" = "#0072B2",
+      "Ranks higher by volume" = "#D55E00",
+      "Same rank" = "#999999"
+    ),
+    name = "Rank Difference"
+  ) +
+  scale_x_continuous(
+    breaks = scales::pretty_breaks(),
+    expand = expansion(mult = c(0.15, 0.15))
+  ) +
+  labs(
+    x = "Quantity Rank - Value Rank",
+    y = "Country / Reporting Economy",
+    title = "Which Top Exporters Rank Higher by Value Than by Volume?",
+    subtitle = "Positive values mean the exporter ranks higher by export value; negative values mean it ranks higher by export quantity.",
+    caption = str_wrap(
+      "Ranks are calculated across all reporting economies in the processed dataset, then shown for the top 30 exporters by value.",
+      width = 110
+    )
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom",
+    plot.title.position = "plot",
+    plot.caption = element_text(hjust = 0),
+    axis.text.y = element_text(size = 10),
+    legend.text = element_text(size = 11),
+    legend.title = element_text(size = 12),
+    plot.margin = margin(10, 30, 16, 10)
+  )
+
+gg_bar_divergence
+```
