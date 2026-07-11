@@ -44,3 +44,6 @@ The code above defines the necessary libraries, source file path, output directo
 
 <!-- Include Data Preprocessing qmd -->
 {{< include _2024_data_preprocessing.qmd >}}
+
+<!-- Include Bar Chart qmd -->
+{{< include _bar-chart-visualisation.qmd >}}
