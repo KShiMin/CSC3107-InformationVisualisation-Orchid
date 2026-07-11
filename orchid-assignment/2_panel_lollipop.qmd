@@ -69,6 +69,12 @@ regional_data <- processed_data |>
       n = 3, 
       w = export_value, 
       other_level = "Rest of Region"
+    ),
+    display_entity = as.character(display_entity),
+    display_entity = if_else(
+      display_entity == "Rest of Region", 
+      paste("Rest of", geo_region), 
+      display_entity
     )
   ) |> 
   group_by(geo_region, display_entity) |> 
@@ -223,4 +229,98 @@ final_plot <- p_left + p_right +
     scale_color_brewer(palette = "Dark2")
 
 final_plot
+```
+
+```{r}
+#| label: regional-data-prep
+
+regional_plot_data <- regional_data |>
+  mutate(entity_key = paste(geo_region, display_entity, sep = "___"))
+
+key_levels <- regional_plot_data |>
+  filter(metric_type == "Export Value (USD Millions)") |>
+  mutate(is_rest = startsWith(display_entity, "Rest of")) |>
+  arrange(geo_region, desc(is_rest), metric_value) |>
+  pull(entity_key)
+
+regional_plot_data <- regional_plot_data |>
+  mutate(
+    entity_key = factor(entity_key, levels = key_levels),
+    is_rest = startsWith(as.character(display_entity), "Rest of")
+  )
+
+data_qty <- filter(regional_plot_data, metric_type == "Export Quantity (1,000 Tonnes)")
+data_val <- filter(regional_plot_data, metric_type == "Export Value (USD Millions)")
+
+regional_plot_data 
+```
+
+```{r}
+#| label: regional-plots
+#| fig-width: 10
+#| fig-height: 12 
+
+strip_prefix <- function(x) sub("^.*___", "", x)
+
+p_left <- ggplot(data_qty, aes(x = metric_value, y = entity_key)) +
+  geom_segment(aes(xend = 0, yend = entity_key, color = geo_region, alpha = is_rest)) +
+  geom_point(aes(color = geo_region, alpha = is_rest), size = 2.5) +
+  geom_text(
+      aes(label = scales::comma(metric_value, accuracy = 1)),
+      hjust = 1.3, size = 2.5, color = "gray30"
+  ) +
+  scale_x_reverse(
+    labels = scales::comma, 
+    position = "top",
+    expand = expansion(mult = c(0.25, 0))
+  ) +
+  scale_y_discrete(position = "right", labels = strip_prefix) +
+  scale_alpha_manual(values = c("FALSE" = 1, "TRUE" = 0.4)) +
+  facet_grid(geo_region ~ ., scales = "free_y", space = "free_y") +
+  labs(title = "Export Quantity (1,000 Tonnes)", x = NULL) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    strip.text = element_blank(),          
+    axis.title.y = element_blank(),
+    axis.text.y.right = element_text(hjust = 0.5),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 10)
+  )
+
+p_right <- ggplot(data_val, aes(x = metric_value, y = entity_key)) +
+  geom_segment(aes(xend = 0, yend = entity_key, color = geo_region, alpha = is_rest)) +
+  geom_point(aes(color = geo_region, alpha = is_rest), size = 2.5) +
+  geom_text(
+      aes(label = scales::comma(metric_value, accuracy = 1)),
+      hjust = -0.3, size = 2.5, color = "gray30"
+  ) +
+  scale_x_continuous(
+    labels = scales::comma, 
+    position = "top",
+    expand = expansion(mult = c(0, 0.25))
+  ) +
+  scale_alpha_manual(values = c("FALSE" = 1, "TRUE" = 0.4)) +
+  facet_grid(geo_region ~ ., scales = "free_y", space = "free_y") +
+  labs(title = "Export Value (USD Millions)", x = NULL, y = NULL) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    strip.text = element_blank(),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 10)
+  )
+
+regional_plot <- p_left + p_right +
+  plot_annotation(
+    title = "Top 3 Exporters per Region: Volume vs. Value (2024)",
+    caption = "Source: World Trade Organization | Note: EU treated as single entity",
+    theme = theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 14))
+  ) &
+  scale_color_brewer(palette = "Dark2")
+
+regional_plot
 ```
