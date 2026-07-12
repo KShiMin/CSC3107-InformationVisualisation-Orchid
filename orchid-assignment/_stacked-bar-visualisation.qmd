@@ -1,0 +1,481 @@
+# Stacked Bar Chart Visualisation
+
+# Fetch the Preprocessed data
+```{r}
+#| label: fetch-preprocessed-data-stacked
+#| message: false
+
+library(tidyverse)
+library(readr)
+library(forcats)
+library(scales)
+library(stringr)
+library(tibble)
+
+preprocessed_data <- read_csv(export_path)
+```
+
+# Filter Rows
+```{r}
+#| label: filter-stacked-country-data
+#| message: false
+
+stacked_country_data <- preprocessed_data |>
+  filter(
+    str_squish(country) != "World",
+    !is.na(export_value),
+    !is.na(export_quantity),
+    !is.na(geo_region)
+  )
+```
+
+# Select top exporters
+```{r}
+#| label: prepare-top15-stacked-data
+#| message: false
+
+# n = 15 matches `bubble_top15_with_rest()` in the bubble visualisation. The bar
+# chart and scatter use n = 30; at 30, Asia contributes 11 named economies to a
+# single bar and South & Central America contributes 7 (Brazil at 221.5 Mt beside
+# Peru at 0.7 Mt), which cannot be direct-labelled without overlap. n = 15 keeps
+# every segment individually labelled.
+n_global <- 15
+
+stacked_top15 <- stacked_country_data |>
+  slice_max(
+    order_by = export_value,
+    n = n_global,
+    with_ties = FALSE
+  )
+```
+
+# ISO3 Codes
+```{r}
+#| label: define-iso3-codes
+#| message: false
+
+# Named economies are labelled with ISO3 codes so a label fits above its own
+# segment. The pooled remainder keeps a written label, since an abbreviation
+# there would not be interpretable.
+iso3_codes <- c(
+  "European Union" = "EU", "Brazil" = "BRA",
+  "United States" = "USA", "Canada" = "CAN",
+  "Mexico" = "MEX", "China" = "CHN",
+  "Australia" = "AUS", "Argentina" = "ARG",
+  "India" = "IND", "Indonesia" = "IDN",
+  "Thailand" = "THA", "Ukraine" = "UKR",
+  "Turkey" = "TUR", "Russian Federation" = "RUS",
+  "Malaysia" = "MYS", "New Zealand" = "NZL",
+  "United Kingdom" = "GBR", "Vietnam" = "VNM",
+  "Chile" = "CHL", "Peru" = "PER",
+  "South Africa" = "ZAF", "Colombia" = "COL",
+  "Cote d'Ivoire" = "CIV", "Ecuador" = "ECU",
+  "Egypt, Arab Rep." = "EGY", "Paraguay" = "PRY",
+  "Pakistan" = "PAK", "Hong Kong, China" = "HKG",
+  "Philippines" = "PHL", "Switzerland" = "CHE"
+)
+
+to_iso3 <- function(country) {
+  code <- unname(iso3_codes[country])
+  if (any(is.na(code))) {
+    stop(
+      "Missing ISO3 code for: ",
+      str_c(country[is.na(code)], collapse = ", ")
+    )
+  }
+  code
+}
+```
+
+# Okabe Ito Palette
+```{r}
+#| label: define-stacked-region-palette
+#| message: false
+
+okabe_ito_palette <- c(
+  "#E69F00", # orange
+  "#56B4E9", # sky blue
+  "#009E73", # bluish green
+  "#F0E442", # yellow
+  "#0072B2", # blue
+  "#D55E00", # vermillion
+  "#CC79A7", # reddish purple
+  "#999999" # grey
+)
+
+region_levels <- sort(unique(stacked_country_data$geo_region))
+
+if (length(region_levels) > length(okabe_ito_palette)) {
+  stop("There are more geographic regions than available Okabe-Ito colours.")
+}
+
+region_palette <- set_names(
+  okabe_ito_palette[seq_along(region_levels)],
+  region_levels
+)
+
+# Hue encodes region (qualitative). Lightness encodes rank within the panel
+# (sequential): the largest economy takes the region's full-strength colour and
+# smaller ones are progressively lightened towards white.
+lighten_hex <- function(hex, factor) {
+  channels <- col2rgb(hex) / 255
+  channels <- channels + (1 - channels) * factor
+  rgb(channels[1], channels[2], channels[3])
+}
+```
+
+# Set Styling Constants
+```{r}
+#| label: set-stacked-chart-styling
+#| message: false
+
+stacked_base_text_size <- 12
+stacked_strip_text_size <- 10
+stacked_axis_text_size <- 8
+stacked_label_size <- 2.6
+stacked_rest_grey <- "#D9D9D9"
+stacked_max_lighten <- 0.62
+stacked_bar_width <- 0.30
+stacked_tier_gap <- 0.30
+stacked_fig_width <- 16
+stacked_fig_height <- 13
+stacked_n_cols <- 2
+```
+
+# Build the segments
+```{r}
+#| label: prepare-stacked-segments
+#| message: false
+
+# Each region's members of the global top 15, named individually.
+named_segments <- stacked_top15 |>
+  transmute(
+    geo_region,
+    segment = to_iso3(country),
+    is_rest = FALSE,
+    rest_n = NA_integer_,
+    export_value,
+    export_quantity
+  )
+
+# Every remaining economy in that region, pooled into one counted residual, so
+# each bar still accounts for 100% of its region's recorded trade.
+rest_segments <- stacked_country_data |>
+  anti_join(stacked_top15 |> select(country), by = "country") |>
+  group_by(geo_region) |>
+  summarise(
+    rest_n = n(),
+    export_value = sum(export_value, na.rm = TRUE),
+    export_quantity = sum(export_quantity, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  transmute(
+    geo_region,
+    segment = "Rest",
+    is_rest = TRUE,
+    rest_n,
+    export_value,
+    export_quantity
+  )
+
+stacked_segments <- bind_rows(named_segments, rest_segments) |>
+  pivot_longer(
+    cols = c(export_value, export_quantity),
+    names_to = "measure",
+    values_to = "raw_amount"
+  ) |>
+  mutate(
+    measure = recode(
+      measure,
+      export_value = "Export value (US$ billions)",
+      export_quantity = "Export quantity (million tonnes)"
+    ),
+    # Source units: value in USD millions, quantity in thousand tonnes.
+    amount = raw_amount / 1000
+  ) |>
+  filter(amount > 0)
+```
+
+```{r}
+#| label: prepare-stacked-geometry
+#| message: false
+
+stacked_plot_df <- stacked_segments |>
+  group_by(measure, geo_region) |>
+  # Draw order: the pooled remainder sits at the ORIGIN, then the named
+  # economies ascend, so the largest lands at the far right of each bar.
+  arrange(desc(is_rest), amount, .by_group = TRUE) |>
+  mutate(
+    # Shading rank is computed independently of draw order: 1 = largest in this
+    # panel = darkest. The residual must not consume a rank slot, or a country's
+    # shade would fall outside the intended ramp.
+    panel_rank = if_else(
+      is_rest,
+      NA_integer_,
+      as.integer(rank(-if_else(is_rest, -Inf, amount), ties.method = "first"))
+    ),
+    n_named = sum(!is_rest),
+    # Rectangles are drawn from these coordinates directly, so bar geometry and
+    # label position cannot disagree (no reliance on position_stack()).
+    x_max = cumsum(amount),
+    x_min = x_max - amount,
+    x_mid = x_max - amount / 2,
+    panel_max = max(x_max) * 1.03
+  ) |>
+  ungroup() |>
+  mutate(
+    fill_hex = pmap_chr(
+      list(geo_region, panel_rank, n_named, is_rest),
+      \(region, rank, n, rest) {
+        if (rest || is.na(rank)) {
+          return(stacked_rest_grey)
+        }
+        lighten_hex(
+          region_palette[[region]],
+          if (n <= 1) 0 else (rank - 1) / (n - 1) * stacked_max_lighten
+        )
+      }
+    ),
+    # Two-line label for named economies, three-line for the residual. Stacking
+    # the value UNDER the name rather than beside it roughly halves the label's
+    # WIDTH, and width is the binding constraint on placement.
+    label = if_else(
+      is_rest,
+      str_c("Rest\n(", rest_n, ")\n", number(amount, accuracy = 0.1)),
+      str_c(segment, "\n", number(amount, accuracy = 0.1))
+    ),
+    panel = str_c(geo_region, " \u2014 ", measure)
+  )
+
+# Panels: regions ordered by total export value, each followed by its own
+# quantity panel.
+region_order <- stacked_plot_df |>
+  filter(measure == "Export value (US$ billions)") |>
+  group_by(geo_region) |>
+  summarise(total = sum(amount), .groups = "drop") |>
+  arrange(desc(total)) |>
+  pull(geo_region)
+
+panel_levels <- as.vector(t(outer(
+  region_order,
+  c("Export value (US$ billions)", "Export quantity (million tonnes)"),
+  \(region, measure) str_c(region, " \u2014 ", measure)
+)))
+
+stacked_plot_df <- stacked_plot_df |>
+  mutate(panel = factor(panel, levels = panel_levels))
+```
+
+# Place the direct labels
+```{r}
+#| label: place-stacked-labels
+#| message: false
+
+# Measure each label in data units. For a multi-line label the binding width is
+# the WIDEST of its lines.
+panel_inches <- (stacked_fig_width / stacked_n_cols) - 1.15
+
+grDevices::pdf(NULL)
+label_inches <- vapply(
+  stacked_plot_df$label,
+  \(text) {
+    lines <- strsplit(text, "\n", fixed = TRUE)[[1]]
+    max(vapply(
+      lines,
+      \(line) graphics::strwidth(line, units = "inches", cex = 0.80, font = 2),
+      numeric(1)
+    ))
+  },
+  numeric(1)
+)
+grDevices::dev.off()
+
+stacked_plot_df <- stacked_plot_df |>
+  mutate(
+    label_width = (label_inches / panel_inches) * panel_max,
+    # Clamp: a label centred on a segment at the panel edge must not be clipped.
+    x_label = pmin(
+      pmax(x_mid, label_width / 2),
+      panel_max - label_width / 2
+    )
+  )
+
+# Place every label on a single shared line where possible. A label may SLIDE
+# horizontally within its own segment before it is bumped to a second tier:
+# sliding keeps it over the segment it names, whereas a tier bump lifts it away
+# from the bar.
+place_labels <- function(panel_df) {
+  panel_df <- panel_df |> arrange(x_label)
+  occupied <- list()
+  tier_of <- integer(nrow(panel_df))
+  x_of <- numeric(nrow(panel_df))
+
+  is_clear <- function(taken, lo, hi, pad) {
+    is.null(taken) || all(lo >= taken$right + pad | hi <= taken$left - pad)
+  }
+
+  for (i in seq_len(nrow(panel_df))) {
+    pad <- 0.004 * panel_df$panel_max[i]
+    half <- panel_df$label_width[i] / 2
+    lower <- half
+    upper <- panel_df$panel_max[i] - half
+
+    seg_lo <- panel_df$x_min[i] + half
+    seg_hi <- panel_df$x_max[i] - half
+    candidates <- panel_df$x_label[i]
+    if (seg_hi > seg_lo) {
+      steps <- seq(0, 1, by = 0.1)
+      candidates <- unique(c(
+        panel_df$x_label[i],
+        pmin(pmax(panel_df$x_mid[i] + steps * (seg_hi - panel_df$x_mid[i]),
+          seg_lo
+        ), seg_hi),
+        pmin(pmax(panel_df$x_mid[i] - steps * (panel_df$x_mid[i] - seg_lo),
+          seg_lo
+        ), seg_hi)
+      ))
+    }
+    candidates <- pmin(pmax(candidates, lower), upper)
+    candidates <- candidates[order(abs(candidates - panel_df$x_mid[i]))]
+
+    placed <- FALSE
+    tier <- 1L
+    while (!placed) {
+      taken <- occupied[[as.character(tier)]]
+      for (candidate in candidates) {
+        if (is_clear(taken, candidate - half, candidate + half, pad)) {
+          occupied[[as.character(tier)]] <- bind_rows(
+            taken,
+            tibble(left = candidate - half, right = candidate + half)
+          )
+          tier_of[i] <- tier
+          x_of[i] <- candidate
+          placed <- TRUE
+          break
+        }
+      }
+      if (!placed) tier <- tier + 1L
+    }
+  }
+
+  panel_df$tier <- tier_of
+  panel_df$x_label <- x_of
+  panel_df
+}
+
+stacked_plot_df <- stacked_plot_df |>
+  group_split(panel) |>
+  map_dfr(place_labels)
+
+stacked_max_tier <- max(stacked_plot_df$tier)
+
+stacked_plot_df <- stacked_plot_df |>
+  mutate(
+    y_min = -stacked_bar_width / 2,
+    y_max = stacked_bar_width / 2,
+    y_label = stacked_bar_width / 2 + 0.10 + (tier - 1) * stacked_tier_gap
+  )
+```
+
+# Build the stacked bar chart
+```{r}
+#| label: build-stacked-bar-chart
+#| message: false
+#| warning: false
+#| fig-height: 13
+#| fig-width: 16
+
+gg_stacked_region <- ggplot(stacked_plot_df) +
+  geom_rect(
+    aes(
+      xmin = x_min,
+      xmax = x_max,
+      ymin = y_min,
+      ymax = y_max,
+      fill = fill_hex
+    ),
+    colour = "white",
+    linewidth = 0.3
+  ) +
+  scale_fill_identity() +
+  geom_text(
+    aes(
+      x = x_label,
+      y = y_label,
+      label = label,
+      colour = if_else(is_rest, "rest", "named")
+    ),
+    size = stacked_label_size,
+    fontface = "bold",
+    lineheight = 0.92,
+    show.legend = FALSE
+  ) +
+  scale_colour_manual(values = c(named = "grey15", rest = "grey40")) +
+  facet_wrap(
+    vars(panel),
+    ncol = stacked_n_cols,
+    scales = "free_x"
+  ) +
+  # Each panel carries its own LINEAR x-range, so tick density adapts to the
+  # region while segment length stays proportional to value.
+  scale_x_continuous(
+    breaks = scales::pretty_breaks(8),
+    minor_breaks = scales::pretty_breaks(16),
+    labels = scales::label_number(accuracy = 1),
+    expand = expansion(mult = c(0.02, 0.06))
+  ) +
+  scale_y_continuous(
+    limits = c(
+      -stacked_bar_width / 2 - 0.06,
+      stacked_bar_width / 2 + 0.14 + stacked_max_tier * stacked_tier_gap
+    ),
+    breaks = NULL,
+    expand = expansion(0)
+  ) +
+  labs(
+    x = NULL,
+    y = NULL,
+    title = "The World's 15 Largest Agricultural Exporters, Grouped by Region in 2024",
+    subtitle = str_wrap(
+      "Each bar is one region's full recorded trade: its members of the global top 15 are named individually by ISO3 code, and every remaining economy is pooled into a single grey segment. Segments ascend from the pooled remainder to the region's largest exporter, and the darkest shade marks the largest economy in that panel.",
+      width = 150
+    ),
+    caption = str_wrap(
+      "Each panel has its own x-range, so segments are compared within a region and not across panels. Africa and the Middle East contain no top-15 exporter, so their bars are entirely the pooled remainder. Export value is shown in US$ billions and export volume in million tonnes (Mt) for product groups measured by physical quantity. Aggregate rows such as World are excluded. European Union is treated as a reporting economy in the WTO dataset.",
+      width = 165
+    )
+  ) +
+  theme_minimal(base_size = stacked_base_text_size) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_line(colour = "grey85", linewidth = 0.3),
+    panel.grid.minor.x = element_line(colour = "grey92", linewidth = 0.22),
+    strip.text = element_text(face = "bold", size = stacked_strip_text_size),
+    axis.text.x = element_text(size = stacked_axis_text_size),
+    plot.title.position = "plot",
+    plot.caption = element_text(hjust = 0),
+    panel.spacing.y = unit(0.5, "lines"),
+    plot.margin = margin(10, 30, 16, 10)
+  )
+
+gg_stacked_region
+```
+
+Each regional bar accounts for 100% of that region's recorded trade, so the seven
+bars together cover the whole of world agricultural trade. Hue encodes region
+using the Okabe-Ito colour-blind-safe palette and lightness encodes rank within
+the panel, which avoids a fifteen-entry country legend while keeping every
+segment identifiable from its direct label.
+
+Faceting each region onto its own x-range is what makes the direct labels
+possible. On a shared axis, Brazil's 221.5 Mt sets the scale and the smaller
+economies collapse into slivers too narrow to hold text. The cost is that
+magnitude can no longer be compared across panels, so the panels are read within
+a region rather than against one another.
+
+The chart retains the inherent limitation of stacked bars: only the segment
+anchored at the zero baseline can be compared by position, while the others must
+be judged by length from a shifting baseline, which is less precise than position
+along a common scale (Cleveland & McGill, 1985). It also shows a single year
+(2024) and does not support temporal comparison.
