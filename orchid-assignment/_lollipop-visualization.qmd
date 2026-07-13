@@ -11,82 +11,8 @@ Fetching the preprocessed data from the `data/processed` directory, which contai
 ## Data Preparation for Lollipop Chart
 ```{r}
 #| label: prepare-lollipop-data
-preprocessed_ordered <- mutate(
-  preprocessed_data,
-  country = fct_reorder(country, export_value)
-)
-
-preprocessed_top30 <- preprocessed_ordered |>
-  slice_max(export_value, n = 30)
-```
-
-
-## Lollipop Chart (Export Value - Base)
-```{r}
-#| label: lollipop-chart
-#| message: false
-#| fig-height: 10
-#| fig-width: 15
-
-gg_base <- ggplot(
-  preprocessed_top30,
-  aes(
-    x = export_value,
-    y = country,
-    color = geo_region,
-  )
-) +
-  geom_segment(
-    aes(xend = 0)
-  ) +
-  geom_point(
-    size = 2
-  ) +
-  scale_color_brewer(
-    palette = "Set2",
-    name = "Geographic Region"
-  ) +
-  scale_x_continuous(
-    labels = scales::label_number(
-      scale_cut = scales::cut_short_scale()
-    )
-  ) +
-  labs(
-    x = "Export Value (USD Millions)",
-    y = "Country",
-    title = "Top 30 Countries with the Highest Export Value of Agricultural Products in 2024"
-  )
-
-gg_base
-```
-
-## Planned Redesign: Export Value with Export Volume Annotation
-
-```{r}
-#| label: lollipop-chart-value-with-volume-annotation
-#| message: false
-#| warning: false
-#| fig-height: 10
-#| fig-width: 15
-
 lollipop_country_data <- preprocessed_data |>
-  filter(
-    str_squish(country) != "World",
-    !is.na(export_value),
-    !is.na(export_quantity),
-    !is.na(geo_region)
-  )
-
-lollipop_top30 <- lollipop_country_data |>
-  slice_max(
-    order_by = export_value,
-    n = 30,
-    with_ties = FALSE
-  )
-
-lollipop_top30 <- lollipop_top30 |>
   mutate(
-    country = fct_reorder(country, export_value),
     export_value_usd_billions = export_value / 1000,
     export_quantity_million_tonnes = export_quantity / 1000,
     export_value_label = scales::label_dollar(
@@ -102,9 +28,80 @@ lollipop_top30 <- lollipop_top30 |>
       export_value_label,
       " | ",
       export_quantity_label
+    ),
+    value_rank = min_rank(desc(export_value)),
+    volume_rank = min_rank(desc(export_quantity))
+  )
+
+lollipop_country_ordered <- lollipop_country_data |>
+  mutate(country = fct_reorder(country, export_value))
+
+lollipop_top30 <- lollipop_country_ordered |>
+  slice_max(
+    order_by = export_value,
+    n = 30,
+    with_ties = FALSE
+  )
+
+lollipop_top30
+
+lollipop_top30_long <- lollipop_top30 |>
+  select(
+    country,
+    geo_region,
+    export_value_usd_billions,
+    export_quantity_million_tonnes,
+    export_value_label,
+    export_quantity_label
+  ) |>
+  pivot_longer(
+    cols = c(
+      export_value_usd_billions,
+      export_quantity_million_tonnes
+    ),
+    names_to = "metric",
+    values_to = "metric_value"
+  ) |>
+  mutate(
+    metric = recode(
+      metric,
+      export_value_usd_billions = "Export value (USD billions)",
+      export_quantity_million_tonnes = "Export volume (million tonnes)"
+    ),
+    metric = factor(
+      metric,
+      levels = c(
+        "Export value (USD billions)",
+        "Export volume (million tonnes)"
+      )
+    ),
+    metric_label = case_when(
+      metric == "Export value (USD billions)" ~ export_value_label,
+      TRUE ~ export_quantity_label
     )
   )
 
+lollipop_regional_leaders <- lollipop_country_data |>
+  group_by(geo_region) |>
+  slice_max(
+    order_by = export_value,
+    n = 5,
+    with_ties = FALSE
+  ) |>
+  ungroup() |>
+  mutate(
+    country_region_label = str_c(country, "___", geo_region),
+    country_region_label = fct_reorder(country_region_label, export_value)
+  )
+
+lollipop_regional_leaders
+```
+
+The above codes prepare the preprocessed dataset for subsequent visualisation.
+
+
+## Lollipop Chart Standardise Values
+```{r}
 lollipop_point_size <- 3.2
 lollipop_label_size <- 3.4
 lollipop_base_text_size <- 14
@@ -114,8 +111,7 @@ lollipop_legend_title_size <- 12
 lollipop_segment_width <- 0.5
 lollipop_annotation_hjust <- -0.18
 lollipop_right_padding <- 0.45
-# Okabe-Ito colour-blind-safe palette for categorical region encoding.
-# Reference: https://jfly.uni-koeln.de/color/#pallet
+
 lollipop_okabe_ito_palette <- c(
   "#E69F00", # orange
   "#56B4E9", # sky blue
@@ -136,6 +132,19 @@ lollipop_region_palette <- set_names(
   lollipop_okabe_ito_palette[seq_along(lollipop_region_levels)],
   lollipop_region_levels
 )
+```
+
+To ensure that the visualisation is color-blind friendly, the team decided to use [Okabe-Ito colour-blind-safe palette]( https://jfly.uni-koeln.de/color/#pallet) as our color palette. 
+
+## Export Value with Export Volume Annotation
+
+```{r}
+#| label: lollipop-chart-value-with-volume-annotation
+#| message: false
+#| warning: false
+#| fig-height: 10
+#| fig-width: 15
+
 gg_lollipop_value_quantity <- ggplot(
   lollipop_top30,
   aes(
@@ -180,7 +189,7 @@ gg_lollipop_value_quantity <- ggplot(
     title = "Top 30 Agricultural Exporters by Export Value in 2024",
     subtitle = "Lollipop length ranks exporters by value; direct labels show value and recorded export volume.",
     caption = str_wrap(
-      "Export volume is shown in million tonnes (Mt) for product groups measured by physical quantity. Aggregate rows such as World are excluded; European Union is treated as a reporting economy in the WTO dataset.",
+      "Export volume is shown in million tonnes (Mt) for product groups measured by physical quantity. European Union is treated as a reporting economy in the WTO dataset.",
       width = 105
     )
   ) +
@@ -210,47 +219,6 @@ This is the main redesign view. It keeps the primary comparison on one visual sc
 #| warning: false
 #| fig-height: 10
 #| fig-width: 15
-
-lollipop_top30_long <- lollipop_top30 |>
-  select(
-    country,
-    geo_region,
-    export_value_usd_billions,
-    export_quantity_million_tonnes
-  ) |>
-  pivot_longer(
-    cols = c(
-      export_value_usd_billions,
-      export_quantity_million_tonnes
-    ),
-    names_to = "metric",
-    values_to = "metric_value"
-  ) |>
-  mutate(
-    metric = recode(
-      metric,
-      export_value_usd_billions = "Export value (USD billions)",
-      export_quantity_million_tonnes = "Export volume (million tonnes)"
-    ),
-    metric = factor(
-      metric,
-      levels = c(
-        "Export value (USD billions)",
-        "Export volume (million tonnes)"
-      )
-    ),
-    metric_label = case_when(
-      metric == "Export value (USD billions)" ~ scales::label_dollar(
-        prefix = "US$",
-        suffix = "B",
-        accuracy = 0.1
-      )(metric_value),
-      TRUE ~ scales::label_number(
-        accuracy = 0.1,
-        suffix = " Mt"
-      )(metric_value)
-    )
-  )
 
 gg_lollipop_faceted_metrics <- ggplot(
   lollipop_top30_long,
@@ -321,198 +289,7 @@ gg_lollipop_faceted_metrics
 
 The faceted version makes the unit difference explicit. It is useful for checking whether the highest-value exporters are also high-volume exporters without placing USD and tonnes on one shared axis.
 
-## Optional Lollipop Support: Cumulative Export Value Share
-
-```{r}
-#| label: lollipop-chart-cumulative-share
-#| message: false
-#| warning: false
-#| fig-height: 10
-#| fig-width: 15
-
-total_reporting_export_value <- sum(lollipop_country_data$export_value, na.rm = TRUE)
-
-lollipop_cumulative_share <- lollipop_top30 |>
-  arrange(desc(export_value)) |>
-  mutate(
-    rank = row_number(),
-    country_rank_label = str_c(rank, ". ", country),
-    country_rank_label = fct_reorder(country_rank_label, export_value),
-    export_share = export_value / total_reporting_export_value,
-    cumulative_share = cumsum(export_share),
-    cumulative_share_label = scales::label_percent(
-      accuracy = 0.1
-    )(cumulative_share)
-  )
-
-gg_lollipop_cumulative_share <- ggplot(
-  lollipop_cumulative_share,
-  aes(
-    x = cumulative_share,
-    y = country_rank_label,
-    color = geo_region
-  )
-) +
-  geom_segment(
-    aes(
-      x = 0,
-      xend = cumulative_share,
-      yend = country_rank_label
-    ),
-    linewidth = lollipop_segment_width,
-    alpha = 0.7
-  ) +
-  geom_point(
-    size = lollipop_point_size
-  ) +
-  geom_text(
-    aes(label = cumulative_share_label),
-    hjust = lollipop_annotation_hjust,
-    size = lollipop_label_size,
-    color = "grey25",
-    show.legend = FALSE
-  ) +
-  scale_color_manual(
-    values = lollipop_region_palette,
-    name = "Geographic Region"
-  ) +
-  scale_x_continuous(
-    labels = scales::label_percent(accuracy = 1),
-    expand = expansion(mult = c(0, lollipop_right_padding))
-  ) +
-  labs(
-    x = "Cumulative Share of Total Reporting Export Value",
-    y = "Country / Reporting Economy",
-    title = "How Quickly the Top Agricultural Exporters Accumulate Market Share",
-    subtitle = "Each lollipop shows the cumulative export value share after adding the next ranked exporter.",
-    caption = str_wrap(
-      "Countries are ranked by agricultural export value. Percentages use the total export value across reporting economies in the processed dataset as the denominator.",
-      width = 105
-    )
-  ) +
-  theme_minimal(base_size = lollipop_base_text_size) +
-  theme(
-    panel.grid.major.y = element_blank(),
-    panel.grid.minor = element_blank(),
-    legend.position = "bottom",
-    plot.title.position = "plot",
-    plot.caption = element_text(hjust = 0),
-    axis.text.y = element_text(size = lollipop_y_axis_text_size),
-    legend.text = element_text(size = lollipop_legend_text_size),
-    legend.title = element_text(size = lollipop_legend_title_size),
-    plot.margin = margin(10, 24, 16, 10)
-  )
-
-gg_lollipop_cumulative_share
-```
-
-This redesign shifts the story from "who is first?" to "how concentrated is agricultural export value?". It directly addresses the infographic-style claim that a small group of exporters accounts for a large share of exports.
-
-## Optional Lollipop Support: Regional Leaders
-
-```{r}
-#| label: lollipop-chart-regional-leaders
-#| message: false
-#| warning: false
-#| fig-height: 10
-#| fig-width: 15
-
-lollipop_regional_leaders <- lollipop_country_data |>
-  filter(
-    !is.na(export_value),
-    !is.na(geo_region)
-  ) |>
-  group_by(geo_region) |>
-  slice_max(
-    order_by = export_value,
-    n = 5,
-    with_ties = FALSE
-  ) |>
-  ungroup() |>
-  mutate(
-    export_value_usd_billions = export_value / 1000,
-    country_region_label = str_c(country, "___", geo_region),
-    country_region_label = fct_reorder(country_region_label, export_value),
-    export_value_label = scales::label_dollar(
-      prefix = "US$",
-      suffix = "B",
-      accuracy = 0.1
-    )(export_value_usd_billions)
-  )
-
-gg_lollipop_regional_leaders <- ggplot(
-  lollipop_regional_leaders,
-  aes(
-    x = export_value_usd_billions,
-    y = country_region_label,
-    color = geo_region
-  )
-) +
-  geom_segment(
-    aes(
-      x = 0,
-      xend = export_value_usd_billions,
-      yend = country_region_label
-    ),
-    linewidth = lollipop_segment_width,
-    alpha = 0.7
-  ) +
-  geom_point(
-    size = lollipop_point_size
-  ) +
-  geom_text(
-    aes(label = export_value_label),
-    hjust = lollipop_annotation_hjust,
-    size = lollipop_label_size,
-    color = "grey25",
-    show.legend = FALSE
-  ) +
-  facet_wrap(
-    vars(geo_region),
-    scales = "free_y"
-  ) +
-  scale_y_discrete(
-    labels = \(label) str_remove(label, "___.*$")
-  ) +
-  scale_color_manual(
-    values = lollipop_region_palette,
-    name = "Geographic Region"
-  ) +
-  scale_x_continuous(
-    labels = scales::label_dollar(
-      prefix = "US$",
-      suffix = "B"
-    ),
-    expand = expansion(mult = c(0, lollipop_right_padding))
-  ) +
-  labs(
-    x = "Agricultural Export Value (USD Billions)",
-    y = "Country / Reporting Economy",
-    title = "Top Agricultural Exporters Within Each Geographic Region",
-    subtitle = "Each facet shows the five highest-value reporting economies in that region.",
-    caption = str_wrap(
-      "This view reduces the dominance of the largest global exporters and makes regional patterns easier to compare. Axes use the same value scale across facets.",
-      width = 105
-    )
-  ) +
-  theme_minimal(base_size = lollipop_base_text_size) +
-  theme(
-    panel.grid.major.y = element_blank(),
-    panel.grid.minor = element_blank(),
-    legend.position = "none",
-    plot.title.position = "plot",
-    strip.text = element_text(face = "bold"),
-    plot.caption = element_text(hjust = 0),
-    axis.text.y = element_text(size = lollipop_y_axis_text_size),
-    plot.margin = margin(10, 24, 16, 10)
-  )
-
-gg_lollipop_regional_leaders
-```
-
-This redesign keeps the lollipop ranking format but changes the comparison group. Instead of one global top 30, it asks: "who leads within each region?". That can be more interpretable when the global chart is dominated by a few very large exporters.
-
-## Optional Lollipop Support: Regional Leaders with Region-Scaled Axes
+## Regional Leaders with Region-Scaled Axes
 
 ```{r}
 #| label: lollipop-chart-regional-leaders-free-scale
@@ -592,113 +369,3 @@ gg_lollipop_regional_leaders_free_scale
 ```
 
 This version improves readability inside each region, especially for regions whose exporters are much smaller than the global leaders. The trade-off is that lollipop lengths should no longer be compared directly across panels because each region uses its own x-axis scale.
-
-## Planned Analytical Support: Value Rank Compared with Volume Rank
-
-```{r}
-#| label: lollipop-chart-value-volume-rank-gap
-#| message: false
-#| warning: false
-#| fig-height: 10
-#| fig-width: 15
-
-lollipop_rank_gap <- lollipop_country_data |>
-  filter(
-    !is.na(export_value),
-    !is.na(export_quantity)
-  ) |>
-  mutate(
-    value_rank = min_rank(desc(export_value)),
-    volume_rank = min_rank(desc(export_quantity))
-  ) |>
-  semi_join(
-    lollipop_top30 |> select(country),
-    by = "country"
-  ) |>
-  mutate(
-    rank_gap = volume_rank - value_rank,
-    rank_gap_direction = case_when(
-      rank_gap > 0 ~ "Ranks higher by value",
-      rank_gap < 0 ~ "Ranks higher by volume",
-      TRUE ~ "Same value and volume rank"
-    ),
-    country = fct_reorder(country, rank_gap),
-    rank_gap_label = case_when(
-      rank_gap > 0 ~ str_c("+", rank_gap),
-      TRUE ~ as.character(rank_gap)
-    )
-  )
-
-gg_lollipop_rank_gap <- ggplot(
-  lollipop_rank_gap,
-  aes(
-    x = rank_gap,
-    y = country,
-    color = rank_gap_direction
-  )
-) +
-  geom_vline(
-    xintercept = 0,
-    linewidth = 0.5,
-    color = "grey55"
-  ) +
-  geom_segment(
-    aes(
-      x = 0,
-      xend = rank_gap,
-      yend = country
-    ),
-    linewidth = lollipop_segment_width,
-    alpha = 0.8
-  ) +
-  geom_point(
-    size = lollipop_point_size
-  ) +
-  geom_text(
-    aes(
-      label = rank_gap_label,
-      hjust = if_else(rank_gap >= 0, -0.35, 1.35)
-    ),
-    size = lollipop_label_size,
-    color = "grey25",
-    show.legend = FALSE
-  ) +
-  scale_color_manual(
-    values = c(
-      "Ranks higher by value" = "#0072B2",
-      "Ranks higher by volume" = "#D55E00",
-      "Same value and volume rank" = "grey45"
-    ),
-    name = "Rank Difference"
-  ) +
-  scale_x_continuous(
-    breaks = scales::pretty_breaks(),
-    expand = expansion(mult = c(0.18, 0.18))
-  ) +
-  labs(
-    x = "Volume Rank - Value Rank",
-    y = "Country / Reporting Economy",
-    title = "Which Top Exporters Rank Higher by Value Than by Volume?",
-    subtitle = "Positive values mean the exporter ranks higher by export value; negative values mean it ranks higher by recorded volume.",
-    caption = str_wrap(
-      "Ranks are calculated across all reporting economies in the processed dataset. The chart then displays countries in the top 30 by export value.",
-      width = 105
-    )
-  ) +
-  theme_minimal(base_size = lollipop_base_text_size) +
-  theme(
-    panel.grid.major.y = element_blank(),
-    panel.grid.minor = element_blank(),
-    legend.position = "bottom",
-    plot.title.position = "plot",
-    plot.caption = element_text(hjust = 0),
-    axis.text.y = element_text(size = lollipop_y_axis_text_size),
-    legend.text = element_text(size = lollipop_legend_text_size),
-    legend.title = element_text(size = lollipop_legend_title_size),
-    plot.margin = margin(10, 24, 16, 10)
-  )
-
-gg_lollipop_rank_gap
-```
-
-This redesign is useful if you want to go beyond size alone. It highlights exporters whose monetary rank is much stronger than their physical volume rank, and vice versa, while still using a lollipop form.
