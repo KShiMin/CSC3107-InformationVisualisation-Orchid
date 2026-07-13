@@ -26,6 +26,7 @@ format:
 library(tidyverse)
 library(readr)
 library(readxl) # for excel files
+library(scales)
 ```
 
 ```{r}
