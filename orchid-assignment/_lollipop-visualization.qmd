@@ -16,14 +16,11 @@ Fetching the preprocessed data from the `data/processed` directory, which contai
 value_formatter <- label_number(
   scale = 1 / 1000,
   accuracy = 0.1,
-  prefix = "US$",
-  suffix = "B"
 )
 
 quantity_formatter <- label_number(
   scale = 1 / 1000,
   accuracy = 0.1,
-  suffix = " Mt"
 )
 ```
 
@@ -34,9 +31,9 @@ quantity_formatter <- label_number(
 lollipop_country_data <- preprocessed_data |>
   mutate(
     point_label = str_c(
-      value_formatter(export_value),
+      str_c(value_formatter(export_value), " B"),
       " | ",
-      quantity_formatter(export_quantity)
+      str_c(quantity_formatter(export_quantity), " Mt")
     ),
     value_rank = min_rank(desc(export_value)),
     volume_rank = min_rank(desc(export_quantity))
@@ -53,7 +50,7 @@ lollipop_top30 <- lollipop_country_data |>
 lollipop_top30
 ```
 
-The above codes prepare the preprocessed dataset for subsequent visualisation. It creates labels for both export values and export quantity, and ranks the countries based on export value. This transformation are made such that the data and its labels are ready for subsquent visualisation ensuring readability and consistency.
+The above codes prepare the preprocessed dataset for subsequent visualisation. It creates labels for both export values and export quantity, and ranks the countries based on export value. This transformation are made such that the data and its labels are ready for subsequent visualisation ensuring readability and consistency.
 
 ```{r}
 #| label: rest-of-world-data
@@ -63,66 +60,77 @@ lollipop_rest_of_world <- lollipop_country_data |>
     !country %in% lollipop_top30$country
   ) |>
   summarise(
-    country = "Rest of World",
-    geo_region = "Rest of World",
+    country = "Rest of the World",
+    geo_region = "Rest of the World",
     export_value = sum(export_value),
     export_quantity = sum(export_quantity),
     .groups = "drop"
   ) |>
   mutate(
-    point_label = str_c(
-      value_formatter(export_value),
+    annotation_label = str_c(
+      "All other reporting economies\n",
+      str_c(value_formatter(export_value), " B"),
       " | ",
-      quantity_formatter(export_quantity)
-    ),
-    value_rank = min_rank(desc(export_value)),
-    volume_rank = min_rank(desc(export_quantity))
+      str_c(quantity_formatter(export_quantity), " Mt")
+    )
   )
 
 lollipop_rest_of_world <- lollipop_rest_of_world |>
   mutate(country = fct_reorder(country, export_value))
 
 lollipop_rest_of_world
-
-lollipop_top30_with_rest_of_world <- bind_rows(
-  lollipop_top30,
-  lollipop_rest_of_world
-) |>
-  mutate(country = fct_reorder(country, export_value))
-
-head(lollipop_top30_with_rest_of_world)
-tail(lollipop_top30_with_rest_of_world)
 ```
 
-## Lollipop Chart Standardise Values
-```{r}
-lollipop_okabe_ito_palette <- c(
-  "#E69F00", # orange
-  "#56B4E9", # sky blue
-  "#009E73", # bluish green
-  "#F0E442", # yellow
-  "#0072B2", # blue
-  "#D55E00", # vermillion
-  "#CC79A7", # reddish purple
-  "#999999"  # neutral grey, used instead of black for softer contrast
-)
-lollipop_region_levels <- sort(unique(lollipop_country_data$geo_region))
-
-if (length(lollipop_region_levels) > length(lollipop_okabe_ito_palette)) {
-  stop("There are more geographic regions than available Okabe-Ito colours.")
-}
-
-lollipop_region_palette <- set_names(
-  lollipop_okabe_ito_palette[seq_along(lollipop_region_levels)],
-  lollipop_region_levels
-)
-
-lollipop_region_palette["Rest of World"] <- "#999999"
-```
-
-To ensure that the visualisation is color-blind friendly, the team decided to use [Okabe-Ito colour-blind-safe palette]( https://jfly.uni-koeln.de/color/#pallet) as our color palette. 
 
 ## Export Value with Export Volume Annotation
+```{r}
+#| label: lollipop-chart-breaks
+#| message: false
+#| warning: false
+
+x_max <- max(lollipop_top30$export_value, na.rm = TRUE)
+
+break_step <- 20 * 1000
+minor_break_step <- 10 * 1000
+
+x_breaks <- seq(
+  0,
+  ceiling(x_max / break_step) * break_step,
+  by = break_step
+)
+
+x_minor_breaks <- seq(
+  0,
+  ceiling(x_max / minor_break_step) * minor_break_step,
+  by = minor_break_step
+)
+
+quantity_breaks_mt <- c(
+  0.5,
+  1,
+  2,
+  5,
+  10,
+  20,
+  50,
+  100,
+  200
+)
+
+quantity_breaks_raw <- quantity_breaks_mt * 1000
+
+legend_height <- max(
+  60,
+  length(quantity_breaks_raw) * 12
+)
+
+annotation_data <- lollipop_rest_of_world |>
+  transmute(
+    x = x_max * 0.80,
+    label = annotation_label
+  )
+```
+
 
 ```{r}
 #| label: lollipop-chart-value-with-volume-annotation
@@ -131,14 +139,11 @@ To ensure that the visualisation is color-blind friendly, the team decided to us
 #| fig-height: 10
 #| fig-width: 15
 
-x_max <- max(lollipop_top30_with_rest_of_world$export_value, na.rm = TRUE)
-
 gg_lollipop_value_quantity <- ggplot(
-  lollipop_top30_with_rest_of_world,
+  lollipop_top30,
   aes(
     x = export_value,
-    y = country,
-    color = geo_region
+    y = country
   )
 ) +
   geom_segment(
@@ -151,43 +156,80 @@ gg_lollipop_value_quantity <- ggplot(
     alpha = 0.7
   ) +
   geom_point(
-    size = 3.2
+    aes(color = export_quantity),
+    size = 4
   ) +
   geom_text(
     aes(label = point_label),
     hjust = -0.15,
-    size = 3.5,
+    size = 4,
     color = "grey25",
     show.legend = FALSE
   ) +
-  scale_color_manual(
-    values = lollipop_region_palette,
-    name = "Geographic Region"
+  geom_label(
+    data = annotation_data,
+    aes(
+      x = x,
+      y = lollipop_top30$country[nrow(lollipop_top30) - 2],
+      label = label
+    ),
+    inherit.aes = FALSE,
+    hjust = 0,
+    vjust = 0.5,
+    size = 4,
+    lineheight = 1,
+    colour = "grey20",
+    fill = "white",
+    linewidth = 0.35,
+    label.padding = grid::unit(0.4, "lines")
   ) +
   scale_x_continuous(
     limits = c(0, x_max * 1.22),
     labels = value_formatter,
+    breaks = x_breaks,
+    minor_breaks = x_minor_breaks,
     expand = expansion(mult = c(0, 0.08))
+  ) +
+  scale_color_gradient(
+    low = "#c2e5f9",
+    high = "#08519c",
+    trans = "log10",
+    breaks = quantity_breaks_raw,
+    labels = quantity_formatter,
+    name = "Export volume\n[Mt, log scale]",
+    guide = guide_colorbar(
+      nbin = 128,
+      title.position = "top",
+      ticks.colour = "grey30",
+      frame.colour = "grey65",
+      theme = theme(
+        legend.key.height = grid::unit(legend_height, "pt"),
+        legend.key.width = grid::unit(12, "pt")
+      )
+    )
   ) +
   labs(
     x = "Agricultural Export Value (USD Billions)",
-    y = "Country / Reporting Economy",
+    y = "Reporting Economy",
     title = "Top 30 Agricultural Exporters including Rest of World by Export Value in 2024",
+    subtitle = str_wrap(
+      "Export volume is shown in million tonnes (Mt) for product groups measured by physical quantity.",
+      width = 125
+    ),
     caption = str_wrap(
-      "Export volume is shown in million tonnes (Mt) for product groups measured by physical quantity. European Union is treated as a reporting economy in the WTO dataset.",
+      "Source: WTO dataset. The European Union is treated as a reporting economy. The top 30 economies and the Rest of World aggregate account for the full reported export value.",
       width = 125
     )
   ) +
   theme_minimal(base_size = 15) +
   theme(
     panel.grid.major.y = element_blank(),
-    panel.grid.minor = element_blank(),
-    legend.position = "bottom",
+    panel.grid.major.x = element_line(color = "grey86", linewidth = 0.5),
+    panel.grid.minor.x = element_line(color = "grey93", linewidth = 0.35),
+    panel.grid.minor.y = element_blank(),
     plot.title.position = "plot",
+    plot.title = element_text(hjust = 0.5, face = "bold"),
     plot.caption = element_text(hjust = 0),
-    axis.text.y = element_text(size = 12),
-    legend.text = element_text(size = 12),
-    legend.title = element_text(size = 13),
     plot.margin = margin(10, 24, 16, 10)
   )
 
