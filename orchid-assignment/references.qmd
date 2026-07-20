@@ -1,0 +1,29 @@
+---
+title: "Team Orchid — References & Supplementary Materials"
+subtitle: "CSC3107 Information Visualisation, Singapore Institute of Technology"
+format:
+  html:
+    output-file: index.html
+    toc: true
+    theme: cosmo
+---
+
+# References
+
+## Data Sources
+
+- World Trade Organization (2024). *Charts - World Trade in Agricultural Products*. WTO Secretariat estimates based on UN Comtrade data. [wto.org](https://www.wto.org/english/tratop_e/agric_e/ag_imp_exp_charts_e.htm#ag_products)
+
+- Visual Capitalist (2026). *Ranked: The Countries That Feed the World*. [visualcapitalist.com](https://www.visualcapitalist.com/ranked-the-countries-that-feed-the-world/)
+
+## Design & Accessibility References
+
+- Garnier, S. (2024). *Viridis: Colorblind-Friendly Color Maps for R*. [sjmgarnier.github.io](https://sjmgarnier.github.io/viridis/)
+
+- Okabe, M., & Ito, K. (2008). *Color Universal Design (CUD): How to make figures and presentations that are friendly to colorblind people*. JFLY, University of Cologne. [jfly.uni-koeln.de](https://jfly.uni-koeln.de/color/)
+
+- Lüdecke, D., et al. (2024). *see: Visualisation Toolbox for easystats*. [easystats.github.io](https://easystats.github.io/see/)
+
+## Supplementary Materials
+
+- Team Orchid GitHub Repository: [github.com/KShiMin/CSC3107-InformationVisualisation-Orchid](https://github.com/KShiMin/CSC3107-InformationVisualisation-Orchid)
