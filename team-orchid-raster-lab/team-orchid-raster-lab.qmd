@@ -463,7 +463,12 @@ continuous_scale_obj <- scale_fill_fermenter(
   oob = scales::squish, 
   na.value = NA,
   name = "Anomaly (°C)",
-  guide = guide_colorsteps(frame.colour = "black", frame.linewidth = 0.3, ticks.colour = "black")
+  guide = guide_colorsteps(
+    order = 1,
+    frame.colour = "black", 
+    frame.linewidth = 0.3, 
+    ticks.colour = "black"
+  )
 )
 
 map_continuous <- make_sst_map(continuous_scale_obj)
@@ -494,6 +499,7 @@ binned_scale_obj <- scale_fill_brewer(
   name = "Anomaly (°C)",
   na.translate = FALSE,
   guide = guide_legend(
+    order = 1,
     reverse = TRUE,
     override.aes = list(color = "black", linewidth = 0.3)
   )
