@@ -1,0 +1,111 @@
+---
+title: "Week 12 Lab: Raster Maps of Sea Surface Temperature Anomalies"
+author: "Team Orchid"
+date: "2026-07-21"
+format:
+  html:
+    toc: true
+---
+
+## Assigned Roles
+
+The table below lists the assigned roles for each team member in this lab:
+
+| Member | Role | Specific Contribution  |
+| ------ | ---- | -----------------------|
+| Quan Yi | Coder | Developed the main QMD implementation by coding the data processing steps, creating the required visualisations, and ensuring the code chunks rendered correctly. Also checked that the final QMD could be executed from start to finish without rendering errors. |
+| Shi Min | Navigator  | Read and interpreted the assignment requirements during the lab, kept the group aligned with the required tasks, and ensured that each section of the QMD addressed the relevant questions. Also helped maintain the flow, readability, and organisation of the QMD document. |
+| Aiman | Reporter | Prepared the written Markdown explanations for the code and visualisations, including descriptions of what each code section does and how the resulting plots should be interpreted. Helped ensure that the report explanations were clear and connected to the assignment objectives. |
+| Subhashini | Verifier  | Validated the accuracy of the generated plots, calculations, and interpretations by cross-checking outputs against the dataset and task requirements. Identified possible inconsistencies and ensured that the final answers were supported by the visual evidence.  |
+| Jabar  | AI Liaison | Managed the team’s AI-assisted workflow by prompting AI tools together with the coder, documenting relevant AI interactions, and reviewing AI-generated suggestions before they were accepted, modified, or rejected. Ensured that AI use supported the assignment without replacing team judgement. |
+| Min Xuan | Constructive Critic | Reviewed the combined work after merging individual contributions, suggested improvements to wording, structure, and visual clarity, and checked that the final submission package was complete. Also helped ensure that the final ZIP contained the required files and maintained submission integrity. |
+
+## 3.1 Plan the Map Encodings
+
+Q1: Why should `anom`, rather than `sst`, determine the principal fill colors?
+
+A1: 
+
+Q2: Should the anomaly scale be sequential or diverging? What does its central value represent?
+
+A2: 
+
+Q3: Why should both panels use identical anomaly-scale limits?
+
+A3: 
+
+
+## 3.2 Start Coding
+```{r}
+#| label: setup
+#| message: false
+library(tidyverse)
+library(stars)
+library(scales)
+library(ggnewscale)
+library(units)
+```
+
+## 3.3 Import the Daily Grids as `stars` Data Cubes
+
+
+### 3.3 Verifier Task
+
+
+
+## 3.4 Establish the Coordinate Reference System
+
+
+### 3.4 Verifier Task
+
+
+## 3.5 Calculate Monthly Cell Summaries
+
+
+### 3.5 Verifier Task
+
+
+## 3.6 Derive Surface Classes
+
+### 3.6 Verifier Task
+
+
+## 3.7 Combine the Monthly Summaries Along a Year Dimension
+
+### 3.7 Verifier Task
+
+
+## 3.8 Draft a First Faceted Raster Map
+
+
+## 3.9 Design a Diverging Fill Scale
+
+
+## 3.10 Add Land and Sea Ice as Surface Layers
+
+
+### 3.10 Verifier Task
+
+
+## 3.11 Compare Equal-Area World Projections
+
+
+## 3.12 Build the Two-Panel Anomaly Map {#build-the-two-panel-anomaly-map}
+
+
+## 3.13 Bin the Anomaly Scale {#bin-the-anomaly-scale}
+
+
+## 3.14 Reflect on the Visualization
+
+Q1: What does the two-panel map reveal about the difference between the December 2009 El Niño and the December 2010 La Niña? Point to specific regions.
+
+A1: 
+
+Q2: The map draws the anomaly for open ocean only and collapses sea ice into a single class. What does the reader gain and lose from these two choices?
+
+A2: 
+
+Q3: You now have two versions of the same map, one with a continuous scale ([Section 3.12](#build-the-two-panel-anomaly-map)) and one with a binned scale ([Section 3.13](#bin-the-anomaly-scale)). The maps are intended to compare the extent of warm and cool anomalies between the two Decembers. Which scale serves that goal better, and what does each sacrifice?
+
+A3: 
