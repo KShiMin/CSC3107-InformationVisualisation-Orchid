@@ -1,0 +1,239 @@
+# Lollipop Visualisation
+
+## Preprocessed Data
+```{r}
+#| label: fetch-preprocessed-data
+#| message: false
+preprocessed_data <- read_csv(export_path)
+```
+
+Fetching the preprocessed data from the `data/processed` directory, which contains the combined export values and quantities for each reporting country.
+
+## Data Preparation for Lollipop Chart
+```{r}
+#| label: data-formats-functions
+
+value_formatter <- label_number(
+  scale = 1 / 1000,
+  accuracy = 0.1,
+)
+
+quantity_formatter <- label_number(
+  scale = 1 / 1000,
+  accuracy = 0.1,
+)
+```
+
+`value_formatter` and `quantity_formatter` are functions that format the export value and quantity for display in the lollipop chart. The export value is converted from **millions to billions**, while the export quantity is converted from **thousand tonnes to million tonnes**.
+
+```{r}
+#| label: prepare-lollipop-data
+lollipop_country_data <- preprocessed_data |>
+  mutate(
+    point_label = str_c(
+      str_c(value_formatter(export_value), " B"),
+      " | ",
+      str_c(quantity_formatter(export_quantity), " Mt")
+    ),
+    value_rank = min_rank(desc(export_value)),
+    volume_rank = min_rank(desc(export_quantity))
+  )
+
+lollipop_top30 <- lollipop_country_data |>
+  mutate(country = fct_reorder(country, export_value)) |>
+  slice_max(
+    order_by = export_value,
+    n = 30,
+    with_ties = FALSE
+  )
+
+lollipop_top30
+```
+
+The above codes prepare the preprocessed dataset for subsequent visualisation. It creates labels for both export values and export quantity, and ranks the countries based on export value. This transformation are made such that the data and its labels are ready for subsequent visualisation ensuring readability and consistency.
+
+```{r}
+#| label: rest-of-world-data
+
+lollipop_rest_of_world <- lollipop_country_data |>
+  filter(
+    !country %in% lollipop_top30$country
+  ) |>
+  summarise(
+    country = "Rest of the World",
+    geo_region = "Rest of the World",
+    export_value = sum(export_value),
+    export_quantity = sum(export_quantity),
+    .groups = "drop"
+  ) |>
+  mutate(
+    annotation_label = str_c(
+      "All other reporting economies\n",
+      str_c(value_formatter(export_value), " B"),
+      " | ",
+      str_c(quantity_formatter(export_quantity), " Mt")
+    )
+  )
+
+lollipop_rest_of_world <- lollipop_rest_of_world |>
+  mutate(country = fct_reorder(country, export_value))
+
+lollipop_rest_of_world
+```
+
+
+## Export Value with Export Volume Annotation
+```{r}
+#| label: lollipop-chart-breaks
+#| message: false
+#| warning: false
+
+x_max <- max(lollipop_top30$export_value, na.rm = TRUE)
+
+break_step <- 20 * 1000
+minor_break_step <- 10 * 1000
+
+x_breaks <- seq(
+  0,
+  ceiling(x_max / break_step) * break_step,
+  by = break_step
+)
+
+x_minor_breaks <- seq(
+  0,
+  ceiling(x_max / minor_break_step) * minor_break_step,
+  by = minor_break_step
+)
+
+quantity_breaks_mt <- c(
+  0.5,
+  1,
+  2,
+  5,
+  10,
+  20,
+  50,
+  100,
+  200
+)
+
+quantity_breaks_raw <- quantity_breaks_mt * 1000
+
+legend_height <- max(
+  60,
+  length(quantity_breaks_raw) * 12
+)
+
+annotation_data <- lollipop_rest_of_world |>
+  transmute(
+    x = x_max * 0.80,
+    label = annotation_label
+  )
+```
+
+
+```{r}
+#| label: lollipop-chart-value-with-volume-annotation
+#| message: false
+#| warning: false
+#| fig-height: 10
+#| fig-width: 15
+
+gg_lollipop_value_quantity <- ggplot(
+  lollipop_top30,
+  aes(
+    x = export_value,
+    y = country
+  )
+) +
+  geom_segment(
+    aes(
+      x = 0,
+      xend = export_value,
+      yend = country
+    ),
+    linewidth = 1,
+    alpha = 0.7
+  ) +
+  geom_point(
+    aes(color = export_quantity),
+    size = 4
+  ) +
+  geom_text(
+    aes(label = point_label),
+    hjust = -0.15,
+    size = 4,
+    color = "grey25",
+    show.legend = FALSE
+  ) +
+  geom_label(
+    data = annotation_data,
+    aes(
+      x = x,
+      y = lollipop_top30$country[nrow(lollipop_top30) - 2],
+      label = label
+    ),
+    inherit.aes = FALSE,
+    hjust = 0,
+    vjust = 0.5,
+    size = 4,
+    lineheight = 1,
+    colour = "grey20",
+    fill = "white",
+    linewidth = 0.35,
+    label.padding = grid::unit(0.4, "lines")
+  ) +
+  scale_x_continuous(
+    limits = c(0, x_max * 1.22),
+    labels = value_formatter,
+    breaks = x_breaks,
+    minor_breaks = x_minor_breaks,
+    expand = expansion(mult = c(0, 0.08))
+  ) +
+  scale_color_gradient(
+    low = "#c2e5f9",
+    high = "#08519c",
+    trans = "log10",
+    breaks = quantity_breaks_raw,
+    labels = quantity_formatter,
+    name = "Export volume\n[Mt, log scale]",
+    guide = guide_colorbar(
+      nbin = 128,
+      title.position = "top",
+      ticks.colour = "grey30",
+      frame.colour = "grey65",
+      theme = theme(
+        legend.key.height = grid::unit(legend_height, "pt"),
+        legend.key.width = grid::unit(12, "pt")
+      )
+    )
+  ) +
+  labs(
+    x = "Agricultural Export Value (USD Billions)",
+    y = "Reporting Economy",
+    title = "Top 30 Agricultural Exporters including Rest of World by Export Value in 2024",
+    subtitle = str_wrap(
+      "Export volume is shown in million tonnes (Mt) for product groups measured by physical quantity.",
+      width = 125
+    ),
+    caption = str_wrap(
+      "Source: WTO dataset. The European Union is treated as a reporting economy. The top 30 economies and the Rest of World aggregate account for the full reported export value.",
+      width = 125
+    )
+  ) +
+  theme_minimal(base_size = 15) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.major.x = element_line(color = "grey86", linewidth = 0.5),
+    panel.grid.minor.x = element_line(color = "grey93", linewidth = 0.35),
+    panel.grid.minor.y = element_blank(),
+    plot.title.position = "plot",
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    plot.caption = element_text(hjust = 0),
+    plot.margin = margin(10, 24, 16, 10)
+  )
+
+gg_lollipop_value_quantity
+```
+
+This is the main redesign view. It keeps the primary comparison on one visual scale: export value. Export volume is included as a direct label so readers can distinguish high-value exporters from high-volume exporters without placing USD and tonnes on the same axis.
