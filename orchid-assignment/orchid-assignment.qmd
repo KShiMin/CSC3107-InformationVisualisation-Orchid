@@ -1,7 +1,0 @@
----
-title: "Assignment Report"
-author: "Team Orchid"
-date: ""
-format:
-  pptx: default
----

@@ -1,0 +1,46 @@
+---
+title: "Assignment Report"
+author: "Team Orchid"
+date: ""
+format:
+  html:
+    toc: true
+    number-sections: true
+---
+
+# Roles and Contribution
+
+| Member | Student ID | Contribution |
+| ------ | ---------- | -------------|
+| Quan Yi | 2401058 | Performed EDA for the "Exports qties" sheet |
+| Shi Min | 2401793 | - imported data and did basic exploratory data analysis to determine if the dataset needs to be cleaned before visualisation |
+| Aiman | <add your student id> | <add your contribution> |
+| Subhashini | <add your student id> | <add your contribution>|
+| Jabar  | <add your student id> | <add your contribution> |
+| Min Xuan | <add your student id> | <add your contribution> |
+
+# Setup
+```{r}
+#| label: qmd-setup
+#| message: false
+library(tidyverse)
+library(readxl) # for excel files
+```
+
+```{r}
+#| label: raw-data-imports
+analysis_year <- 2024
+source_file <- "data/export_of_agriculture_products_data.xlsx"
+export_dir <- "data/processed"
+```
+
+The code above defines the necessary libraries, source file path, output directory, and target year for the analysis.
+
+<!-- Include Export Values EDA qmd -->
+{{< include _export-values-eda.qmd >}}
+
+<!-- Include Export Quantity EDA qmd -->
+{{< include _quantity-eda-2024.qmd >}}
+
+<!-- Include Data Preprocessing qmd -->
+{{< include _2024_data_preprocessing.qmd >}}
