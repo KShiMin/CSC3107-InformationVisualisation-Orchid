@@ -48,6 +48,18 @@ library(units)
 
 ## 3.3 Import the Daily Grids as `stars` Data Cubes
 
+```{r}
+#| label: import-stars
+
+files_2009 <- list.files("oisst_daily/el_nino_2009-12", pattern = "\\.nc$", full.names = TRUE)
+files_2010 <- list.files("oisst_daily/la_nina_2010-12", pattern = "\\.nc$", full.names = TRUE)
+
+dec_2009 <- read_stars(files_2009, along = "time")
+dec_2010 <- read_stars(files_2010, along = "time")
+
+dec_2009
+
+```
 
 ### 3.3 Verifier Task
 
@@ -55,57 +67,468 @@ library(units)
 
 ## 3.4 Establish the Coordinate Reference System
 
+```{r}
+#| label: establish-crs
+
+dec_2009 <- dec_2009 |>
+    st_set_crs(4326)
+
+dec_2010 <- dec_2010 |>
+    st_set_crs(4326)
+
+```
 
 ### 3.4 Verifier Task
+
+```{r}
+#| label: verifier-task-3.4
+
+st_crs(dec_2009) == st_crs(4326)
+st_crs(dec_2010) == st_crs(4326)
+
+```
 
 
 ## 3.5 Calculate Monthly Cell Summaries
 
+```{r}
+#| label: calculate-monthly-summaries
+
+mean_anom_2009 <- st_apply(dec_2009["anom"], c("x", "y"), mean, na.rm = TRUE)
+mean_ice_2009 <- st_apply(dec_2009["ice"], c("x", "y"), function(x) {
+  mean(ifelse(is.na(x), 0, x))
+})
+
+mean_anom_2010 <- st_apply(dec_2010["anom"], c("x", "y"), mean, na.rm = TRUE)
+mean_ice_2010 <- st_apply(dec_2010["ice"], c("x", "y"), function(x) {
+  mean(ifelse(is.na(x), 0, x))
+})
+
+summary_2009 <- c(mean_anom = mean_anom_2009, mean_ice = mean_ice_2009) |>
+  mutate(
+    land = is.nan(mean_anom) & mean_ice == 0,
+    mean_ice = if_else(land, NA_real_, mean_ice)
+  ) |>
+  select(land, mean_anom, mean_ice)
+
+summary_2010 <- c(mean_anom = mean_anom_2010, mean_ice = mean_ice_2010) |>
+  mutate(
+    land = is.nan(mean_anom) & mean_ice == 0,
+    mean_ice = if_else(land, NA_real_, mean_ice)
+  ) |>
+  select(land, mean_anom, mean_ice)
+
+names(summary_2009)
+dim(summary_2009)
+
+```
 
 ### 3.5 Verifier Task
 
-
 ## 3.6 Derive Surface Classes
+
+```{r}
+#| label: derive-surface
+
+summary_2009 <- summary_2009 |>
+  mutate(
+    surface = case_when(
+      land ~ "land",
+      mean_ice >= 0.15 ~ "sea ice",
+      is.na(mean_anom) ~ "sea ice",
+      TRUE ~ "open ocean"
+    )
+  )
+
+summary_2010 <- summary_2010 |>
+  mutate(
+    surface = case_when(
+      land ~ "land",
+      mean_ice >= 0.15 ~ "sea ice",
+      is.na(mean_anom) ~ "sea ice",
+      TRUE ~ "open ocean"
+    )
+  )
+
+table(summary_2009$surface, useNA = "ifany")
+table(summary_2010$surface, useNA = "ifany")
+
+```
 
 ### 3.6 Verifier Task
 
 
 ## 3.7 Combine the Monthly Summaries Along a Year Dimension
 
+```{r}
+#| label: combine-summaries
+
+dec_summaries <- c(
+  summary_2009,
+  summary_2010,
+  along = "year"
+) |>
+  select(mean_anom, surface)
+
+names(dec_summaries)
+st_dimensions(dec_summaries)
+dim(dec_summaries)
+
+```
+
 ### 3.7 Verifier Task
 
 
 ## 3.8 Draft a First Faceted Raster Map
 
+```{r}
+#| label: draft-raster
+
+ggplot() +
+  geom_stars(data = dec_summaries, aes(fill = mean_anom)) +
+  facet_wrap(vars(year))
+
+```
+
+1. The default colors are unsuitable for mapping the anomaly. In Figure 1.1, it uses a diverging palette to help map the positive and negative colors
+
+2. The land masses are squished, and the area is uninterpretable as a data value. The map exaggerates polar regions because it is drawn in longitude and latitude rather than an equal-area projection.
+
+3. There is no mapping for the surface/land, it is only patches of gray
+
+4. Land and sea ice are not separated from open ocean, so the surface pattern is ambiguous.
 
 ## 3.9 Design a Diverging Fill Scale
 
+```{r}
+#| label: diverging-fill-scale
+
+dec_summaries <- dec_summaries |>
+  mutate(
+    open_ocean_anom = if_else(surface == "open ocean", mean_anom, NA_real_)
+  )
+
+limit <- dec_summaries |>
+  pull(open_ocean_anom) |>
+  abs() |>
+  quantile(0.99, na.rm = TRUE) |>
+  ceiling()
+
+ggplot() +
+  geom_stars(data = dec_summaries, aes(fill = mean_anom)) +
+  facet_wrap(vars(year)) +
+  scale_fill_fermenter(
+    palette = "RdYlBu",
+    direction = -1,
+    limits = c(-limit, limit),
+    oob = scales::squish
+  )
+```
 
 ## 3.10 Add Land and Sea Ice as Surface Layers
 
+```{r}
+#| label: add-land-and-seaice
+
+ggplot() +
+  geom_stars(data = dec_summaries, aes(fill = open_ocean_anom)) +
+  facet_wrap(vars(year)) +
+  scale_fill_fermenter(
+    palette = "RdYlBu",
+    direction = -1,
+    limits = c(-limit, limit),
+    oob = scales::squish
+  ) +
+  ggnewscale::new_scale_fill() +
+  geom_stars(data = dec_summaries, aes(fill = surface)) +
+  scale_fill_manual(
+    values = c(
+      land = "grey70",
+      `sea ice` = "white",
+      `open ocean` = "transparent"
+    ),
+    breaks = c("land", "sea ice"),
+    labels = c("Land", "Sea-ice concentration >= 15%"),
+    name = NULL
+  ) 
+
+```
+
+The surface layer has to sit above the anomaly layer because it acts as a mask that controls what the viewer can see. Land and sea ice should cover the anomaly colors wherever they occur, while open ocean must stay transparent so the anomaly remains visible underneath. If the surface layer were drawn first, the anomaly layer would paint over it and the categorical distinction would be lost.
 
 ### 3.10 Verifier Task
 
 
 ## 3.11 Compare Equal-Area World Projections
 
+```{r}
+#| label: compare-equal-area
+
+equal_earth_crs <- st_crs("+proj=eqearth +lon_0=180 +ellps=WGS84 +R_A +units=m +no_defs +type=crs")
+mollweide_crs <- st_crs("+proj=moll +lon_0=180 +ellps=WGS84 +R_A +units=m +no_defs +type=crs")
+
+warp_and_plot <- function(crs) {
+  keep <- which(abs(st_get_dimension_values(dec_summaries, "y")) <= 89.5)
+  trimmed <- dec_summaries[, , keep, ]
+  
+  target <- st_as_stars(
+    st_bbox(st_transform(trimmed, crs)),
+    dx = 50000, # 50 km cells (CRS units are meters)
+    dy = 50000
+  )
+  
+  warped <- st_warp(trimmed, target, method = "near")
+  
+  bbox_latlon <- st_bbox(c(xmin = 0.001, xmax = 359.999, ymin = -89.5, ymax = 89.5), crs = 4326)
+  world_boundary <- st_as_sfc(bbox_latlon) |>
+    st_segmentize(dfMaxLength = 1) |>
+    st_transform(crs)
+  
+  warped_cropped <- st_crop(warped, world_boundary)
+  
+  ggplot() +
+    geom_stars(data = warped_cropped, aes(fill = open_ocean_anom)) +
+    scale_fill_fermenter(
+      palette = "RdYlBu",
+      direction = -1,
+      limits = c(-limit, limit),
+      oob = scales::squish
+    ) +
+    ggnewscale::new_scale_fill() +
+    geom_stars(data = warped_cropped, aes(fill = surface)) +
+    facet_wrap(vars(year), ncol = 1) +
+    scale_fill_manual(
+      values = c(
+        land = "grey70",
+        `sea ice` = "white",
+        `open ocean` = "transparent"
+      ),
+      breaks = c("land", "sea ice"),
+      labels = c("Land", "Sea-ice concentration >= 15%"),
+      name = NULL
+    ) +
+    coord_equal()
+}
+
+map_equal_earth <- warp_and_plot(equal_earth_crs)
+map_equal_earth
+
+map_mollweide <- warp_and_plot(mollweide_crs)
+map_mollweide
+
+```
+
+a. How does each projection represent the polar regions?
+
+The Equal Earth projection represents the poles as straight, horizontal lines across the top and bottom of the map. This stretches high-latitude landmasses horizontally but maintains a familiar overall world shape.
+
+The Mollweide projection represents the poles as single points, this pinches the high-latitude landmasses much more sharply and produces a narrower, more pointed silhouette at the top and bottom.
+
+b. How clearly does each projection show the equatorial Pacific?
+
+Both projections show the equatorial Pacific very clearly because they are centered on the 180 degrees meridian, placing the El Nino and La Nina temperature anomalies dead center. As they are both equal-area projections, the physical size of the anomaly regions relative to the rest of the globe is accurately preserved in both.
+
+c. Which projection uses the rectangular panel space more effectively?
+
+The Equal Earth projection uses the rectangular panel space more effectively. As its poles are stretched into lines rather than points, the map takes up more of the rectangular panel, leaving less empty gray space in the four corners compared to the curving Mollweide projection.
+
+d. Which projection makes the contrast between the two Decembers more visually prominent?
+
+While Equal Earth fills more of the panel, Mollweide makes the contrast between the two Decembers more visually prominent by concentrating the viewer's focus. As Mollweide's oval converges at the poles, it naturally draws the eye straight to the center of the frame, where the equatorial Pacific anomaly resides.
+
+By minimizing peripheral distractions at high latitudes, Mollweide forces a direct, centered vertical comparison between the red El Nino plume in 2009 and the blue La Nina wave in 2010, making the core signal easier to isolate.
+
+I would choose Mollweide for the final map. It sacrifices some rectangular panel efficiency compared to Equal Earth, and compresses the poles more aggressively, but since the anomalies of interest are concentrated in the equatorial and mid-latitude Pacific, that polar distortion has little practical cost here. The compact elliptical form also keeps the data-rich areas closer to the visual center of the panel, which we found to make the two December panels easier to compare side by side.
 
 ## 3.12 Build the Two-Panel Anomaly Map {#build-the-two-panel-anomaly-map}
 
+```{r}
+#| label: data-preparation
+
+keep <- which(abs(st_get_dimension_values(dec_summaries, "y")) <= 89.5)
+trimmed <- dec_summaries[, , keep, ]
+  
+target <- st_as_stars(
+  st_bbox(st_transform(trimmed, mollweide_crs)),
+  dx = 50000, # 50 km cells (CRS units are meters)
+  dy = 50000
+)
+
+warped <- st_warp(trimmed, target, method = "near")
+  
+bbox_latlon <- st_bbox(c(xmin = 0.001, xmax = 359.999, ymin = -89.5, ymax = 89.5), crs = 4326)
+world_boundary <- st_as_sfc(bbox_latlon) |>
+  st_segmentize(dfMaxLength = 3) |>
+  st_transform(mollweide_crs)
+
+warped_cropped <- st_crop(warped, world_boundary)
+
+equator_line <- st_linestring(matrix(c(seq(0.001, 359.999, length.out = 100), rep(0, 100)), ncol = 2)) |>
+  st_sfc(crs = 4326) |>
+  st_segmentize(dfMaxLength = 3) |>
+  st_transform(mollweide_crs)
+
+ocean_labels <- st_sf(
+    name = c("Pacific\nOcean", "Atlantic\nOcean", "Indian\nOcean"),
+    geometry = st_sfc(
+      st_point(c(190, 20)),   
+      st_point(c(315, 25)),
+      st_point(c(75, -15)),
+      crs = 4326
+    )
+  ) |> 
+  st_transform(mollweide_crs)
+
+ocean_coords <- as.data.frame(st_coordinates(ocean_labels))
+ocean_coords$name <- ocean_labels$name
+
+equator_df <- as.data.frame(st_coordinates(equator_line))
+
+world_boundary_df <- as.data.frame(st_coordinates(world_boundary))
+
+```
+
+```{r}
+#| label: continuous-scale-plot
+#| warning: false
+
+make_sst_map <- function(anomaly_scale, anomaly_mapping = aes(fill = open_ocean_anom)) {
+  ggplot() +
+    geom_stars(data = warped_cropped, anomaly_mapping) +
+    anomaly_scale +
+    ggnewscale::new_scale_fill() +
+    geom_stars(data = warped_cropped, aes(fill = surface)) +
+    facet_wrap(
+      vars(year), 
+      ncol = 1,
+      labeller = labeller(year = as_labeller(c(
+        "1" = "December 2009 (El Niño)",
+        "2" = "December 2010 (La Niña)"
+      )))
+    ) +
+    scale_fill_manual(
+      values = c(
+        land = "grey70",
+        `sea ice` = "white",
+        `open ocean` = "transparent"
+      ),
+      breaks = c("land", "sea ice"),
+      labels = c("Land", "Sea-ice concentration >= 15%"),
+      name = NULL,
+      na.value = NA,
+      guide = guide_legend(
+        order = 2,
+        override.aes = list(colour = "black", linewidth = 0.3)
+      )
+    ) +
+    geom_path(
+      data = equator_df, aes(x = X, y = Y),
+      colour = "grey60", linetype = "dashed", linewidth = 0.35
+    ) +
+    geom_polygon(
+      data = world_boundary_df, aes(x = X, y = Y, group = L1),
+      fill = NA, colour = "black", linewidth = 0.4
+    ) +
+    geom_label(
+      data = ocean_coords,
+      aes(x = X, y = Y, label = name),
+      fill = alpha("white", 0.6),
+      color = "grey20",
+      size = 2.8,
+      fontface = "plain",
+      linewidth = 0,
+      label.padding = unit(0.15, "lines")
+    ) +
+    coord_equal(clip = "off") +
+    labs(
+      title = "Sea Surface Temperature Anomalies During El Nino and La Nina",
+      subtitle = "Monthly mean departure from 1971–2000 climatology",
+      caption = "Source: NOAA Optimum Interpolation Sea Surface Temperature (OISST) v2.1"
+    ) +
+    theme_void() +
+    theme(
+      plot.title.position = "plot",
+      strip.text = element_text(face = "bold", size = 11, margin = margin(b = 5, t = 5)),
+      plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+      plot.subtitle = element_text(size = 10, color = "grey30", hjust = 0, margin = margin(b = 10)),
+      plot.caption = element_text(size = 8, color = "grey40", hjust = 1, margin = margin(t = 10)),
+      legend.position = "right",
+    )
+}
+
+continuous_scale_obj <- scale_fill_fermenter(
+  palette = "RdYlBu", 
+  direction = -1,
+  limits = c(-limit, limit), 
+  oob = scales::squish, 
+  na.value = NA,
+  name = "Anomaly (°C)",
+  guide = guide_colorsteps(frame.colour = "black", frame.linewidth = 0.3, ticks.colour = "black")
+)
+
+map_continuous <- make_sst_map(continuous_scale_obj)
+map_continuous
+```
 
 ## 3.13 Bin the Anomaly Scale {#bin-the-anomaly-scale}
 
+```{r}
+#| label: binned-scale
+#| warning: false
+
+breaks <- seq(-limit, limit, by = 1)
+fmt_breaks <- sprintf("%+g", breaks)
+bin_labels <- c(
+  paste0("\u2264 ", fmt_breaks[1]),
+  paste0(head(fmt_breaks, -1), " to ", tail(fmt_breaks, -1)),
+  paste0("> ", fmt_breaks[length(fmt_breaks)])
+)
+
+binned_mapping <- aes(
+  fill = cut(open_ocean_anom, breaks = c(-Inf, breaks, Inf), labels = bin_labels)
+)
+
+binned_scale_obj <- scale_fill_brewer(
+  palette = "RdYlBu", 
+  direction = -1,
+  name = "Anomaly (°C)",
+  na.translate = FALSE,
+  guide = guide_legend(
+    reverse = TRUE,
+    override.aes = list(color = "black", linewidth = 0.3)
+  )
+)
+
+map_binned <- make_sst_map(binned_scale_obj, binned_mapping)
+map_binned
+```
 
 ## 3.14 Reflect on the Visualization
 
 Q1: What does the two-panel map reveal about the difference between the December 2009 El Niño and the December 2010 La Niña? Point to specific regions.
 
-A1: 
+A1: The two-panel map reveals a contrast across several key regions, driven by the shift between El Nino (2009) and La Nina (2010):
+
+- Pacific Ocean: In December 2009, a strong, continuous "warm tongue" of positive anomalies (red) spans the central and eastern equatorial Pacific, with sea surface temperatures exceeding 2 to 3 degree celsius above average. By December 2010, this region completely reverses into a broad band of cold negative anomalies (blue), marking the La Nina cooling pattern.
+- North Pacific & Mid-Latitudes: In 2009, cooler anomalies (blue) surround the warm equatorial core. In 2010, this pattern flips, warm anomalies (red) flank the central cold La Nina pattern to the north and south.
+- Indian and Atlantic Oceans: The warmth of the 2009 El Niño extends into the Indian Ocean, which shows widespread positive anomalies (yellow/orange). In contrast, the 2010 panel shows a cooling trend across the Indian Ocean alongside strong regional warming in the North Atlantic.
+
+Overall, the map illustrates that the 2009–2010 shift was not just localized to the equator, but more of a global-scale sea surface temperature adjustment.
 
 Q2: The map draws the anomaly for open ocean only and collapses sea ice into a single class. What does the reader gain and lose from these two choices?
 
-A2: 
+A2: By drawing temperature anomalies only for the open ocean, the map makes it much easier to identify the characteristic warming during El Nino and cooling during La Nina. Since sea surface temperature anomalies are only meaningful where there is exposed ocean water, masking out sea ice avoids displaying misleading or unavailable data and produces a cleaner, more interpretable map.
+
+However, this choice also means the reader cannot see temperature variations beneath or within sea-ice-covered regions, making it impossible to examine how polar ocean temperatures may differ or change near the ice edge.
+
+Collapsing sea ice into a single class also improves readability by clearly distinguishing sea ice from both land and open ocean without adding another variable to interpret. This keeps the focus on the sea surface temperature anomalies.
+
+The downside is that the reader loses information about differences in sea-ice concentration. Areas with thin, partial ice and areas with nearly 100% ice cover appear identical, so changes in ice extent or concentration cannot be assessed from the map.
 
 Q3: You now have two versions of the same map, one with a continuous scale ([Section 3.12](#build-the-two-panel-anomaly-map)) and one with a binned scale ([Section 3.13](#bin-the-anomaly-scale)). The maps are intended to compare the extent of warm and cool anomalies between the two Decembers. Which scale serves that goal better, and what does each sacrifice?
 
-A3: 
+A3: The binned scale serves the goal better. By grouping continuous temperature values into discrete, bounded classes (e.g., +1 to +2 °C), it creates clear visual categories that make it easier to compare the spatial extent of anomaly thresholds across the two Decembers. The reader can more readily assess how far the El Niño warm tongue or La Niña cold plume extends without being distracted by minor colour variations.
+
+However, the binned scale sacrifices precision and internal variation. Cells with distinct anomaly values (such as +1.1 °C and +1.9 °C) are rendered with the same fill colour. This flattens fine-grained temperature gradients and obscures subtle regional differences within each class.
+
+In contrast, the continuous scale preserves the full spectrum of temperature anomalies and reveals smooth spatial transitions. The trade-off is that its continuous range of colour shades makes it more difficult to judge the overall extent of warm and cool anomalies or identify where specific anomaly thresholds begin and end.
