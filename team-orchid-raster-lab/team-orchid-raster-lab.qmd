@@ -53,14 +53,21 @@ Utlized new R packages `stars` for handling raster data and `ggnewscale` for plo
 ## 3.3 Import the Daily Grids as `stars` Data Cubes
 ```{r}
 #| label: import-stars
-files_2009 <- list.files("C:/Users/mjaba/Documents/GITHUB/CSC3107-InformationVisualisation-Orchid/team-orchid-raster-lab/oisst_daily/el_nino_2009-12", pattern = "\\.nc$", full.names = TRUE)
-files_2010 <- list.files("C:/Users/mjaba/Documents/GITHUB/CSC3107-InformationVisualisation-Orchid/team-orchid-raster-lab/oisst_daily/la_nina_2010-12", pattern = "\\.nc$", full.names = TRUE)
+files_2009 <- list.files(
+  "oisst_daily/el_nino_2009-12",
+  pattern = "\\.nc$",
+  full.names = TRUE
+)
+files_2010 <- list.files(
+  "oisst_daily/la_nina_2010-12",
+  pattern = "\\.nc$",
+  full.names = TRUE
+)
 
 dec_2009 <- read_stars(files_2009, along = "time")
 dec_2010 <- read_stars(files_2010, along = "time")
 
 dec_2009
-
 ```
 
 `list.files(...)` list all .nc files for each December, sorted chronologically for both `files_2009` and `files_2010`.
