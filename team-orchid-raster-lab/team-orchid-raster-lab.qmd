@@ -748,3 +748,51 @@ A3: The binned scale serves the goal better. By grouping continuous temperature 
 However, the binned scale sacrifices precision and internal variation. Cells with distinct anomaly values (such as +1.1 °C and +1.9 °C) are rendered with the same fill colour. This flattens fine-grained temperature gradients and obscures subtle regional differences within each class.
 
 In contrast, the continuous scale preserves the full spectrum of temperature anomalies and reveals smooth spatial transitions. The trade-off is that its continuous range of colour shades makes it more difficult to judge the overall extent of warm and cool anomalies or identify where specific anomaly thresholds begin and end.
+
+# AI Liaison Report
+
+Tool used: Perplexity (GPT 5.4)
+
+### One Useful AI Response
+
+```
+In the prompt :
+I am trying to compile and preview the Quarto
+document but it is taking so long especially on the
+calculating monthly cell summaries task. Why could
+this be happening? Is there something wrong with the
+code?
+```
+
+The team has been struggling to test and play with this week's lab practice due to the time taken for the compiling whenever we make changes. This is especially so when making aesthetic changes and having to wait 8-15 minutes to render was horrible. Within the first prompt regarding said issue, AI was able to suggest multiple solutions which one of them had worked well for most of the team. The cache solution was able to reduce our compile times by at least half and this greatly improved the efficiency and productivity of the team to get the lab sheet done.
+
+
+### Suboptimal AI Response
+
+```
+From the response :
+make_boundary <- function(crs) {
+lat_rng <- range(st_get_dimension_values(dec_summaries, "y"))
+lat_rng <- lat_rng[abs(lat_rng) <= 89.5]
+bb_ll <- st_bbox(c(
+xmin = 0.001,
+xmax = 359.999,
+ymin = min(lat_rng),
+ymax = max(lat_rng)
+), crs = st_crs(4326))
+boundary <- st_as_sfc(bb_ll) |>
+st_segmentize(dfMaxLength = 1) |>
+st_transform(crs)
+boundary
+}
+```
+
+The AI was able to give effective points and answers however any code that is in the AI's answer often lacked any proper explanation and assumes that we fully knowledgeable of the coding logic. Unlike other models, there was no indicator of the code being used. What followed was lengthy and wordy explanations which was not enjoyable after the first few prompts and at times, made the team more confused on what we were actually trying to do.
+
+### Reflection
+
+This week the team tried a new model under Perplexity (GPT 5.4) and realised how each model may differ in their responses. Some of which are in-tuned with what we would like (Gemini and Claude Sonnet) and some (GPT 5.4) which did not give the best responses as mentioned in suboptimal responses.
+
+However, there are instances in which the AI gave a suggestion which greatly helped the team, such as to use the caching so as to reduce the time it takes trying to compile and preview the generated document. 
+
+This shows the duality of using and depending on AI for fixes and help with our work. The team discussed this and feel that the amount of context given to AI this time may have been lacking, causing response to be more explanation based and to show the AI more of the code may have helped with the result accuracy but may have skewed our solutions much further than we would have preferred.
