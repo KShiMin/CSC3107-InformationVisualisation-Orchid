@@ -1,6 +1,4 @@
-# Lollipop Visualisation
-
-## Preprocessed Data
+## Load Processed Data
 ```{r}
 #| label: fetch-preprocessed-data
 #| message: false
@@ -9,7 +7,7 @@ preprocessed_data <- read_csv(export_path)
 
 Fetching the preprocessed data from the `data/processed` directory, which contains the combined export values and quantities for each reporting country.
 
-## Data Preparation for Lollipop Chart
+## Prepare Labels, Rankings, and Formatters
 ```{r}
 #| label: data-formats-functions
 
@@ -52,6 +50,7 @@ lollipop_top30
 
 The above codes prepare the preprocessed dataset for subsequent visualisation. It creates labels for both export values and export quantity, and ranks the countries based on export value. This transformation are made such that the data and its labels are ready for subsequent visualisation ensuring readability and consistency.
 
+## Calculate Rest of World Context
 ```{r}
 #| label: rest-of-world-data
 
@@ -131,6 +130,8 @@ annotation_data <- lollipop_rest_of_world |>
   )
 ```
 
+## Build the Lollipop Chart
+The final visualization keeps **export value** as the primary ranking measure and uses **export quantity** as supporting context. This avoids comparing USD and tonnes on the same axis while still revealing countries whose economic export value differs from their physical export volume.
 
 ```{r}
 #| label: lollipop-chart-value-with-volume-annotation
@@ -236,4 +237,6 @@ gg_lollipop_value_quantity <- ggplot(
 gg_lollipop_value_quantity
 ```
 
-This is the main redesign view. It keeps the primary comparison on one visual scale: export value. Export volume is included as a direct label so readers can distinguish high-value exporters from high-volume exporters without placing USD and tonnes on the same axis.
+## Interpretation of Final Visualization
+
+The redesigned chart shows that agricultural export dominance is not only about physical volume. Some reporting economies rank highly by export value because they export higher-value agricultural goods, while others contribute more strongly in physical tonnage. The added quantity labels and colour scale make this contrast visible without overcrowding the ranking.
