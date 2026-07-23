@@ -17,7 +17,7 @@ This report documents the data preparation and visualization pipeline for our re
 | Member | Student ID | Contribution |
 | ------ | ---------- | -------------|
 | Quan Yi | 2401058 | Performed EDA for the "Exports qties" sheet |
-| Shi Min | 2401793 | - imported data and did basic exploratory data analysis to determine if the dataset needs to be cleaned before visualisation |
+| Shi Min | 2401793 | Drafted the initial EDA for export quantities; created a lollipop chart prototype for team comparison; cleaned and polished the report QMD for grammar, formatting, and overall flow. |
 | Aiman | <add your student id> | <add your contribution> |
 | Subhashini | <add your student id> | <add your contribution>|
 | Jabar  | <add your student id> | <add your contribution> |
