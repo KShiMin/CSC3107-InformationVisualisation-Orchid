@@ -20,6 +20,11 @@ quantity_formatter <- label_number(
   scale = 1 / 1000,
   accuracy = 0.1,
 )
+
+price_formatter <- label_dollar(
+  accuracy = 1,
+  suffix = "/t"
+)
 ```
 
 `value_formatter` and `quantity_formatter` are functions that format the export value and quantity for display in the lollipop chart. The export value is converted from **millions to billions**, while the export quantity is converted from **thousand tonnes to million tonnes**.
@@ -28,24 +33,25 @@ quantity_formatter <- label_number(
 #| label: prepare-lollipop-data
 lollipop_country_data <- preprocessed_data |>
   mutate(
-    point_label = str_c(
-      str_c(value_formatter(export_value), " B"),
-      " | ",
-      str_c(quantity_formatter(export_quantity), " Mt")
-    ),
+    usd_per_tonne = export_value * 1000 / export_quantity,
+    point_label = str_c(value_formatter(export_value), " B"),
     value_rank = min_rank(desc(export_value)),
     volume_rank = min_rank(desc(export_quantity))
   )
 
-lollipop_top30 <- lollipop_country_data |>
+lollipop_top20 <- lollipop_country_data |>
   mutate(country = fct_reorder(country, export_value)) |>
   slice_max(
     order_by = export_value,
-    n = 30,
+    n = 20,
     with_ties = FALSE
   )
 
-lollipop_top30
+price_range <- range(lollipop_top20$usd_per_tonne, na.rm = TRUE)
+
+price_breaks <- scales::breaks_log(n = 6)(price_range)
+
+lollipop_top20
 ```
 
 The above codes prepare the preprocessed dataset for subsequent visualisation. It creates labels for both export values and export quantity, and ranks the countries based on export value. This transformation are made such that the data and its labels are ready for subsequent visualisation ensuring readability and consistency.
@@ -56,7 +62,7 @@ The above codes prepare the preprocessed dataset for subsequent visualisation. I
 
 lollipop_rest_of_world <- lollipop_country_data |>
   filter(
-    !country %in% lollipop_top30$country
+    !country %in% lollipop_top20$country
   ) |>
   summarise(
     country = "Rest of the World",
@@ -68,9 +74,9 @@ lollipop_rest_of_world <- lollipop_country_data |>
   mutate(
     annotation_label = str_c(
       "All other reporting economies\n",
-      str_c(value_formatter(export_value), " B"),
+      value_formatter(export_value), " B",
       " | ",
-      str_c(quantity_formatter(export_quantity), " Mt")
+      quantity_formatter(export_quantity), " million tonnes"
     )
   )
 
@@ -87,7 +93,7 @@ lollipop_rest_of_world
 #| message: false
 #| warning: false
 
-x_max <- max(lollipop_top30$export_value, na.rm = TRUE)
+x_max <- max(lollipop_top20$export_value, na.rm = TRUE)
 
 break_step <- 20 * 1000
 minor_break_step <- 10 * 1000
@@ -102,25 +108,6 @@ x_minor_breaks <- seq(
   0,
   ceiling(x_max / minor_break_step) * minor_break_step,
   by = minor_break_step
-)
-
-quantity_breaks_mt <- c(
-  0.5,
-  1,
-  2,
-  5,
-  10,
-  20,
-  50,
-  100,
-  200
-)
-
-quantity_breaks_raw <- quantity_breaks_mt * 1000
-
-legend_height <- max(
-  60,
-  length(quantity_breaks_raw) * 12
 )
 
 annotation_data <- lollipop_rest_of_world |>
@@ -141,7 +128,7 @@ The final visualization keeps **export value** as the primary ranking measure an
 #| fig-width: 15
 
 gg_lollipop_value_quantity <- ggplot(
-  lollipop_top30,
+  lollipop_top20,
   aes(
     x = export_value,
     y = country
@@ -157,13 +144,16 @@ gg_lollipop_value_quantity <- ggplot(
     alpha = 0.7
   ) +
   geom_point(
-    aes(color = export_quantity),
-    size = 4
+    aes(fill = usd_per_tonne),
+    shape = 21,
+    size = 4,
+    stroke = 0.5,
+    color = "grey40"
   ) +
   geom_text(
     aes(label = point_label),
-    hjust = -0.15,
-    size = 4,
+    hjust = -0.35,
+    size = 5.5,
     color = "grey25",
     show.legend = FALSE
   ) +
@@ -171,13 +161,13 @@ gg_lollipop_value_quantity <- ggplot(
     data = annotation_data,
     aes(
       x = x,
-      y = lollipop_top30$country[nrow(lollipop_top30) - 2],
+      y = lollipop_top20$country[nrow(lollipop_top20) - 2],
       label = label
     ),
     inherit.aes = FALSE,
     hjust = 0,
     vjust = 0.5,
-    size = 4,
+    size = 5,
     lineheight = 1,
     colour = "grey20",
     fill = "white",
@@ -185,53 +175,62 @@ gg_lollipop_value_quantity <- ggplot(
     label.padding = grid::unit(0.4, "lines")
   ) +
   scale_x_continuous(
-    limits = c(0, x_max * 1.22),
+    limits = c(0, x_max * 1.12),
     labels = value_formatter,
     breaks = x_breaks,
     minor_breaks = x_minor_breaks,
-    expand = expansion(mult = c(0, 0.08))
+    expand = expansion(mult = c(0, 0.04))
   ) +
-  scale_color_gradient(
-    low = "#c2e5f9",
-    high = "#08519c",
+  scale_fill_fermenter(
+    palette = "Blues",
+    direction = 1,
     trans = "log10",
-    breaks = quantity_breaks_raw,
-    labels = quantity_formatter,
-    name = "Export volume\n[Mt, log scale]",
-    guide = guide_colorbar(
-      nbin = 128,
+    breaks = price_breaks,
+    labels = price_formatter,
+    limits = range(price_breaks),
+    oob = scales::squish,
+    name = "Export value per tonne\n[USD/tonne, log scale]",
+    guide = guide_coloursteps(
       title.position = "top",
       ticks.colour = "grey30",
       frame.colour = "grey65",
       theme = theme(
-        legend.key.height = grid::unit(legend_height, "pt"),
-        legend.key.width = grid::unit(12, "pt")
+        legend.key.height = grid::unit(160, "pt"),
+        legend.key.width = grid::unit(35, "pt"),
+        legend.title = element_text(size = 16, face="bold"),
+        legend.text = element_text(size = 14)
       )
     )
   ) +
   labs(
     x = "Agricultural Export Value (USD Billions)",
     y = "Reporting Economy",
-    title = "Top 30 Agricultural Exporters including Rest of World by Export Value in 2024",
+    title = "Top 20 Agricultural Exporters including Rest of World by Export Value in 2024",
     subtitle = str_wrap(
-      "Export volume is shown in million tonnes (Mt) for product groups measured by physical quantity.",
+    "Point color reflects export value per tonne, highlighting economies whose trade is concentrated in higher or lower-value goods.",
+    width = 150
+  ),
+  caption = str_wrap(
+      "Source: WTO dataset. The European Union is treated as a reporting economy.",
       width = 125
-    ),
-    caption = str_wrap(
-      "Source: WTO dataset. The European Union is treated as a reporting economy. The top 30 economies and the Rest of World aggregate account for the full reported export value.",
-      width = 125
-    )
+    ) 
   ) +
   theme_minimal(base_size = 15) +
   theme(
+    axis.text.y = element_text(size = 16),
+    axis.text.x = element_text(size = 16),
+    axis.title.x = element_text(size = 18, margin = margin(t = 10)),
+    axis.title.y = element_text(size = 18, margin = margin(r = 10)),
     panel.grid.major.y = element_blank(),
     panel.grid.major.x = element_line(color = "grey86", linewidth = 0.5),
     panel.grid.minor.x = element_line(color = "grey93", linewidth = 0.35),
     panel.grid.minor.y = element_blank(),
     plot.title.position = "plot",
-    plot.title = element_text(hjust = 0.5, face = "bold"),
+    plot.title = element_text(size = 20, hjust = 0.5, face = "bold"),
     plot.caption = element_text(hjust = 0),
-    plot.margin = margin(10, 24, 16, 10)
+    plot.margin = margin(10, 0, 16, 10),   # reduced right margin, was 24
+    legend.box.spacing = grid::unit(5, "pt"),  # pulls legend closer to plot
+    legend.margin = margin(0, 0, 0, 0)          # trims internal legend padding
   )
 
 gg_lollipop_value_quantity
