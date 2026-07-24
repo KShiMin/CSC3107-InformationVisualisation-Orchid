@@ -64,8 +64,8 @@ The redesign improves the original visualization by preserving its accessible ra
 
 # References
 
-- Visual Capitalist. (2024). *Ranked: The Countries That Feed the World*. https://www.visualcapitalist.com/ranked-the-countries-that-feed-the-world/
+- Visual Capitalist. (2024). *Ranked: The Countries That Feed the World*. [https://www.visualcapitalist.com/ranked-the-countries-that-feed-the-world/](https://www.visualcapitalist.com/ranked-the-countries-that-feed-the-world/)
 
-- World Trade Organization. (n.d.). *World Trade in Agricultural Products in Charts*. https://www.wto.org/english/tratop_e/agric_e/ag_imp_exp_charts_e.htm#ag_products
+- World Trade Organization. (n.d.). *World Trade in Agricultural Products in Charts*. [https://www.wto.org/english/tratop_e/agric_e/ag_imp_exp_charts_e.htm#ag_products](https://www.wto.org/english/tratop_e/agric_e/ag_imp_exp_charts_e.htm#ag_products)
 
-- Sarah. (2026). *ScienceDirect article used for Bangladesh wheat export context*. https://www.sciencedirect.com/science/article/pii/S240584402502818X
+- Sarah. (2026). *ScienceDirect article used for Bangladesh wheat export context*. [https://www.sciencedirect.com/science/article/pii/S240584402502818X](https://www.sciencedirect.com/science/article/pii/S240584402502818X)
