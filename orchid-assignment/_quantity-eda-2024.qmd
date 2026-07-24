@@ -1,8 +1,8 @@
-# Export Quantity Data Preparation and EDA
+## Export Quantity Data Preparation and EDA
 
 This section examines the `Exports qties` worksheet from the WTO agricultural trade dataset. The goal is to prepare a clean 2024 export quantity dataset, verify that the values are suitable for physical-volume analysis, and identify patterns that inform the final visualization design.
 
-## Import Raw Export Quantity Data
+### Import Raw Export Quantity Data
 ```{r}
 #| label: quantity-import-quantity-sheet
 
@@ -19,8 +19,8 @@ The raw quantity worksheet is structured as a **wide panel dataset**. Each row r
 
 Unlike the `Export values` worksheet, the `Exports qties` worksheet does not include a `GeoRegion` column. This means regional information must later be added through a join with the value dataset. This is important because the original visualization uses regional colour coding, and our redesign also needs regional context.
 
-## Filter and Clean 2024 Quantity Data
-### Removing Aggregate and Non-Tonnage Product Categories
+### Filter and Clean 2024 Quantity Data
+#### Removing Aggregate and Non-Tonnage Product Categories
 
 ```{r}
 #| label: quantity-filtering-and-cleaning-2024-data
@@ -50,7 +50,7 @@ The `AoA HS proxy` row is an aggregate category rather than an individual agricu
 
 The product categories `18x Live Animals`, `21 Fruits`, `22 Vegetables`, and `25 Processed fruits and vegetables` are also removed because their values are recorded in **USD millions**, not physical tonnes. Since the final visualization compares export quantity, retaining these rows would incorrectly mix monetary values with physical quantity measures such as thousand tonnes.
 
-### Verification Against Removed USD-Measured Categories
+#### Verification Against Removed USD-Measured Categories
 ```{r}
 #| label: quantity-value-verifier
 
@@ -116,9 +116,9 @@ usd_breakdown %>%
 
 The breakdown confirms that the sum of the removed categories matches the observed differences in `comparison_check`. This supports the decision to exclude these categories from the physical export quantity analysis.
 
-## Missing, Zero, and Negative Value Checks
+### Missing, Zero, and Negative Value Checks
 
-### Missing and Zero Quantity Values
+#### Missing and Zero Quantity Values
 
 ```{r}
 #| label: quantity-check-missing-data
@@ -140,7 +140,7 @@ An audit of the filtered 2024 quantity feature yielded these insights:
 
 2. Presence of Non-Exporters (zero_count = 759): Approximately 20% of the observations contain a recorded zero (0.0). This means that certain countries perhaps due to geographic or their climate are unable to export a specific commodity group, such as wheat or rice.
 
-### Interpreting Zero Export Quantities
+#### Interpreting Zero Export Quantities
 
 ```{r}
 #| label: quantity-check-zero-export-rows
@@ -158,7 +158,7 @@ According to Sarah (2026), while Bangladesh has made progress in increasing whea
 
 Source: [ScienceDirect Article](https://www.sciencedirect.com/science/article/pii/S240584402502818X)
 
-### Negative Quantity Check
+#### Negative Quantity Check
 
 ```{r}
 #| label: quantity-check-negative-values
@@ -172,7 +172,7 @@ cat("Number of negative export quantities found:", negative_count)
 
 The dataset yielded a hard minimum of zero, confirming that no negative values exist in the 2024 metric feature.
 
-## Structural Balance Audit
+### Structural Balance Audit
 
 ```{r}
 #| label: quantity-check-country-count
@@ -207,7 +207,7 @@ This audit reveals that the dataset is an unbalanced panel matrix. A total of 79
 
 Discovering this unbalanced framework means that when we combine the Export Quantities sheet with the Export Values sheet to build our faceted layout, we cannot perform simple row-index merging. We must explicitly use a relational database join framework (`left_join` or `full_join`) keyed on both product and country variables to avoid massive row misalignments of our 2024 regional aggregates.
 
-## World Total Consistency Check
+### World Total Consistency Check
 
 ```{r}
 #| label: quantity-checking-world-total
@@ -245,7 +245,7 @@ While there seems to be "Residual Delta", the value is so small that the differe
 
 This suggests that a quantity-only residual is not needed. For the final visualization, residual context is handled through a **Rest of World** calculation rather than through a separate hidden-country quantity estimate.
 
-## Concentration and Dominance Analysis
+### Concentration and Dominance Analysis
 
 ```{r}
 #| label: quantity-concentration-audit
@@ -275,9 +275,9 @@ Additionally, when performing a comparative audit between our raw dataset and th
 
 Therefore, it may be challenging to provide the same granularity that the original visualization provides. 
 
-## Summary Statistics
+### Summary Statistics
 
-### Country-Level Quantity Summary
+#### Country-Level Quantity Summary
 
 ```{r}
 #| label: quantity-eda-summary-statistics-country
@@ -310,7 +310,7 @@ The country-level summary statistics show a highly skewed distribution:
 
 3. The standard deviation (25,661) is over 3 times larger than the mean. This indicates that the "average" distance between countries is massive.
 
-### Product-Level Quantity Summary
+#### Product-Level Quantity Summary
 
 ```{r}
 #| label: quantity-eda-summary-statistics-product
@@ -347,9 +347,9 @@ Looking at the product metrics, we notice that the median product volume sits at
 
 This structural gap (186,921 / 1,088) highlights an economic reality, where global trade is overwhelmingly anchored by raw, low-cost bulk industrial commodities (like Maize/Corn) used worldwide for livestock feed, bio-fuels, and processing. In contrast, highly processed animal fats like butter command premium financial prices per kilogram, meaning their physical transport requirements remain minute.
 
-## Diagnostic Plots
+### Diagnostic Plots
 
-### Distribution of Country Export Quantities
+#### Distribution of Country Export Quantities
 
 ```{r}
 #| label: quantity-plot-summary
@@ -377,7 +377,7 @@ As displayed in our first diagnostic distribution plot, applying a base-10 logar
 **Methodological Justification:**
 This plot serves as our diagnostic proof against using a standard, un-faceted linear design. If we were to map these countries on a uniform linear scale, the extreme variation between the median cluster and the mega-producers on the right would compress over 75% of the chart canvas into unreadable clutter.
 
-### Cumulative Market Share Curve
+#### Cumulative Market Share Curve
 
 ```{r}
 #| label: quantity-concentration-plot
@@ -404,4 +404,3 @@ The steep, nearly vertical slope at the origin captures the immense market share
 Beyond the 30th ranked exporter, the slope transitions into a sharp plateau, flattening out almost completely as it approaches 1.00. This plateau visually demonstrates the small individual contributions of the remaining ~150 countries.
 
 This plot provides the justification to only plot the selected few countries. Attempting to plot every country would crowd the canvas with 125 horizontal points that offer no analytical signal. By isolating the top 30 countries along this curve and programmatically compressing into a  "Rest of the World" category, our redesigned visualization preserves global context while maximizing readability and visual impact.
-
