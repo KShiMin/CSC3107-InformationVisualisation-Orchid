@@ -27,7 +27,9 @@ price_formatter <- label_dollar(
 )
 ```
 
-`value_formatter` and `quantity_formatter` are functions that format the export value and quantity for display in the lollipop chart. The export value is converted from **millions to billions**, while the export quantity is converted from **thousand tonnes to million tonnes**.
+`value_formatter` and `quantity_formatter` are functions that format the export value and quantity for display in the lollipop chart. The export value is converted from **millions to billions**, while the export quantity is converted from **thousand tonnes to million tonnes**. 
+
+`price_formatter` formats unit values as currency rounded to the nearest dollar with a **"/t"** suffix (e.g., **"$1,250/t"**), providing a clean display for the color bar legend.
 
 ```{r}
 #| label: prepare-lollipop-data
@@ -54,7 +56,7 @@ price_breaks <- scales::breaks_log(n = 6)(price_range)
 lollipop_top20
 ```
 
-The above codes prepare the preprocessed dataset for subsequent visualisation. It creates labels for both export values and export quantity, and ranks the countries based on export value. This transformation are made such that the data and its labels are ready for subsequent visualisation ensuring readability and consistency.
+The above code prepares the preprocessed dataset for subsequent visualization. It calculates the unit value (`usd_per_tonne`), constructs formatted display labels for export values (`point_label`), and calculates rank positions for both trade value and volume. Finally, it filters the top 20 reporting economies by value and establishes log-transformed scale breaks (`price_breaks`) for the color legend, ensuring readability and visual consistency in the chart.
 
 ## Calculate Rest of World Context
 ```{r}
@@ -116,6 +118,8 @@ annotation_data <- lollipop_rest_of_world |>
     label = annotation_label
   )
 ```
+
+This section configures the dynamic scale positioning and annotation placement for the chart. It calculates appropriate major (`x_breaks`) and minor (`x_minor_breaks`) x-axis intervals based on the maximum export value, ensuring consistent axis spacing across updates. Additionally, it constructs `annotation_data` to position the aggregate rest-of-world metrics dynamically near the right side of the visualization.
 
 ## Build the Lollipop Chart
 The final visualization keeps **export value** as the primary ranking measure and uses **export quantity** as supporting context. This avoids comparing USD and tonnes on the same axis while still revealing countries whose economic export value differs from their physical export volume.
@@ -238,4 +242,4 @@ gg_lollipop_value_quantity
 
 ## Interpretation of Final Visualization
 
-The redesigned chart shows that agricultural export dominance is not only about physical volume. Some reporting economies rank highly by export value because they export higher-value agricultural goods, while others contribute more strongly in physical tonnage. The added quantity labels and colour scale make this contrast visible without overcrowding the ranking.
+The redesigned chart demonstrates that agricultural export leadership is driven by both overall volume and product unit value. The log-scale color gradient clearly distinguishes high-unit-value exporters (darker points, such as Mexico, New Zealand, and Chile) from bulk commodity exporters (lighter points, such as Brazil, Ukraine, and the Russian Federation). By pairing explicit dollar labels at each point with unit-value color encoding, the visualization reveals structural differences in trade profiles without cluttering the primary ranking.
