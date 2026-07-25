@@ -21,7 +21,7 @@ This report documents the data preparation and visualization pipeline for our re
 | Aiman | <add your student id> | <add your contribution> |
 | Subhashini | <add your student id> | <add your contribution>|
 | Jabar  | <add your student id> | <add your contribution> |
-| Min Xuan | <add your student id> | <add your contribution> |
+| Min Xuan | 2301173 | Researched optimal chart types for our data; drafted a bubble chart prototype for team comparison; reviewed the final QMD to verify reference accuracy. |
 
 # Setup
 ```{r}
