@@ -1,3 +1,5 @@
+This section produces the final redesigned lollipop chart using the preprocessed 2024 WTO agricultural trade dataset. The visualization ranks the top 20 reporting economies by agricultural export value, while using point colour to show export value per tonne as a compact indicator of trade profile. This design keeps export value as the main comparison axis and uses export quantity as supporting context, avoiding a misleading dual-axis comparison between USD and tonnes.
+
 ## Load Processed Data
 ```{r}
 #| label: fetch-preprocessed-data
@@ -5,7 +7,7 @@
 preprocessed_data <- read_csv(export_path)
 ```
 
-Fetching the preprocessed data from the `data/processed` directory, which contains the combined export values and quantities for each reporting country.
+The preprocessed dataset is loaded from the `data/processed` directory, which contains the combined export values and quantities for each reporting country.
 
 ## Prepare Labels, Rankings, and Formatters
 ```{r}
@@ -27,7 +29,7 @@ price_formatter <- label_dollar(
 )
 ```
 
-`value_formatter` and `quantity_formatter` are functions that format the export value and quantity for display in the lollipop chart. The export value is converted from **millions to billions**, while the export quantity is converted from **thousand tonnes to million tonnes**. 
+`value_formatter` and `quantity_formatter` format the chart labels for readability. The export value is converted from **millions to billions**, while the export quantity is converted from **thousand tonnes to million tonnes**. 
 
 `price_formatter` formats unit values as currency rounded to the nearest dollar with a **"/t"** suffix (e.g., **"$1,250/t"**), providing a clean display for the color bar legend.
 
@@ -56,7 +58,7 @@ price_breaks <- scales::breaks_log(n = 6)(price_range)
 lollipop_top20
 ```
 
-The above code prepares the preprocessed dataset for subsequent visualization. It calculates the unit value (`usd_per_tonne`), constructs formatted display labels for export values (`point_label`), and calculates rank positions for both trade value and volume. Finally, it filters the top 20 reporting economies by value and establishes log-transformed scale breaks (`price_breaks`) for the color legend, ensuring readability and visual consistency in the chart.
+This code prepares the preprocessed dataset for the final lollipop chart. It calculates the unit value (`usd_per_tonne`), constructs formatted display labels for export values (`point_label`), and calculates rank positions for both trade value and volume. Finally, it filters the top 20 reporting economies by value and establishes log-transformed scale breaks (`price_breaks`) for the color legend, ensuring readability and visual consistency in the chart.
 
 ## Calculate Rest of World Context
 ```{r}
@@ -76,9 +78,11 @@ lollipop_rest_of_world <- lollipop_country_data |>
   mutate(
     annotation_label = str_c(
       "All other reporting economies (105)\n",
-      value_formatter(export_value), " B",
+      value_formatter(export_value),
+      " B",
       " | ",
-      quantity_formatter(export_quantity), " million tonnes"
+      quantity_formatter(export_quantity),
+      " million tonnes"
     )
   )
 
@@ -88,8 +92,9 @@ lollipop_rest_of_world <- lollipop_rest_of_world |>
 lollipop_rest_of_world
 ```
 
+The remaining reporting economies are grouped into a single Rest of the World summary. This preserves the broader global context while keeping the main chart focused on the largest exporters. The annotation reports the combined export value and export quantity for all economies outside the top 20.
 
-## Export Value with Export Volume Annotation
+## Configure Axis Breaks and Annotation Placement
 ```{r}
 #| label: lollipop-chart-breaks
 #| message: false
@@ -201,7 +206,7 @@ gg_lollipop_value_quantity <- ggplot(
       theme = theme(
         legend.key.height = grid::unit(160, "pt"),
         legend.key.width = grid::unit(35, "pt"),
-        legend.title = element_text(size = 16, face="bold"),
+        legend.title = element_text(size = 16, face = "bold"),
         legend.text = element_text(size = 14)
       )
     )
@@ -211,13 +216,13 @@ gg_lollipop_value_quantity <- ggplot(
     y = "Reporting Economy",
     title = "Top 20 Agricultural Exporters including Rest of World by Export Value in 2024",
     subtitle = str_wrap(
-    "Point color reflects export value per tonne, highlighting economies whose trade is concentrated in higher or lower-value goods.",
-    width = 150
-  ),
-  caption = str_wrap(
+      "Point color reflects export value per tonne, highlighting economies whose trade is concentrated in higher or lower-value goods.",
+      width = 150
+    ),
+    caption = str_wrap(
       "Source: WTO dataset. The European Union is treated as a reporting economy.",
       width = 125
-    ) 
+    )
   ) +
   theme_minimal(base_size = 15) +
   theme(
@@ -255,7 +260,7 @@ ggsave(
 )
 ```
 
-This exports out the lollipop chart visualization as a high-resolution png.
+This code exports out the lollipop chart visualization as a high-resolution png for use in the poster.
 
 ## Interpretation of Final Visualization
 
