@@ -68,4 +68,4 @@ The redesign improves the original visualization by preserving its accessible ra
 
 - World Trade Organization. (n.d.). *World Trade in Agricultural Products in Charts*. [https://www.wto.org/english/tratop_e/agric_e/ag_imp_exp_charts_e.htm#ag_products](https://www.wto.org/english/tratop_e/agric_e/ag_imp_exp_charts_e.htm#ag_products)
 
-- Sarah. (2026). *ScienceDirect article used for Bangladesh wheat export context*. [https://www.sciencedirect.com/science/article/pii/S240584402502818X](https://www.sciencedirect.com/science/article/pii/S240584402502818X)
+- Yasmin, S., & Moniruzzaman, M. (2026). *Wheat production dynamics in Bangladesh: A comprehensive overview of growth, instability, and decomposition*. Heliyon, 12(1), e44413. https://doi.org/10.1016/j.heliyon.2025.e44413
