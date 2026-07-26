@@ -75,7 +75,7 @@ lollipop_rest_of_world <- lollipop_country_data |>
   ) |>
   mutate(
     annotation_label = str_c(
-      "All other reporting economies\n",
+      "All other reporting economies (105)\n",
       value_formatter(export_value), " B",
       " | ",
       quantity_formatter(export_quantity), " million tonnes"
@@ -114,7 +114,7 @@ x_minor_breaks <- seq(
 
 annotation_data <- lollipop_rest_of_world |>
   transmute(
-    x = x_max * 0.80,
+    x = x_max * 0.75,
     label = annotation_label
   )
 ```
@@ -232,13 +232,30 @@ gg_lollipop_value_quantity <- ggplot(
     plot.title.position = "plot",
     plot.title = element_text(size = 20, hjust = 0.5, face = "bold"),
     plot.caption = element_text(hjust = 0),
-    plot.margin = margin(10, 0, 16, 10),   # reduced right margin, was 24
-    legend.box.spacing = grid::unit(5, "pt"),  # pulls legend closer to plot
-    legend.margin = margin(0, 0, 0, 0)          # trims internal legend padding
+    plot.margin = margin(10, 0, 16, 10),
+    legend.box.spacing = grid::unit(5, "pt"),
+    legend.margin = margin(0, 0, 0, 0)
   )
 
 gg_lollipop_value_quantity
 ```
+
+### Export of Lollipop Chart
+
+```{r}
+#| label: export-lollipop-as-png
+
+ggsave(
+  filename = "lollipop_top20_export_value.png",
+  plot = gg_lollipop_value_quantity,
+  width = 15,
+  height = 10,
+  units = "in",
+  dpi = 300
+)
+```
+
+This exports out the lollipop chart visualization as a high-resolution png.
 
 ## Interpretation of Final Visualization
 

@@ -154,9 +154,7 @@ zero_exports_samples
 
 To verify that these non-exporters are not all due to data omission, we performed a check using the first five zero-quantity rows, which are all under the `01 Wheat` product class.
 
-According to Sarah (2026), while Bangladesh has made progress in increasing wheat production, it remains heavily reliant on wheat imports to meet domestic consumption demand. This supports the plausibility of Bangladesh recording zero wheat exports in the WTO quantity dataset.
-
-Source: [ScienceDirect Article](https://www.sciencedirect.com/science/article/pii/S240584402502818X)
+According to Yasmin and Moniruzzaman (2026), while Bangladesh has made progress in increasing wheat production, it remains heavily reliant on wheat imports to meet domestic consumption demand. This supports the plausibility of Bangladesh recording zero wheat exports in the WTO quantity dataset.
 
 #### Negative Quantity Check
 
