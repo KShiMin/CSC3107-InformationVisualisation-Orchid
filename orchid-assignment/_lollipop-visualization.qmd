@@ -232,7 +232,7 @@ gg_lollipop_value_quantity <- ggplot(
     plot.title.position = "plot",
     plot.title = element_text(size = 20, hjust = 0.5, face = "bold"),
     plot.caption = element_text(hjust = 0),
-    plot.margin = margin(10, 0, 16, 10),
+    plot.margin = margin(20, 20, 16, 20),
     legend.box.spacing = grid::unit(5, "pt"),
     legend.margin = margin(0, 0, 0, 0)
   )
