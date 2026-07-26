@@ -20,7 +20,7 @@ This report documents the data preparation and visualization pipeline for our re
 | Shi Min | 2401793 | Drafted the initial EDA for export quantities; created a lollipop chart prototype for team comparison; cleaned and polished the report QMD for grammar, formatting, and overall flow. |
 | Aiman | 2402329 | Drafted bar chart prototype for team comparison; Assisted with use of AI and AI usage reports and logs |
 | Subhashini | 2402769 | Designed and implemented the redesigned export quantity vs. export value scatter plot for team comparison|
-| Jabar  | <add your student id> | <add your contribution> |
+| Jabar  | 2403247 | Amended the EDA for export quantities and produced a stack bar chart for team comparison. |
 | Min Xuan | 2301173 | Researched optimal chart types for our data; drafted a bubble chart prototype for team comparison; reviewed the final QMD to verify reference accuracy. |
 
 # Setup
