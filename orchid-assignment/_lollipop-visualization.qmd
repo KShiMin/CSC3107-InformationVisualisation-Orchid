@@ -77,7 +77,7 @@ lollipop_rest_of_world <- lollipop_country_data |>
   ) |>
   mutate(
     annotation_label = str_c(
-      "All other reporting economies (105)\n",
+      "All other reporting economies (135)\n",
       value_formatter(export_value),
       " B",
       " | ",
@@ -214,9 +214,9 @@ gg_lollipop_value_quantity <- ggplot(
   labs(
     x = "Agricultural Export Value (USD Billions)",
     y = "Reporting Economy",
-    title = "Top 20 Agricultural Exporters including Rest of World by Export Value in 2024",
+    title = "Top 20 Agricultural Exporters by Export Value, 2024",
     subtitle = str_wrap(
-      "Point color reflects export value per tonne, highlighting economies whose trade is concentrated in higher or lower-value goods.",
+      "Point color reflects export value per tonne; annotation summarises all other reporting economies.",
       width = 150
     ),
     caption = str_wrap(
