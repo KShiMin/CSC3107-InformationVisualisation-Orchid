@@ -1,7 +1,10 @@
-# Data Preprocessing
+# Final Data Preprocessing for Visualization
 
+This section creates the final country-level dataset used in the redesigned visualization. It aggregates export value and export quantity separately, joins them by reporting economy, and exports the processed CSV for reproducible plotting.
+
+## Aggregate Export Value and Quantity by Country
 ```{r}
-#| label: data-preprocessing
+#| label: data-preprocessing-aggregate
 
 value_w32 <- value_analysis_2024 |>
   group_by(country = reporter_name, geo_region) |>
@@ -13,13 +16,17 @@ value_w32 <- value_analysis_2024 |>
 value_w32
 
 quantity_w32 <- quantity_2024 |>
-  filter (country != "World ") |>
+  filter(country != "World") |>
   group_by(country) |>
   summarise(
     export_quantity = sum(quantity, na.rm = TRUE),
     .groups = "drop"
   )
+```
 
+## Join Value and Quantity Data
+```{r}
+#| label: data-preprocessing-join
 combined_country_data <- value_w32 |> 
   left_join(quantity_w32, by = "country") |> 
   select(country, geo_region, export_value, export_quantity)
@@ -32,13 +39,15 @@ sorted_values <- combined_country_data |>
 sorted_values
 ```
 
-Upon inspecting the raw data, we identified a duplication error within the WTO dataset, where the pre-calculated AoA HS proxy row contained identical values across both the quantity and values sheet. 
+The WTO workbook includes aggregate product rows such as `AoA HS proxy`, `All W32 groups`, and `Other AoA`. These rows are useful as official reference totals, but they should not be summed together with individual product groups because doing so would double-count export activity.
 
-Therefore, to guarantee data integrity, we filter out these duplicated data. Instead, we dynamically group and sum up the 32 agricultural products to calculate the true total value and physical tonnage for every reporting country.
+For export value, we aggregate the cleaned `value_analysis_2024` dataset by reporting economy and region. This gives each reporting economy's total export value across the individual W32 product groups.
 
-We chose to preserve all the individual reporting countries with their unique metrics. This approach remove prevents data loss, and leaves the dataset fully complete and dynamically structured for downstream filtering or faceting during the visualization phase.
+For export quantity, we use the cleaned `quantity_2024` dataset, where `AoA HS proxy` and product categories measured in USD rather than tonnes have already been removed. In this section, the `World` row is excluded before aggregating quantity by reporting economy.
 
-# Exporting data
+The value and quantity summaries are then joined by reporting economy to produce the final country-level dataset used in the lollipop visualization.
+
+## Export Processed Visualization Dataset
 
 ```{r}
 #| label: export-processed-data
@@ -55,5 +64,5 @@ write_csv(combined_country_data, export_path)
 cat("Success! Processed data successfully exported to:", export_path, "\n")
 ```
 
-For reproducibility, the preprocessed infographic data has been exported and stored into the `data/processed` directory. 
+For reproducibility, the preprocessed data has been exported and stored into the `data/processed` directory. 
 
