@@ -74,6 +74,8 @@ data/processed/
 *.xls
 *.rds
 *.RDS
+*.geojson
+*.nc
 
 # Keep sample data if needed
 # !data/sample/

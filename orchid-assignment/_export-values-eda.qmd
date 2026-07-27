@@ -1,0 +1,521 @@
+## Data Source Overview
+
+```{r}
+#| label: workbook-sheets
+excel_sheets(source_file)
+```
+
+The workbook contains overview tables, product definitions, export quantity data and export value data. This section covers the `Export values` worksheet only. The `Export qties` worksheet is examined separately in the export quantities section of this report.
+
+The `Export values` worksheet includes monetary export values in USD millions and a `GeoRegion` field for regional comparisons. The `Exports qties` worksheet provides reported export quantities, but it does not contain `GeoRegion`, so region-level analysis comes from the value dataset.
+
+## Export Value Data Preparation and EDA
+
+This section examines the `Export values` worksheet from the WTO agricultural trade dataset. The goal is to prepare a clean 2024 export value dataset, validate the monetary data used for ranking reporting economies, and identify regional, reporter, and product-level patterns that inform the final visualization design.
+
+### Import Raw Export Value Data
+
+```{r}
+#| label: value-import
+value_raw <- read_excel(
+  source_file,
+  sheet = "Export values",
+  range = "A4:N4839"
+)
+
+glimpse(value_raw)
+```
+
+The first three rows of the worksheet contain workbook-level title and unit notes, so the import starts at row 4 where the data table begins. The selected range keeps `ProductDescription`, `ReporterName`, `GeoRegion`, and annual export value columns from 2014 to 2024.
+
+### Clean and Reshape Export Value Data
+
+```{r}
+#| label: value-clean-long
+value_clean <- value_raw |>
+  rename(
+    product_description = ProductDescription,
+    reporter_name = ReporterName,
+    geo_region = GeoRegion
+  ) |>
+  pivot_longer(
+    cols = matches("^\\d{4}$"),
+    names_to = "year",
+    values_to = "export_value_usd_millions"
+  ) |>
+  mutate(
+    year = as.integer(year),
+    product_description = str_squish(product_description),
+    reporter_name = str_squish(reporter_name),
+    geo_region = str_squish(geo_region),
+
+    # region bar will have the 89-character CIS label and 48-character South & Central label
+    geo_region = case_when(
+      str_detect(geo_region, "^Commonwealth") ~ "CIS",
+      str_detect(geo_region, "^South and Central") ~ "S. & C. America",
+      .default = geo_region
+    ),
+    export_value_usd_millions = as.numeric(export_value_usd_millions)
+  )
+
+head(value_clean)
+```
+
+The value data preprocessing performs six steps:
+
+1. Standardises column names into snake case.
+2. Converts the dataset from wide format to long format, with one row per product, reporter, region, and year.
+3. Converts `year` into an integer so it can be filtered and sorted correctly.
+4. Converts export values into numeric form.
+5. Removes extra whitespace from product, reporter, and region labels using `str_squish()`.
+6. Shortens long `GeoRegion` labels for readability in charts and legends.
+
+### Filter to 2024
+
+```{r}
+#| label: value-filter-2024
+value_2024 <- value_clean |>
+  filter(year == analysis_year)
+
+head(value_2024)
+```
+
+All subsequent value-based EDA uses `value_2024`. This keeps the analysis focused on the latest available year in the workbook instead of mixing 2024 patterns with earlier years.
+
+### Validate Export Value Data
+
+```{r}
+#| label: value-validation
+value_validation <- tibble(
+  check = c(
+    "Rows in raw value data",
+    "Columns in raw value data",
+    "Rows after long transformation",
+    "Available years",
+    "Rows retained for 2024",
+    "Missing 2024 export values",
+    "Negative 2024 export values",
+    "Duplicate 2024 product-reporter rows"
+  ),
+  result = c(
+    nrow(value_raw),
+    ncol(value_raw),
+    nrow(value_clean),
+    paste(range(value_clean$year), collapse = "-"),
+    nrow(value_2024),
+    sum(is.na(value_2024$export_value_usd_millions)),
+    sum(value_2024$export_value_usd_millions < 0, na.rm = TRUE),
+    value_2024 |>
+      count(product_description, reporter_name) |>
+      filter(n > 1) |>
+      nrow()
+  )
+)
+
+value_validation
+```
+
+The validation checks confirm whether the 2024 filter retained the expected one-year slice and whether any values require special handling before visualisation. Missing values would indicate incomplete source coverage, negative values require interpretation, and duplicate product-reporter rows would affect aggregation.
+
+```{r}
+#| label: value-negative-2024
+negative_values_2024 <- value_2024 |>
+  filter(export_value_usd_millions < 0) |>
+  arrange(export_value_usd_millions)
+
+negative_values_2024
+```
+
+Negative values are not automatically removed. In this workbook, negative export values can appear in derived or residual product categories, especially where a category is calculated by subtraction. They are retained unless the team chooses to exclude residual categories for a specific visualisation.
+
+### Construct the 2024 Analysis Dataset
+
+```{r}
+#| label: value-analysis-dataset
+aggregate_products <- c(
+  "All W32 groups",
+  "AoA HS proxy",
+  "Other AoA"
+)
+
+# Save the World Aggregate rows as a reference before removing them.
+# Used as the denominator for market share and the Rest of World calculations
+
+world_aggregates_2024 <- value_2024 |>
+  filter(
+    reporter_name == "World",
+    product_description == "AoA HS proxy"
+  ) |>
+  pull(export_value_usd_millions)
+
+# Save the per-country aggregate rows for cross-check validation
+# "All W32 groups" per country should match the sum of that country's 32 individual product values
+
+country_aggregates_2024 <- value_2024 |>
+  filter(
+    reporter_name != "World",
+    product_description == "All W32 groups"
+  )
+
+# For ranking and Rest of World, use the full AoA definition because it matches the infographic.
+country_aoa_2024 <- value_2024 |>
+  filter(
+    reporter_name != "World",
+    product_description == "AoA HS proxy"
+  )
+
+# Build the analysis dataset: individual countries x individual products only
+
+value_analysis_2024 <- value_2024 |>
+  filter(
+    reporter_name != "World",
+    !product_description %in% aggregate_products
+  )
+
+glimpse(value_analysis_2024)
+```
+
+Aggregate reporter and product rows are excluded from the general 2024 analysis dataset to avoid double-counting. The WTO dataset contains three aggregate product categories: `AoA HS proxy` (total agriculture exports), `All W32 groups` (sum of the 32 individual product groups), and `Other AoA` (residual = AoA minus W32). If these were summed alongside individual products, each country's total would be inflated to roughly three times its true value.
+
+Before filtering, two reference tibbles are saved. `world_aggregates_2024` stores the official WTO global total (the `AoA HS proxy` row for `World`), which is needed as the denominator for market share and Rest of World calculations. `country_aggregates_2024` stores the per-country `All W32 groups` values, which are used later to cross-check that summing 32 individual products produces the same total.
+
+### Export Value Exploratory Analysis
+
+#### Missing and Zero Values
+
+```{r}
+#| label: value-zero-summary-2024
+value_zero_summary_2024 <- value_analysis_2024 |>
+  summarise(
+    observations = n(),
+    missing_values = sum(is.na(export_value_usd_millions)),
+    zero_values = sum(export_value_usd_millions == 0, na.rm = TRUE),
+    zero_percent = zero_values / observations * 100
+  )
+
+value_zero_summary_2024
+```
+
+Zero values are retained because they likely represent product-reporter combinations with no recorded export value in 2024. They are treated differently from missing values, which would indicate absent or incomplete data.
+
+#### 2024 Summary Statistics
+
+```{r}
+#| label: value-summary-2024
+value_summary_2024 <- value_analysis_2024 |>
+  summarise(
+    total_export_value = sum(export_value_usd_millions, na.rm = TRUE),
+    mean = mean(export_value_usd_millions, na.rm = TRUE),
+    median = median(export_value_usd_millions, na.rm = TRUE),
+    q1 = quantile(export_value_usd_millions, 0.25, na.rm = TRUE),
+    q3 = quantile(export_value_usd_millions, 0.75, na.rm = TRUE),
+    max = max(export_value_usd_millions, na.rm = TRUE),
+    sd = sd(export_value_usd_millions, na.rm = TRUE)
+  )
+
+value_summary_2024
+```
+
+The mean, median, quartiles, maximum, and standard deviation describe the spread of 2024 export values. Because export data is usually highly skewed, the median and quartiles are more reliable indicators of a typical product-reporter observation than the mean alone.
+
+#### 2024 Categorical Coverage
+
+```{r}
+#| label: value-categorical-coverage-2024
+value_categorical_coverage_2024 <- value_analysis_2024 |>
+  summarise(
+    product_groups = n_distinct(product_description),
+    reporters = n_distinct(reporter_name),
+    regions = n_distinct(geo_region)
+  )
+
+value_categorical_coverage_2024
+```
+
+Coverage is checked after filtering to 2024 and removing aggregate rows. These counts define the valid comparison base for 2024 visualisations.
+
+#### Reporter Coverage by Region
+
+```{r}
+#| label: value-regional-coverage-2024
+regional_coverage_2024 <- value_analysis_2024 |>
+  distinct(reporter_name, geo_region) |>
+  count(geo_region, name = "number_of_reporters") |>
+  arrange(desc(number_of_reporters))
+
+regional_coverage_2024
+```
+
+This table shows how many reporting economies are assigned to each geographical region in the 2024 analysis dataset. Regional export totals should be interpreted alongside this coverage because regions with more reporters naturally have more observations.
+
+#### Product Coverage Across Reporters
+
+```{r}
+#| label: value-product-coverage-2024
+total_reporters_2024 <- n_distinct(value_analysis_2024$reporter_name)
+
+product_coverage_2024 <- value_analysis_2024 |>
+  distinct(product_description, reporter_name) |>
+  count(product_description, name = "number_of_reporters") |>
+  mutate(
+    coverage_percent = round(
+      number_of_reporters / total_reporters_2024 * 100,
+      1
+    )
+  ) |>
+  arrange(number_of_reporters, product_description)
+
+product_coverage_2024
+```
+
+Product coverage is not assumed to be complete. If a product-reporter pair is absent from the 2024 data, it should not automatically be interpreted as zero exports unless the source documentation confirms that missing combinations represent zero trade.
+
+#### Top 2024 Export Regions
+
+```{r}
+#| label: value-top-regions-2024
+top_regions_2024 <- value_analysis_2024 |>
+  group_by(geo_region) |>
+  summarise(
+    total_export_value = sum(export_value_usd_millions, na.rm = TRUE),
+    reporters = n_distinct(reporter_name),
+    .groups = "drop"
+  ) |>
+  arrange(desc(total_export_value))
+
+top_regions_2024
+```
+
+```{r}
+#| label: value-top-regions-plot-2024
+ggplot(
+  top_regions_2024,
+  aes(x = reorder(geo_region, total_export_value), y = total_export_value)
+) +
+  geom_col(fill = "#2f7d6b") +
+  coord_flip() +
+  scale_y_continuous(labels = scales::label_comma(), limits = c(0, 300000)) +
+  labs(
+    title = "2024 Export Value by Region",
+    x = NULL,
+    y = "Export value (USD millions)"
+  ) +
+  theme_minimal()
+```
+
+This regional view identifies where 2024 export value is concentrated geographically. The reporter count is included to help distinguish high regional totals from broad regional coverage.
+
+#### Top 2024 Export Reporters
+
+```{r}
+#| label: value-top-reporters-2024
+top_reporters_2024 <- value_analysis_2024 |>
+  group_by(reporter_name, geo_region) |>
+  summarise(
+    total_export_value = sum(export_value_usd_millions, na.rm = TRUE),
+    product_groups = n_distinct(product_description),
+    .groups = "drop"
+  ) |>
+  arrange(desc(total_export_value)) |>
+  slice_head(n = 15)
+
+top_reporters_2024
+```
+
+```{r}
+#| label: value-top-reporters-plot-2024
+ggplot(
+  top_reporters_2024,
+  aes(x = reorder(reporter_name, total_export_value), y = total_export_value)
+) +
+  geom_col(fill = "#6c5ce7") +
+  coord_flip() +
+  scale_y_continuous(
+    labels = scales::label_comma(),
+    limits = c(0, 150000),
+  ) +
+  labs(
+    title = "Top 15 Reporting Economies by 2024 Export Value",
+    x = NULL,
+    y = "Export value (USD millions)"
+  ) +
+  theme_minimal()
+```
+
+The top reporter table and chart identify the economies contributing the largest export values in 2024. Product group counts show whether each reporter's total comes from broad product coverage or from fewer reported categories.
+
+#### Top 2024 Product Groups
+
+```{r}
+#| label: value-top-products-2024
+top_products_2024 <- value_analysis_2024 |>
+  group_by(product_description) |>
+  summarise(
+    total_export_value = sum(export_value_usd_millions, na.rm = TRUE),
+    reporters = n_distinct(reporter_name),
+    .groups = "drop"
+  ) |>
+  arrange(desc(total_export_value)) |>
+  slice_head(n = 15)
+
+top_products_2024
+```
+
+```{r}
+#| label: value-top-products-plot-2024
+#| fig-width: 10
+#| fig-height: 6
+#| fig-dpi: 300
+ggplot(
+  top_products_2024,
+  aes(
+    x = reorder(product_description, total_export_value),
+    y = total_export_value
+  )
+) +
+  geom_col(fill = "#b85c38") +
+  coord_flip() +
+  scale_y_continuous(
+    labels = scales::label_comma()
+  ) +
+  labs(
+    title = "Top 15 Product Groups by 2024 Export Value",
+    x = NULL,
+    y = "Export value (USD millions)"
+  ) +
+  theme_minimal()
+```
+
+This product-level summary identifies which product groups dominate 2024 export value. Reporter counts help flag product groups that are large because they are widely reported versus product groups dominated by a small number of major exporters.
+
+#### 2024 Export Value Distribution
+
+```{r}
+#| label: value-distribution-2024
+#| fig-width: 10
+#| fig-height: 6
+#| fig-dpi: 300
+positive_value_2024 <- value_analysis_2024 |>
+  filter(export_value_usd_millions > 0)
+
+ggplot(positive_value_2024, aes(x = export_value_usd_millions)) +
+  geom_histogram(bins = 40, fill = "#4c78a8", color = "white") +
+  scale_x_log10(labels = scales::label_comma()) +
+  labs(
+    title = "Distribution of Positive 2024 Export Values",
+    x = "Export value (USD millions, log scale)",
+    y = "Number of observations"
+  ) +
+  theme_minimal()
+```
+
+Only positive values are used in the log-scale distribution because zero and negative values cannot be plotted on a logarithmic axis. The chart helps check whether the 2024 data is dominated by many small values and a small number of very large observations.
+
+#### 2024 Concentration Check
+
+```{r}
+#| label: value-concentration-2024
+total_value_2024 <- sum(
+  value_analysis_2024$export_value_usd_millions,
+  na.rm = TRUE
+)
+
+reporter_concentration_2024 <- value_analysis_2024 |>
+  group_by(reporter_name) |>
+  summarise(
+    total_export_value = sum(export_value_usd_millions, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  arrange(desc(total_export_value)) |>
+  mutate(
+    rank = row_number(),
+    cumulative_value = cumsum(total_export_value),
+    cumulative_share_percent = round(
+      cumulative_value / world_aggregates_2024 * 100,
+      1
+    )
+  )
+
+reporter_concentration_2024 |>
+  filter(rank <= 30)
+```
+
+The concentration check shows how much of the 2024 export value is captured by the largest reporting economies. This helps justify whether later visualisations should show all reporters, focus on the top reporters, or use transformed scales.
+
+#### Rest of World Calculation
+
+```{r}
+#| label: value-rest-of-world-2024
+
+# Rank reporters by AoA HS proxy (full agricultural total, matches infographic definition)
+top_30_reporters_2024 <- country_aoa_2024 |>
+  arrange(desc(export_value_usd_millions)) |>
+  slice_head(n = 30)
+
+top_30_total_2024 <- sum(top_30_reporters_2024$export_value_usd_millions)
+rest_of_world_2024 <- world_aggregates_2024 - top_30_total_2024
+
+rest_of_world_summary <- tibble(
+  measure = c(
+    "WTO world total (AoA HS proxy)",
+    "Top 30 reporters total",
+    "Rest of World (residual)",
+    "Top 30 share of world (%)"
+  ),
+  value = c(
+    round(world_aggregates_2024, 2),
+    round(top_30_total_2024, 2),
+    round(rest_of_world_2024, 2),
+    round(top_30_total_2024 / world_aggregates_2024 * 100, 1)
+  )
+)
+
+rest_of_world_summary
+```
+
+The Rest of World calculation addresses a limitation of the original Visual Capitalist infographic, which showed only the largest exporting countries without indicating what share of global exports was left out. The official WTO world total (`AoA HS proxy` for `World`) serves as the denominator. The top 30 reporters are ranked using their `AoA HS proxy` totals, and their combined total is subtracted from the WTO world total to produce the residual.
+
+The Visual Capitalist article states that the top 30 food exporters account for **more than 80%** of the global agricultural export market. Our WTO-based calculation supports this claim: the top 30 reporters account for **89.7%** of the WTO world agricultural export total in 2024 when `AoA HS proxy` is used as the country-level total.
+
+Note that the `European Union` reporter is an aggregate of all EU member states and is not directly comparable to individual countries. Individual EU member states are not available as separate reporters in this WTO dataset.
+
+#### Cross-Check Validation
+
+```{r}
+#| label: value-cross-check-2024
+# For a sample of countries, compare the sum of 32 individual products
+# against the official "All W32 groups" aggregate from the source data.
+sample_countries <- c(
+  "United States",
+  "Brazil",
+  "India",
+  "Australia",
+  "Thailand"
+)
+
+individual_sums <- value_analysis_2024 |>
+  filter(reporter_name %in% sample_countries) |>
+  group_by(reporter_name) |>
+  summarise(
+    sum_individual_products = sum(export_value_usd_millions, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+official_totals <- country_aggregates_2024 |>
+  filter(reporter_name %in% sample_countries) |>
+  select(reporter_name, all_w32_total = export_value_usd_millions)
+
+cross_check <- left_join(
+  individual_sums,
+  official_totals,
+  by = "reporter_name"
+) |>
+  mutate(
+    difference = round(sum_individual_products - all_w32_total, 4),
+    match = abs(difference) < 0.01
+  )
+
+cross_check
+```
+
+This cross-check validates the cleaning pipeline by comparing two independent paths to the same number. For each sample country, the sum of its 32 individual product export values is compared against the official `All W32 groups` value from the source workbook. A difference below $0.01 million confirms that no products were accidentally dropped or double-counted during cleaning. All rows should show `match = TRUE`. If any show `FALSE`, the pipeline has a data loss or duplication issue that must be investigated before visualisation.

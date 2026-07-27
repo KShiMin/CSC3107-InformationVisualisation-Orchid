@@ -1,0 +1,71 @@
+---
+title: "Assignment Report"
+author: "Team Orchid"
+date: ""
+format:
+  html:
+    toc: true
+    number-sections: true
+---
+
+# Project Overview
+
+This report documents the data preparation and visualization pipeline for our redesign of the published [Visual Capitalist visualization](https://www.visualcapitalist.com/ranked-the-countries-that-feed-the-world/) on global agricultural exporters. The redesigned visualization uses 2024 [World Trade Organization (WTO)](https://www.wto.org/english/tratop_e/agric_e/ag_imp_exp_charts_e.htm#ag_products) agricultural export value and quantity data to compare major reporting economies by export value while adding physical export quantity as supporting context.
+
+# Roles and Contribution
+
+| Member | Student ID | Contribution |
+| ------ | ---------- | -------------|
+| Quan Yi | 2401058 | Performed EDA for the "Exports qties" sheet, drafted diverging lollipop for team comparison, performed slight revisions of lollipop chart |
+| Shi Min | 2401793 | Drafted the initial EDA for export quantities; created a lollipop chart prototype for team comparison; cleaned and polished the report QMD for grammar, formatting, and overall flow. |
+| Aiman | 2402329 | Drafted bar chart prototype for team comparison; Assisted with use of AI and AI usage reports and logs |
+| Subhashini | 2402769 | Designed and implemented the redesigned export quantity vs. export value scatter plot for team comparison|
+| Jabar  | 2403247 | Amended the EDA for export values and produced a stack bar chart for team comparison. |
+| Min Xuan | 2301173 | Researched optimal chart types for our data; drafted a bubble chart prototype for team comparison; reviewed the final QMD to verify reference accuracy. |
+
+# Setup
+```{r}
+#| label: qmd-setup
+#| message: false
+library(tidyverse)
+library(readr)
+library(readxl) # for excel files
+library(scales)
+```
+
+```{r}
+#| label: raw-data-imports
+analysis_year <- 2024
+source_file <- "data/export_of_agriculture_products_data.xlsx"
+export_dir <- "data/processed"
+```
+
+The code above defines the necessary libraries, source file path, output directory, and target year for the analysis.
+
+# Data Preparation and Validation
+
+<!-- Include Export Values EDA qmd -->
+{{< include _export-values-eda.qmd >}}
+
+<!-- Include Export Quantity EDA qmd -->
+{{< include _quantity-eda-2024.qmd >}}
+
+<!-- Include Data Preprocessing qmd -->
+{{< include _2024_data_preprocessing.qmd >}}
+
+# Redesigned Visualization
+
+<!-- Lollipop Visualization -->
+{{< include _lollipop-visualization.qmd >}}
+
+# Conclusion
+
+The redesign improves the original visualization by preserving its accessible ranked comparison while adding clearer analytical context. By combining export value and quantity, the chart helps readers distinguish between economies that dominate by monetary value and those that dominate by physical volume. The documented preprocessing and validation steps also make the final visualization reproducible from the submitted files.
+
+# References
+
+- Neufeld, D. (2026, May 25). Ranked: The countries that feed the world. *Visual Capitalist*. [https://www.visualcapitalist.com/ranked-the-countries-that-feed-the-world/](https://www.visualcapitalist.com/ranked-the-countries-that-feed-the-world/) 
+
+- World Trade Organization. (n.d.). *Charts - World trade in agricultural products*. [https://www.wto.org/english/tratop_e/agric_e/ag_imp_exp_charts_e.htm#ag_products](https://www.wto.org/english/tratop_e/agric_e/ag_imp_exp_charts_e.htm#ag_products)
+
+- Yasmin, S., & Moniruzzaman, M. (2026, Jan). *Wheat production dynamics in Bangladesh: A comprehensive overview of growth, instability, and decomposition*. Heliyon, 12(1), e44413. [https://doi.org/10.1016/j.heliyon.2025.e44413](https://doi.org/10.1016/j.heliyon.2025.e44413)

@@ -1,0 +1,404 @@
+## Export Quantity Data Preparation and EDA
+
+This section examines the `Exports qties` worksheet from the WTO agricultural trade dataset. The goal is to prepare a clean 2024 export quantity dataset, verify that the values are suitable for physical-volume analysis, and identify patterns that inform the final visualization design.
+
+### Import Raw Export Quantity Data
+```{r}
+#| label: quantity-import-quantity-sheet
+
+quantity_raw <- read_excel(
+  source_file,
+  sheet = "Exports qties",
+  range = "A4:M4559"
+)
+
+quantity_raw
+```
+
+The raw quantity worksheet is structured as a **wide panel dataset**. Each row represents a unique combination of agricultural product and reporting economy, while yearly export quantities are stored across separate columns from 2014 to 2024.
+
+Unlike the `Export values` worksheet, the `Exports qties` worksheet does not include a `GeoRegion` column. This means regional information must later be added through a join with the value dataset. This is important because the original visualization uses regional colour coding, and our redesign also needs regional context.
+
+### Filter and Clean 2024 Quantity Data
+#### Removing Aggregate and Non-Tonnage Product Categories
+
+```{r}
+#| label: quantity-filtering-and-cleaning-2024-data
+
+usd_products <- c(
+  "18x Live Animals", 
+  "21 Fruits", 
+  "22 Vegetables", 
+  "25 Processed fruits and vegetables"
+)
+
+quantity_2024 <- quantity_raw |>
+  select(
+    product = "ProductDescription",
+    country = "ReporterName",
+    quantity = "2024"
+  ) |>
+  filter(
+    product != "AoA HS proxy",
+    !(product %in% usd_products)
+  )
+
+quantity_2024
+```
+
+The `AoA HS proxy` row is an aggregate category rather than an individual agricultural product. It represents the Agreement on Agriculture Harmonized System total proxy used by the WTO. This row is removed before analysis to avoid double-counting product-level quantities.
+
+The product categories `18x Live Animals`, `21 Fruits`, `22 Vegetables`, and `25 Processed fruits and vegetables` are also removed because their values are recorded in **USD millions**, not physical tonnes. Since the final visualization compares export quantity, retaining these rows would incorrectly mix monetary values with physical quantity measures such as thousand tonnes.
+
+#### Verification Against Removed USD-Measured Categories
+```{r}
+#| label: quantity-value-verifier
+
+quantity_2024_check <- quantity_raw |>
+  select(
+    product = "ProductDescription",
+    country = "ReporterName",
+    quantity = "2024"
+  ) |>
+  filter(product != "AoA HS proxy", country != "World") |>
+  group_by(country) |>
+  summarise(export_quantity_check = sum(quantity, na.rm = TRUE), .groups = "drop")
+
+quantity_w32_verify <- quantity_2024 |>
+  filter (country != "World") |>
+  group_by(country) |>
+  summarise(export_quantity_verify = sum(quantity, na.rm = TRUE), .groups = "drop")
+
+comparison_check <- quantity_w32_verify |>
+  left_join(quantity_2024_check, by = "country") |>
+  mutate(
+    difference = export_quantity_check - export_quantity_verify,
+    is_different = !near(export_quantity_verify, export_quantity_check)
+  )
+
+comparison_check_difference <- comparison_check |>
+  filter(is_different == TRUE)
+
+comparison_check_no_difference <- comparison_check |>
+  filter(is_different == FALSE)
+
+comparison_check
+comparison_check_no_difference
+
+```
+
+This check verifies that the removed USD-measured categories explain the differences between the broader quantity total and the cleaned physical-volume total. Interestingly, four reporting economies show no difference because all four removed categories have values of zero for those economies.
+
+```{r}
+#| label: quantity-verify-values-match
+
+usd_breakdown <- quantity_raw |>
+  select(
+    product = "ProductDescription",
+    country = "ReporterName",
+    quantity = "2024"
+  ) |>
+  filter(country != "World", product %in% usd_products) |>
+  group_by(country, product) |>
+  summarise(quantity = sum(quantity, na.rm = TRUE), .groups = "drop") |>
+  pivot_wider(
+    names_from = product,
+    values_from = quantity,
+    values_fill = 0 
+  ) |>
+  mutate(
+    sum_of_removed = rowSums(across(any_of(usd_products)), na.rm = TRUE)
+  )
+
+usd_breakdown %>% 
+  print(width = Inf)
+```
+
+The breakdown confirms that the sum of the removed categories matches the observed differences in `comparison_check`. This supports the decision to exclude these categories from the physical export quantity analysis.
+
+### Missing, Zero, and Negative Value Checks
+
+#### Missing and Zero Quantity Values
+
+```{r}
+#| label: quantity-check-missing-data
+
+missing_summary <- quantity_2024 |>
+  summarise(
+    total_rows = n(),
+    na_count = sum(is.na(quantity)),
+    zero_count = sum(quantity == 0, na.rm = TRUE),
+    valid_data_count = sum(quantity > 0, na.rm = TRUE)
+  )
+
+missing_summary
+```
+
+An audit of the filtered 2024 quantity feature yielded these insights:
+
+1. Zero Missing Records (na_count = 0): The 2024 data displays 100% observational completeness across all 3,797 rows. This ensures that calculations involving the top reporting economies are not affected by missing quantity values.
+
+2. Presence of Non-Exporters (zero_count = 759): Approximately 20% of the observations contain a recorded zero (0.0). This means that certain countries perhaps due to geographic or their climate are unable to export a specific commodity group, such as wheat or rice.
+
+#### Interpreting Zero Export Quantities
+
+```{r}
+#| label: quantity-check-zero-export-rows
+
+zero_exports_samples <- quantity_2024 |>
+  filter(quantity == 0) |>
+  head(5)
+
+zero_exports_samples
+```
+
+To verify that these non-exporters are not all due to data omission, we performed a check using the first five zero-quantity rows, which are all under the `01 Wheat` product class.
+
+According to Yasmin and Moniruzzaman (2026), while Bangladesh has made progress in increasing wheat production, it remains heavily reliant on wheat imports to meet domestic consumption demand. This supports the plausibility of Bangladesh recording zero wheat exports in the WTO quantity dataset.
+
+#### Negative Quantity Check
+
+```{r}
+#| label: quantity-check-negative-values
+
+negative_count <- quantity_2024 |>
+  filter(quantity < 0) |>
+  nrow()
+
+cat("Number of negative export quantities found:", negative_count)
+```
+
+The dataset yielded a hard minimum of zero, confirming that no negative values exist in the 2024 metric feature.
+
+### Structural Balance Audit
+
+```{r}
+#| label: quantity-check-country-count
+
+total_unique_products <- quantity_2024 |>
+  distinct(product) |>
+  nrow()
+
+country_row_counts <- quantity_2024 |>
+  group_by(country) |>
+  summarise(count = n())
+
+imbalanced_countries <- country_row_counts |>
+  filter(count != total_unique_products)
+
+total_unique_products
+nrow(country_row_counts)
+
+if (nrow(imbalanced_countries) == 0) {
+  cat(
+    "Every country contains exactly",
+    total_unique_products,
+    "rows mapping to every product."
+  )
+} else {
+  cat("The following countries do not possess rows for all products:")
+  imbalanced_countries
+}
+```
+
+This audit reveals that the dataset is an unbalanced panel matrix. A total of 79 countries deviate from possessing a uniform product count of 28 (e.g., Afghanistan logs only 16 product rows, while Argentina logs 27).
+
+Discovering this unbalanced framework means that when we combine the Export Quantities sheet with the Export Values sheet to build our faceted layout, we cannot perform simple row-index merging. We must explicitly use a relational database join framework (`left_join` or `full_join`) keyed on both product and country variables to avoid massive row misalignments of our 2024 regional aggregates.
+
+### World Total Consistency Check
+
+```{r}
+#| label: quantity-checking-world-total
+
+product_leakage_audit <- quantity_2024 |>
+  group_by(product) |>
+  summarise(
+    World_Stated_Qty = sum(quantity[tolower(country) == "world"], na.rm = TRUE),
+    Summed_Countries_Qty = sum(
+      quantity[tolower(country) != "world"],
+      na.rm = TRUE
+    ),
+    Residual_Delta = World_Stated_Qty - Summed_Countries_Qty,
+    Is_Delta_Positive = Residual_Delta > 0
+  ) |>
+  arrange(desc(Residual_Delta))
+
+head(product_leakage_audit)
+tail(product_leakage_audit)
+
+total_products_checked <- nrow(product_leakage_audit)
+successful_products <- sum(product_leakage_audit$Is_Delta_Positive)
+
+cat("Total Product Categories Audited:", total_products_checked, "\n")
+cat(
+  "Categories where 'World - Countries > 0':",
+  successful_products,
+  "out of",
+  total_products_checked,
+  "\n"
+)
+```
+
+While there seems to be "Residual Delta", the value is so small that the difference barely exists (e.g. `5.82e-11`), and is essentially zero. The near-zero residuals suggest that, within this worksheet, the reported country rows closely reconcile with the `World` total for each product category.
+
+This suggests that a quantity-only residual is not needed. For the final visualization, residual context is handled through a **Rest of World** calculation rather than through a separate hidden-country quantity estimate.
+
+### Concentration and Dominance Analysis
+
+```{r}
+#| label: quantity-concentration-audit
+
+concentration_audit <- quantity_2024 |>
+  filter(tolower(country) != "world") |>
+  group_by(country) |>
+  summarise(total_qty = sum(quantity, na.rm = TRUE)) |>
+  arrange(desc(total_qty)) |>
+  mutate(
+    market_share = total_qty / sum(total_qty),
+    cumulative_share = cumsum(market_share)
+  )
+
+head(concentration_audit, 10)
+```
+
+Here, we analyzed the ranked market shares and cumulative distributions for the 2024 export quantities and the results reveal a high level of centralization within the global food supply chain:
+
+1. Brazil stands as the global leader in physical outbound volume, commanding 21.4% of the world's market. The United States follows closely behind at 17.0%, with Ukraine occupying the third tier at 7.29%. Together, these top three trading entities collectively account for 45.6% of all physical food tonnage shipped across the planet. An interesting thing to note is that the European Union had the highest exports in terms of value but is only ranked 5th in terms of export quantity. This will be an interesting contrast when the quantity is plotted with the export values.
+
+2. The cumulative market share builds rapidly across the top countries. By the fifth row (European Union), the cumulative market share hits 59.4%. This means a mere five trading entities (Brazil, US, Ukraine, Argentina and EU) supply more than half of the entire planet's outbound agricultural volume.
+
+3. When extending the view to the tenth row (India), the cumulative share reaches 81.0%. This indicates that fewer than a dozen major exporters account for more than three-quarters of reported agricultural export quantity.
+
+Additionally, when performing a comparative audit between our raw dataset and the original Visual Capitalist infographic, it reveals a structural discrepancy. While the original visualization depicts individual European sovereign nations, specifically listing France ($39B), the Netherlands ($37B), and Italy ($31B) as independent tiles, these nations are completely absent as individual rows in our raw dataset. Instead, they seem to be pre-aggregated under the single "European Union" block. 
+
+Therefore, it may be challenging to provide the same granularity that the original visualization provides. 
+
+### Summary Statistics
+
+#### Country-Level Quantity Summary
+
+```{r}
+#| label: quantity-eda-summary-statistics-country
+
+country_summaries <- quantity_2024 |>
+  filter(tolower(country) != "world") |>
+  group_by(country) |>
+  summarise(Total_Country_Qty = sum(quantity, na.rm = TRUE))
+
+country_stats <- country_summaries |>
+  summarise(
+    Total_Entities = n(),
+    Min_Qty = min(Total_Country_Qty),
+    Q1_25th = quantile(Total_Country_Qty, 0.25),
+    Median_Qty = median(Total_Country_Qty),
+    Mean_Qty = mean(Total_Country_Qty),
+    Q3_75th = quantile(Total_Country_Qty, 0.75),
+    Max_Qty = max(Total_Country_Qty),
+    Std_Dev = sd(Total_Country_Qty)
+  )
+
+country_stats
+```
+
+The country-level summary statistics show a highly skewed distribution:
+
+1. There is an extreme right-skew. The Mean export volume per nation sits at 6,692 thousand tonnes, while the Median sits at 257 thousand tonnes. This means the mean is nearly 26 times larger than the median. In an evenly distributed market, these numbers would align, but here, the heavily inflated mean is a direct mathematical result of a few high-volume agricultural powerhouse pulling the baseline upward.
+
+2. Looking at the distribution tiers, 75% of all countries in the world export less than 1,431 thousand tonnes of food. Yet, the absolute maximum entity (Brazil) is exporting 221,454 thousand tonnes. This means the top exporter single-handedly moves over 154 times more physical volume than nations occupying the entry point of the upper quartile of global trade.
+
+3. The standard deviation (25,661) is over 3 times larger than the mean. This indicates that the "average" distance between countries is massive.
+
+#### Product-Level Quantity Summary
+
+```{r}
+#| label: quantity-eda-summary-statistics-product
+
+product_summaries <- quantity_2024 |>
+  filter(tolower(country) != "world") |>
+  group_by(product) |>
+  summarise(Total_Product_Qty = sum(quantity, na.rm = TRUE))
+
+product_stats <- product_summaries |>
+  summarise(
+    Total_Products = n(),
+    Min_Prod_Qty = min(Total_Product_Qty),
+    Median_Prod_Qty = median(Total_Product_Qty),
+    Mean_Prod_Qty = mean(Total_Product_Qty),
+    Max_Prod_Qty = max(Total_Product_Qty),
+    Std_Dev_Prod = sd(Total_Product_Qty)
+  )
+
+# Find the product matching the minimum volume
+least_exported <- product_summaries |>
+  filter(Total_Product_Qty == min(Total_Product_Qty))
+
+# Find the product matching the maximum volume
+most_exported <- product_summaries |>
+  filter(Total_Product_Qty == max(Total_Product_Qty))
+
+product_stats
+least_exported
+most_exported
+```
+
+Looking at the product metrics, we notice that the median product volume sits at 9,902 thousand tonnes, while the absolute maximum category (02 Maize) reaches a massive 186,921 thousand tonnes. Conversely, the absolute lowest volume floor in global shipping belongs to 10 Butter and butter oil at just 1,088 thousand tonnes.
+
+This structural gap (186,921 / 1,088) highlights an economic reality, where global trade is overwhelmingly anchored by raw, low-cost bulk industrial commodities (like Maize/Corn) used worldwide for livestock feed, bio-fuels, and processing. In contrast, highly processed animal fats like butter command premium financial prices per kilogram, meaning their physical transport requirements remain minute.
+
+### Diagnostic Plots
+
+#### Distribution of Country Export Quantities
+
+```{r}
+#| label: quantity-plot-summary
+
+library(ggplot2)
+
+ggplot(country_summaries, aes(x = Total_Country_Qty)) +
+  geom_histogram(bins = 30, fill = "#2c3e50", color = "white", alpha = 0.8) +
+  scale_x_log10(labels = scales::comma) +
+  labs(
+    title = "Diagnostic EDA: Distribution of Total Country Export Volumes (2024)",
+    subtitle = "Log-scaled x-axis",
+    x = "Total Export Volume (Log Scale)",
+    y = "Number of Countries"
+  ) +
+  theme_minimal()
+```
+
+As displayed in our first diagnostic distribution plot, applying a base-10 logarithmic transformation to the horizontal axis suggests a strongly right-skewed distribution, with many lower-volume exporters and a small number of very high-volume exporters. This visualization provides structural confirmation of our earlier summary statistics:
+
+1. As a log scale compresses geometric differences, the seemingly symmetrical bell curve in this plot actually represents an aggressive, exponential right-skew in linear space. The vast majority of nations cluster near the median peak (257 thousand tonnes), while the heavy right tail stretches out to accommodate the massive market titans.
+
+2. The isolated bar on the far-left boundary highlights a subset of global actors operating at near-zero export volumes. They are completely decoupled from the primary global supply hubs.
+ 
+**Methodological Justification:**
+This plot serves as our diagnostic proof against using a standard, un-faceted linear design. If we were to map these countries on a uniform linear scale, the extreme variation between the median cluster and the mega-producers on the right would compress over 75% of the chart canvas into unreadable clutter.
+
+#### Cumulative Market Share Curve
+
+```{r}
+#| label: quantity-concentration-plot
+
+ggplot(
+  concentration_audit,
+  aes(x = seq_along(cumulative_share), y = cumulative_share)
+) +
+  geom_line(color = "#e74c3c", linewidth = 1.2) +
+  geom_area(fill = "#e74c3c", alpha = 0.1) +
+  geom_hline(yintercept = 0.725, linetype = "dashed", color = "gray50") +
+  labs(
+    title = "Cumulative Global Market Share Curve",
+    x = "Ranked Exporting Entities (Highest to Lowest)",
+    y = "Cumulative Share of Global Tonnage"
+  ) +
+  theme_minimal()
+```
+
+Our second diagnostic visualization displays the cumulative global market share of agricultural export quantities ranked from largest to smallest. This curve provides visual proof of a highly consolidated global market structure:
+
+The steep, nearly vertical slope at the origin captures the immense market share dominated by the first few trading hubs. The curve cuts cleanly through the 0.725 dashed reference line within the first eight entities, visually confirming that 72.5% of all global agricultural tonnage is anchored by less than 6% of the world's nations.
+
+Beyond the 30th ranked exporter, the slope transitions into a sharp plateau, flattening out almost completely as it approaches 1.00. This plateau visually demonstrates the small individual contributions of the remaining ~150 countries.
+
+This plot provides the justification to only plot the selected few countries. Attempting to plot every country would crowd the canvas with 125 horizontal points that offer no analytical signal. By isolating the top 30 countries along this curve and programmatically compressing into a  "Rest of the World" category, our redesigned visualization preserves global context while maximizing readability and visual impact.
