@@ -64,8 +64,8 @@ The redesign improves the original visualization by preserving its accessible ra
 
 # References
 
-- Visual Capitalist. (2024). *Ranked: The Countries That Feed the World*. [https://www.visualcapitalist.com/ranked-the-countries-that-feed-the-world/](https://www.visualcapitalist.com/ranked-the-countries-that-feed-the-world/)
+- Neufeld, D. (2026, May 25). Ranked: The countries that feed the world. *Visual Capitalist*. [https://www.visualcapitalist.com/ranked-the-countries-that-feed-the-world/](https://www.visualcapitalist.com/ranked-the-countries-that-feed-the-world/) 
 
-- World Trade Organization. (n.d.). *World Trade in Agricultural Products in Charts*. [https://www.wto.org/english/tratop_e/agric_e/ag_imp_exp_charts_e.htm#ag_products](https://www.wto.org/english/tratop_e/agric_e/ag_imp_exp_charts_e.htm#ag_products)
+- World Trade Organization. (n.d.). *Charts - World trade in agricultural products*. [https://www.wto.org/english/tratop_e/agric_e/ag_imp_exp_charts_e.htm#ag_products](https://www.wto.org/english/tratop_e/agric_e/ag_imp_exp_charts_e.htm#ag_products)
 
-- Yasmin, S., & Moniruzzaman, M. (2026). *Wheat production dynamics in Bangladesh: A comprehensive overview of growth, instability, and decomposition*. Heliyon, 12(1), e44413. [https://doi.org/10.1016/j.heliyon.2025.e44413](https://doi.org/10.1016/j.heliyon.2025.e44413)
+- Yasmin, S., & Moniruzzaman, M. (2026, Jan). *Wheat production dynamics in Bangladesh: A comprehensive overview of growth, instability, and decomposition*. Heliyon, 12(1), e44413. [https://doi.org/10.1016/j.heliyon.2025.e44413](https://doi.org/10.1016/j.heliyon.2025.e44413)
