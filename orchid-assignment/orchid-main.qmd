@@ -10,7 +10,7 @@ format:
 
 # Project Overview
 
-This report documents the data preparation and visualization pipeline for our redesign of the published [Visual Capitalist visualization](https://www.visualcapitalist.com/ranked-the-countries-that-feed-the-world/) on global agricultural exporters. The redesigned visualization uses 2024 World Trade Organization (WTO) agricultural export value and quantity data to compare major reporting economies by export value while adding physical export quantity as supporting context.
+This report documents the data preparation and visualization pipeline for our redesign of the published [Visual Capitalist visualization](https://www.visualcapitalist.com/ranked-the-countries-that-feed-the-world/) on global agricultural exporters. The redesigned visualization uses 2024 [World Trade Organization (WTO)](https://www.wto.org/english/tratop_e/agric_e/ag_imp_exp_charts_e.htm#ag_products) agricultural export value and quantity data to compare major reporting economies by export value while adding physical export quantity as supporting context.
 
 # Roles and Contribution
 
